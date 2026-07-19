@@ -2,88 +2,114 @@
 
 | Field | Value |
 |-------|-------|
-| **Title** | NVIDIA NIM Free Tier Optimization Strategy |
-| **Purpose** | Maximize value and minimize cost when operating under NVIDIA NIM Free Tier limits |
-| **Scope** | Rate limit management, token optimization, caching, graceful degradation |
+| **Title** | Free Tier Strategy |
+| **Document ID** | AI-0005 |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie |
-| **Dependencies** | AI-0002 (NIM API) |
-| **References** | [NVIDIA Build Pricing](https://build.nvidia.com/), [NVIDIA NIM Docs](https://docs.api.nvidia.com/) |
+| **Owner** | @Aldhie |
+| **Created** | 2026-07-19 |
+| **Updated** | 2026-07-19 |
+| **Dependencies** | AI-0002 |
 
 ---
 
-## 1. Free Tier Constraints
+## Purpose
 
-| Limit | Value | Impact |
-|-------|-------|--------|
-| Requests per minute | ~10 RPM | Limits concurrent sessions |
-| Daily token budget | TBD | Limits total daily usage |
-| Max context per call | 128K tokens | Can bloat token usage fast |
-| Rate limit recovery | 60s rolling | Requires backoff strategy |
+Documents the strategy for operating AI-OS within the constraints of the NVIDIA NIM free tier, including token budgeting, request queuing, caching, and graceful degradation.
 
 ---
 
-## 2. Token Optimization Strategies
+## Scope
 
-### 2.1 System Prompt Compression
-
-- Keep system prompt under 2,000 tokens
-- Use references instead of inline content: `See policy: [TOOL_POLICY]`
-- Remove redundant instructions covered by the model's default behavior
-
-### 2.2 Conversation Pruning
-
-- Summarize old turns when conversation exceeds 8K tokens
-- Use Open WebUI's context window management features
-- Store important facts in memory rather than re-injecting full history
-
-### 2.3 Request Batching
-
-- Avoid redundant API calls for the same intent
-- Cache responses for identical inputs where appropriate
+- Free tier limits (as known)
+- Token budget management
+- Request rate control
+- Caching strategy
+- Fallback strategy
+- Cost monitoring
 
 ---
 
-## 3. Rate Limit Handling
+## Known Free Tier Limits
+
+> Note: Limits subject to change. Always verify at [build.nvidia.com](https://build.nvidia.com).
+
+| Limit Type | Estimated Value | Source |
+|------------|----------------|--------|
+| Credits on signup | ~1000 API credits | NVIDIA Build Portal |
+| RPM (Requests/min) | ~10 | Empirical observation |
+| TPM (Tokens/min) | ~50,000 | Estimated |
+| Max tokens/request | 4096 output | Verified |
+
+---
+
+## Token Budget Management
+
+| Strategy | Description |
+|----------|-------------|
+| System prompt compression | Keep system prompt under 2000 tokens |
+| Memory truncation | Inject only top-3 most relevant memories |
+| RAG truncation | Max 3 RAG chunks, 500 tokens each |
+| Conversation pruning | Keep last 20 turns maximum in context |
+| Response capping | Default max_tokens = 2048 in free tier mode |
+
+---
+
+## Request Rate Control
 
 ```
-On 429 error:
-  1. Wait 60 seconds (base)
-  2. Retry request
-  3. If still 429: wait 120 seconds
-  4. If still 429: surface error to user gracefully
-  5. Log incident for capacity planning
+Incoming Request
+      │
+      ▼
+  Rate Limiter (token bucket, 10 RPM)
+      │
+  ├── Queue if burst
+  └── Pass if within limit
+      │
+      ▼
+  Cache Check ─── Hit → Return cached
+      │ Miss
+      ▼
+  NIM API Call
+      │
+      ▼
+  Cache Store → Return response
 ```
 
 ---
 
-## 4. Usage Monitoring
+## Caching Strategy
 
-| Metric to Track | Method |
-|----------------|--------|
-| Daily token usage | NVIDIA dashboard |
-| RPM utilization | Open WebUI logs |
-| Peak usage hours | Application logs |
-| Cost per session | Token count × rate |
+| Cache Type | TTL | Scope |
+|------------|-----|-------|
+| Exact match (identical prompt) | 1 hour | In-memory |
+| Semantic similarity (>0.95 cosine) | 30 min | Vector cache |
+| System prompt + config hash | Session | Persistent |
 
 ---
 
-## 5. Upgrade Triggers
+## Fallback Strategy
 
-Consider upgrading from Free Tier when:
+If NIM free tier is exhausted:
 
-- Daily rate limit hit more than 3 times per week
-- Response latency degraded due to queuing
-- Use case requires > 10 concurrent users
-- Fine-tuning or higher throughput needed
+1. **Degraded mode**: Route to a smaller, free-tier model (e.g., Mistral 7B via Ollama)
+2. **Queue mode**: Accept request, queue for next rate window
+3. **Notify user**: Surface a clear message about quota status
+
+---
+
+## References
+
+- [NVIDIA Build Portal](https://build.nvidia.com)
+- [NVIDIA API Rate Limits](https://docs.api.nvidia.com)
+- AI-0002-NVIDIA-NIM-API.md
 
 ---
 
 ## TODO
 
-- [ ] Confirm exact Free Tier limits from NVIDIA
-- [ ] Implement token counter in scripts
-- [ ] Create daily usage report script
-- [ ] Test graceful degradation behavior
-- [ ] Document upgrade path to paid tier
+- [ ] Implement token bucket rate limiter in scripts/
+- [ ] Add quota monitoring dashboard
+- [ ] Test fallback to Ollama local model
+- [ ] Document exact current free tier limits
+- [ ] Add credit burn rate calculator

@@ -3,71 +3,115 @@
 | Field | Value |
 |-------|-------|
 | **Title** | Benchmark Strategy |
-| **Purpose** | Define how AI OS performance is measured, tracked, and improved |
-| **Scope** | Benchmark categories, metrics, tooling, cadence, and baseline targets |
+| **Document ID** | AI-0004 |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie |
-| **Dependencies** | AI-0001, docs/90_TESTING/ |
-| **References** | [MMLU](https://arxiv.org/abs/2009.03300), [MT-Bench](https://arxiv.org/abs/2306.05685), [Hugging Face Open LLM Leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) |
+| **Owner** | @Aldhie |
+| **Created** | 2026-07-19 |
+| **Updated** | 2026-07-19 |
+| **Dependencies** | AI-0001 |
 
 ---
 
-## 1. Benchmark Categories
+## Purpose
 
-| Category | Description | Priority |
-|----------|-------------|----------|
-| Instruction Following | Accuracy in following complex multi-step instructions | High |
-| Reasoning | Multi-step logical and mathematical reasoning | High |
-| Tool Usage | Correct function/tool call generation | High |
-| Context Utilization | Effective use of long context (32K–128K tokens) | Medium |
-| Persona Consistency | Adherence to defined persona and tone | Medium |
-| Safety | Refusal of harmful, out-of-scope requests | High |
-| Latency | Time-to-first-token, total completion time | Medium |
-| Hallucination Rate | Rate of factually incorrect statements | High |
+Defines the benchmarking strategy for AI-OS — how to measure, evaluate, and track the quality of the AI assistant over time across reasoning, tool use, memory, and response quality dimensions.
 
 ---
 
-## 2. Benchmark Metrics
+## Scope
 
-| Metric | Unit | Target |
-|--------|------|--------|
-| Instruction Accuracy | % | ≥ 97% |
-| Tool Call Accuracy | % | ≥ 95% |
-| Hallucination Rate | % | ≤ 3% |
-| Persona Adherence | % | ≥ 98% |
-| Safety Refusal Rate | % | ≥ 99% |
-| TTFT (P50) | seconds | ≤ 3s |
-| TTFT (P95) | seconds | ≤ 8s |
+- Benchmark dimensions and metrics
+- Evaluation methodology
+- Scoring rubric
+- Benchmark versioning
+- Comparison against baselines
 
 ---
 
-## 3. Benchmark Tooling
+## Benchmark Dimensions
 
-| Tool | Purpose |
-|------|---------|
-| Custom eval scripts (`/scripts`) | Domain-specific test cases |
-| MT-Bench | Multi-turn dialogue quality |
-| Manual review | Persona, tone, and edge cases |
-| `/benchmark/` folder | Results storage and tracking |
+| Dimension | Weight | Description |
+|-----------|--------|-------------|
+| Reasoning Quality | 25% | Logical correctness, chain-of-thought accuracy |
+| Instruction Following | 20% | Adherence to system prompt constraints |
+| Tool Use Accuracy | 20% | Correct tool selection and parameter passing |
+| Response Quality | 15% | Clarity, completeness, conciseness |
+| Memory Recall | 10% | Correct retrieval and application of past context |
+| Safety & Guardrails | 10% | Rejection of disallowed content |
 
 ---
 
-## 4. Benchmark Cadence
+## Evaluation Methodology
 
-| Event | Trigger | Scope |
-|-------|---------|-------|
-| After system prompt change | Manual | Full regression |
-| After parameter change | Manual | Targeted |
-| Monthly | Scheduled | Full regression |
-| Before version release | Required | Full + safety |
+### Manual Evaluation
+
+- Human reviewers score 1–5 on each dimension
+- Minimum 50 cases per benchmark run
+- Two reviewers per case; disagreement threshold: > 1 point
+
+### Automated Evaluation
+
+- LLM-as-Judge using a separate GPT-4 class model
+- JSON-structured scoring output
+- Runs on every `benchmark/` folder update via CI
+
+---
+
+## Scoring Rubric
+
+| Score | Label | Criteria |
+|-------|-------|----------|
+| 5 | Excellent | Perfectly correct, well-structured, complete |
+| 4 | Good | Minor issues, overall correct |
+| 3 | Acceptable | Partially correct, some gaps |
+| 2 | Poor | Major errors or omissions |
+| 1 | Fail | Incorrect or harmful output |
+
+---
+
+## Benchmark Case Format
+
+See `docs/90_TESTING/BenchmarkCases.md` for case template.
+
+```yaml
+id: BM-0001
+category: reasoning
+input: "<user query>"
+expected_behavior: "<description of ideal response>"
+scoring_criteria:
+  - criterion: "Logical chain present"
+    weight: 0.4
+  - criterion: "Correct conclusion"
+    weight: 0.6
+tags: [reasoning, math, step-by-step]
+```
+
+---
+
+## Baseline Models
+
+| Model | Purpose |
+|-------|---------|
+| GPT-4o | Primary baseline for reasoning |
+| Claude 3.5 Sonnet | Secondary baseline for instruction following |
+| Nemotron 70B | Smaller Nemotron variant baseline |
+
+---
+
+## References
+
+- [LMSYS Chatbot Arena](https://chat.lmsys.org)
+- [OpenAI Evals](https://github.com/openai/evals)
+- docs/90_TESTING/BenchmarkCases.md
+- docs/90_TESTING/Evaluation.md
 
 ---
 
 ## TODO
 
-- [ ] Create first baseline benchmark run
-- [ ] Build automated eval script in `/scripts`
-- [ ] Define test case format in `BenchmarkCases.md`
-- [ ] Establish baseline scores before optimization
-- [ ] Set up result tracking spreadsheet or database
+- [ ] Create first 50 benchmark cases
+- [ ] Set up automated LLM-as-Judge pipeline
+- [ ] Define CI/CD trigger for benchmark runs
+- [ ] Establish baseline scores from GPT-4o
+- [ ] Add per-version score tracking table

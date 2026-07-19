@@ -1,27 +1,15 @@
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 *.swp
-*.swo
+*~
 
-# Editor directories
+# Editor
 .vscode/
 .idea/
 *.code-workspace
 
-# Environment
-.env
-.env.local
-.env.*.local
-*.env
-
-# API keys and secrets
-secrets/
-*.key
-*.pem
-*.p12
-
-# Python
+# Python (scripts)
 __pycache__/
 *.py[cod]
 *.pyo
@@ -32,28 +20,36 @@ env/
 dist/
 build/
 
-# Node
+# Node (tooling)
 node_modules/
-npm-debug.log
-yarn-error.log
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Secrets & credentials
+*.key
+*.pem
+*.p12
+secrets/
+credentials/
+
+# Benchmark outputs (raw)
+benchmark/results/raw/
+benchmark/tmp/
+
+# Dataset raw uploads (large files use Git LFS)
+dataset/raw/
+dataset/tmp/
 
 # Logs
 logs/
 *.log
 
-# Temporary and output
+# Temporary
 tmp/
 temp/
-output/
-*.tmp
-*.bak
-
-# Large binary files
-*.bin
-*.gguf
-*.safetensors
-*.pt
-*.ckpt
-
-# Dataset raw (add explicitly what you want to track)
-dataset/raw/
+.cache/

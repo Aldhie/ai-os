@@ -3,72 +3,87 @@
 | Field | Value |
 |-------|-------|
 | **Title** | NVIDIA NIM Free Tier Optimization Strategy |
-| **Purpose** | Maximize capability within NVIDIA NIM free tier constraints |
-| **Scope** | Token budgeting, prompt compression, caching, request batching |
+| **Purpose** | Maximize value and minimize cost when operating under NVIDIA NIM Free Tier limits |
+| **Scope** | Rate limit management, token optimization, caching, graceful degradation |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie / Global Telko Informatika |
-| **Created** | 2026-07-19 |
-| **Dependencies** | AI-0002-NVIDIA-NIM-API.md |
-| **References** | NVIDIA NIM pricing page |
+| **Owner** | Aldhie |
+| **Dependencies** | AI-0002 (NIM API) |
+| **References** | [NVIDIA Build Pricing](https://build.nvidia.com/), [NVIDIA NIM Docs](https://docs.api.nvidia.com/) |
 
 ---
 
 ## 1. Free Tier Constraints
 
-> Verify current limits at https://build.nvidia.com/explore/reasoning
+| Limit | Value | Impact |
+|-------|-------|--------|
+| Requests per minute | ~10 RPM | Limits concurrent sessions |
+| Daily token budget | TBD | Limits total daily usage |
+| Max context per call | 128K tokens | Can bloat token usage fast |
+| Rate limit recovery | 60s rolling | Requires backoff strategy |
 
-| Limit | Estimated Value | Notes |
-|-------|-----------------|-------|
-| Requests per minute | ~5-10 | Subject to change |
-| Tokens per day | ~50,000 | Subject to change |
-| Max context per request | TBD | Verify with API |
+---
 
-## 2. Token Budget Strategy
+## 2. Token Optimization Strategies
 
-### System Prompt Compression
+### 2.1 System Prompt Compression
 
-- Keep system prompt under **1,000 tokens** in production
-- Use a minimal system prompt for testing; full persona for production
-- Audit system prompt token count with every version update
+- Keep system prompt under 2,000 tokens
+- Use references instead of inline content: `See policy: [TOOL_POLICY]`
+- Remove redundant instructions covered by the model's default behavior
 
-### Conversation History Pruning
+### 2.2 Conversation Pruning
 
-- Prune conversation history when context exceeds **80% of limit**
-- Use summarization to compress older turns
-- Implement sliding window with summary injection
+- Summarize old turns when conversation exceeds 8K tokens
+- Use Open WebUI's context window management features
+- Store important facts in memory rather than re-injecting full history
 
-### Response Length Control
+### 2.3 Request Batching
 
-- Set `max_tokens` conservatively per use case
-- For structured tasks (JSON, code), use strict output formatting to minimize verbosity
-- Avoid open-ended prompts that generate long preambles
+- Avoid redundant API calls for the same intent
+- Cache responses for identical inputs where appropriate
 
-## 3. Caching Strategy
+---
 
-| Cache Type | Mechanism | Benefit |
-|------------|-----------|----------|
-| Exact match | Redis key-value | Eliminate duplicate requests |
-| Semantic cache | Embedding similarity | Reuse near-duplicate responses |
-| Template cache | Pre-computed outputs | Fast responses for common queries |
+## 3. Rate Limit Handling
 
-## 4. Request Batching
+```
+On 429 error:
+  1. Wait 60 seconds (base)
+  2. Retry request
+  3. If still 429: wait 120 seconds
+  4. If still 429: surface error to user gracefully
+  5. Log incident for capacity planning
+```
 
-- Batch independent queries where API supports it
-- Avoid sequential calls that can be parallelized
+---
 
-## 5. Monitoring
+## 4. Usage Monitoring
 
-- Track daily token usage against limit
-- Alert at 70% daily token consumption
-- Log prompt and completion token counts per request
+| Metric to Track | Method |
+|----------------|--------|
+| Daily token usage | NVIDIA dashboard |
+| RPM utilization | Open WebUI logs |
+| Peak usage hours | Application logs |
+| Cost per session | Token count × rate |
+
+---
+
+## 5. Upgrade Triggers
+
+Consider upgrading from Free Tier when:
+
+- Daily rate limit hit more than 3 times per week
+- Response latency degraded due to queuing
+- Use case requires > 10 concurrent users
+- Fine-tuning or higher throughput needed
 
 ---
 
 ## TODO
 
-- [ ] Confirm exact free tier limits
-- [ ] Implement token counting middleware
-- [ ] Build Redis cache for exact-match responses
-- [ ] Design conversation summarization module
-- [ ] Set up usage dashboard
+- [ ] Confirm exact Free Tier limits from NVIDIA
+- [ ] Implement token counter in scripts
+- [ ] Create daily usage report script
+- [ ] Test graceful degradation behavior
+- [ ] Document upgrade path to paid tier

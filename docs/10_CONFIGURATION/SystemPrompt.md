@@ -2,42 +2,72 @@
 
 | Field | Value |
 |-------|-------|
-| **Title** | AI-OS System Prompt Specification |
-| **Purpose** | Define, version, and maintain the master system prompt for AI-OS |
-| **Scope** | System prompt design, injection strategy, version history |
+| **Title** | AI OS System Prompt |
+| **Purpose** | Define the master system prompt injected into every conversation with Nemotron Ultra |
+| **Scope** | Identity, behavior, capability boundaries, tone, and safety guardrails |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie / Global Telko Informatika |
-| **Created** | 2026-07-19 |
-| **Dependencies** | Persona.md, Parameters.md |
-| **References** | prompts/nemotron-ultra/system.txt |
+| **Owner** | Aldhie |
+| **Dependencies** | Persona.md, ToolPolicy.md, MemoryPolicy.md |
+| **References** | AI-0001, Parameters.md |
 
 ---
 
 ## Design Principles
 
-1. **Clarity** — Instructions must be unambiguous and structured
-2. **Brevity** — Under 1,000 tokens in production
-3. **Persona consistency** — Tone and style defined in Persona.md must be enforced
-4. **Task focus** — System prompt sets constraints, not domain-specific instructions
-5. **Versioned** — Every change must increment the version and be logged below
+1. **Minimal footprint** — Under 2,000 tokens to preserve context budget
+2. **Explicit identity** — Model must know who it is and what it does
+3. **Clear boundaries** — What to do, what not to do
+4. **Tool awareness** — Know which tools are available and when to use them
+5. **Memory integration** — Reference and update memory when appropriate
 
 ---
 
-## Current Version: v0.1.0
+## Prompt Structure
 
-See raw prompt: `prompts/nemotron-ultra/system.txt`
-
-### Token Count
-
-| Section | Estimated Tokens |
-|---------|------------------|
-| Identity & Persona | ~150 |
-| Behavioral Rules | ~200 |
-| Output Format Rules | ~150 |
-| Tool Use Policy | ~100 |
-| **Total** | **~600** |
+```
+[IDENTITY]
+[CAPABILITIES]
+[BEHAVIOR RULES]
+[TOOL USAGE POLICY]
+[MEMORY POLICY]
+[KNOWLEDGE POLICY]
+[SAFETY GUARDRAILS]
+[OUTPUT FORMAT]
+```
 
 ---
 
-## Vers
+## Current Prompt (v0.1.0 — Draft)
+
+> Stored in: `prompts/nemotron-ultra/system.txt`
+
+---
+
+## Prompt Changelog
+
+| Version | Date | Changes | Author |
+|---------|------|---------|--------|
+| 0.1.0 | 2026-07-20 | Initial draft template | Aldhie |
+
+---
+
+## Evaluation Criteria
+
+A good system prompt should produce:
+
+- [ ] Consistent persona across sessions
+- [ ] Correct tool selection without over-calling
+- [ ] Appropriate refusals for out-of-scope requests
+- [ ] Concise, structured responses
+- [ ] Memory usage without user prompting
+
+---
+
+## TODO
+
+- [ ] Write v0.1 system prompt content
+- [ ] Run against benchmark cases (BenchmarkCases.md)
+- [ ] Optimize for token count
+- [ ] Test persona consistency across 20+ turns
+- [ ] Review safety guardrails with adversarial inputs

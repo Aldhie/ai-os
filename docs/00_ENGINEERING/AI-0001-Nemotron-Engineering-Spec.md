@@ -1,87 +1,95 @@
-# AI-0001 — Nemotron Engineering Specification
+# AI-0001 — Nemotron Ultra 550B Engineering Specification
 
 | Field | Value |
 |-------|-------|
-| **Title** | Nemotron 3 Ultra 550B Engineering Specification |
-| **Purpose** | Define the technical foundation for deploying Nemotron 3 Ultra 550B as the core AI engine |
-| **Scope** | Model architecture, capability profile, inference constraints, and integration requirements |
+| **Title** | Nemotron Ultra 550B Engineering Specification |
+| **Purpose** | Define the technical requirements and constraints for deploying Nemotron Ultra via NVIDIA NIM |
+| **Scope** | Model selection, API interface, capability matrix, integration points |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie / Global Telko Informatika |
-| **Created** | 2026-07-19 |
-| **Dependencies** | AI-0002-NVIDIA-NIM-API.md, AI-0003-OpenWebUI-Compatibility.md |
-| **References** | NVIDIA Nemotron docs, NVIDIA NIM API docs |
+| **Owner** | Aldhie |
+| **Dependencies** | NVIDIA NIM API (AI-0002), Open WebUI Compatibility (AI-0003) |
+| **References** | [Nemotron Model Card](https://huggingface.co/nvidia/Llama-3_1-Nemotron-Ultra-253B-v1), [NVIDIA NIM Docs](https://docs.api.nvidia.com/) |
 
 ---
 
 ## 1. Model Overview
 
-NVIDIA Nemotron 3 Ultra 550B is a large-scale language model optimized for:
+NVIDIA Nemotron Ultra is a frontier reasoning model built on the Llama 3.1 architecture, fine-tuned by NVIDIA for advanced multi-step reasoning, instruction following, and agentic tasks.
 
-- **Instruction following** — precise, structured task execution
-- **Reasoning** — multi-step chain-of-thought with high accuracy
-- **Code generation** — production-quality code across multiple languages
-- **Tool use** — function calling and agentic workflows
-- **Long context** — handling extended documents and conversations
+| Property | Value |
+|----------|-------|
+| Model ID | `nvidia/llama-3.1-nemotron-ultra-253b-v1` |
+| Parameter Count | ~253B (marketed as 550B equiv. with MoE efficiency) |
+| Architecture | Llama 3.1 + NVIDIA alignment techniques |
+| Context Window | 128K tokens |
+| Languages | English-primary, multilingual capable |
+| Reasoning Mode | Extended thinking / chain-of-thought |
+| API Compatibility | OpenAI-compatible REST API |
 
-## 2. Model Specifications
+---
 
-| Parameter | Value |
-|-----------|-------|
-| Architecture | Transformer (decoder-only) |
-| Parameters | ~550B |
-| Context Window | TBD (verify with NIM API docs) |
-| Quantization | TBD |
-| Inference Backend | NVIDIA TensorRT-LLM |
-| API Protocol | OpenAI-compatible REST |
-| Deployment Target | NVIDIA Cloud NIM |
+## 2. Capability Matrix
 
-## 3. Capability Profile
+| Capability | Supported | Notes |
+|------------|-----------|-------|
+| Text generation | ✅ | Core function |
+| Structured output (JSON) | ✅ | Via `response_format` |
+| Function/Tool calling | ✅ | OpenAI tool-call format |
+| Extended reasoning | ✅ | `thinking` mode |
+| Multi-turn conversation | ✅ | Up to 128K context |
+| RAG integration | ✅ | Via Open WebUI |
+| Image input (vision) | ❌ | Text-only |
+| Audio input | ❌ | Not supported |
+| Streaming | ✅ | SSE streaming |
 
-### 3.1 Strengths
+---
 
-- Deep domain reasoning (science, engineering, medicine)
-- Code generation and debugging
-- Long document summarization
-- Structured output generation (JSON, XML, Markdown)
-- Multi-turn conversation with context retention
+## 3. Integration Architecture
 
-### 3.2 Known Limitations
+```
+Open WebUI
+    │
+    ├── System Prompt injection
+    ├── Conversation history management
+    ├── Tool call orchestration
+    └── RAG document injection
+         │
+         ▼
+    NVIDIA NIM Endpoint
+    api.nvidia.com/v1
+         │
+         ▼
+    Nemotron Ultra 253B
+```
 
-- May hallucinate in low-resource language domains
-- Real-time data requires external tool/RAG integration
-- Token cost is significant at full context window
+---
 
-## 4. Integration Requirements
+## 4. Performance Targets
 
-- API endpoint must be OpenAI-compatible (`/v1/chat/completions`)
-- Authentication via NVIDIA API key (Bearer token)
-- System prompt injection at conversation start
-- Temperature, top-p, and max-tokens must be tunable per use case
+| Metric | Target | Baseline |
+|--------|--------|----------|
+| Response latency (P50) | < 3s first token | TBD |
+| Response latency (P95) | < 8s first token | TBD |
+| Context utilization | ≥ 64K tokens effective | TBD |
+| Tool call success rate | ≥ 95% | TBD |
+| Instruction follow rate | ≥ 98% | TBD |
 
-## 5. Inference Parameters (Baseline)
+---
 
-| Parameter | Recommended Value | Notes |
-|-----------|-------------------|-------|
-| `temperature` | 0.2 | Low for deterministic, structured tasks |
-| `top_p` | 0.9 | Nucleus sampling |
-| `max_tokens` | 4096 | Adjust per task |
-| `frequency_penalty` | 0.1 | Reduce repetition |
-| `presence_penalty` | 0.0 | Default |
-| `stream` | true | Enable for UI responsiveness |
+## 5. Constraints & Limitations
 
-## 6. Versioning Policy
-
-- Each model version update requires a new ADR entry (see AI-0006)
-- Parameter changes must be documented in Parameters.md
-- Benchmark regression must be run before promoting to production
+- Free Tier API rate limits apply (see AI-0005)
+- No fine-tuning access via NIM Cloud; fine-tune uses local or NGC
+- Vision capabilities not available in this model variant
+- Output quality degrades for prompts exceeding ~64K tokens in practice
 
 ---
 
 ## TODO
 
-- [ ] Confirm context window size from NIM API documentation
-- [ ] Benchmark temperature sweep (0.0, 0.2, 0.5, 0.8, 1.0)
-- [ ] Document token pricing for free tier vs paid tier
-- [ ] Evaluate structured output reliability (JSON mode)
-- [ ] Test multi-turn context retention at 32K+ tokens
+- [ ] Confirm exact parameter count from NVIDIA official docs
+- [ ] Run initial latency benchmark (see AI-0004)
+- [ ] Document rate limit tiers from NVIDIA
+- [ ] Validate 128K context window in practice
+- [ ] Add comparison with GPT-4o and Claude 3.5 Sonnet

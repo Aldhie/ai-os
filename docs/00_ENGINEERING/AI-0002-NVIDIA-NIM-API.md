@@ -1,137 +1,146 @@
-# AI-0002 — NVIDIA NIM API Integration
+# AI-0002 — NVIDIA NIM API Reference
 
 | Field | Value |
 |-------|-------|
-| **Title** | NVIDIA NIM API Integration Guide |
-| **Purpose** | Document API endpoints, authentication, and integration patterns for NVIDIA Cloud NIM |
-| **Scope** | REST API, authentication, request/response schema, error handling, rate limits |
+| **Title** | NVIDIA NIM API Reference |
+| **Purpose** | Document the API interface, authentication, endpoints, and usage patterns for NVIDIA NIM |
+| **Scope** | REST API, authentication, request/response schema, rate limits, error handling |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie / Global Telko Informatika |
-| **Created** | 2026-07-19 |
-| **Dependencies** | AI-0001-Nemotron-Engineering-Spec.md |
-| **References** | https://docs.api.nvidia.com, OpenAI API specification |
+| **Owner** | Aldhie |
+| **Dependencies** | AI-0001 (Model Spec) |
+| **References** | [NVIDIA NIM API Docs](https://docs.api.nvidia.com/), [OpenAI API Reference](https://platform.openai.com/docs/api-reference) |
 
 ---
 
-## 1. Base URL
+## 1. Base Configuration
 
-```
-https://integrate.api.nvidia.com/v1
-```
+| Parameter | Value |
+|-----------|-------|
+| Base URL | `https://integrate.api.nvidia.com/v1` |
+| API Compatibility | OpenAI-compatible |
+| Authentication | Bearer token (NVIDIA API Key) |
+| Content-Type | `application/json` |
+
+---
 
 ## 2. Authentication
 
 ```http
-Authorization: Bearer $NVIDIA_API_KEY
+Authorization: Bearer nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-Store the key in environment variable `NVIDIA_API_KEY`. Never commit to version control.
+API keys are obtained from [NVIDIA Build](https://build.nvidia.com/). Store keys in environment variables — never commit to repository.
+
+```bash
+export NVIDIA_API_KEY="nvapi-xxxxxxxxxxxxxxxxxxxx"
+```
+
+---
 
 ## 3. Chat Completions Endpoint
 
 ### Request
 
 ```http
-POST /chat/completions
-Content-Type: application/json
-Authorization: Bearer $NVIDIA_API_KEY
+POST https://integrate.api.nvidia.com/v1/chat/completions
 ```
 
 ```json
 {
-  "model": "nvidia/nemotron-3-ultra-550b",
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
   "messages": [
-    {
-      "role": "system",
-      "content": "<system_prompt>"
-    },
-    {
-      "role": "user",
-      "content": "<user_message>"
-    }
+    {"role": "system", "content": "<system_prompt>"},
+    {"role": "user", "content": "<user_message>"}
   ],
-  "temperature": 0.2,
-  "top_p": 0.9,
+  "temperature": 0.6,
+  "top_p": 0.95,
   "max_tokens": 4096,
   "stream": true
 }
 ```
 
-### Response (non-stream)
+### Extended Thinking Mode
 
 ```json
 {
-  "id": "chatcmpl-xxx",
-  "object": "chat.completion",
-  "created": 1720000000,
-  "model": "nvidia/nemotron-3-ultra-550b",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "..."
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 512,
-    "completion_tokens": 256,
-    "total_tokens": 768
-  }
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "messages": [...],
+  "thinking": {"type": "enabled", "budget_tokens": 10000},
+  "max_tokens": 16384,
+  "stream": true
 }
 ```
 
-## 4. Streaming
+### Structured Output
 
-Set `"stream": true` to receive Server-Sent Events (SSE). Each chunk follows OpenAI streaming format:
-
-```
-data: {"choices":[{"delta":{"content":"..."}}]}
-```
-
-Terminated by:
-
-```
-data: [DONE]
+```json
+{
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "messages": [...],
+  "response_format": {"type": "json_object"}
+}
 ```
 
-## 5. Error Codes
+---
+
+## 4. Tool Calling
+
+```json
+{
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "messages": [...],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current date and time",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "timezone": {"type": "string", "description": "IANA timezone"}
+          },
+          "required": ["timezone"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+---
+
+## 5. Rate Limits (Free Tier)
+
+| Limit Type | Value |
+|------------|-------|
+| Requests per minute (RPM) | 10 |
+| Tokens per minute (TPM) | TBD |
+| Tokens per day (TPD) | TBD |
+| Max context per request | 128K tokens |
+
+> See AI-0005 for Free Tier optimization strategy.
+
+---
+
+## 6. Error Handling
 
 | HTTP Code | Meaning | Action |
 |-----------|---------|--------|
-| 400 | Bad request (malformed JSON, invalid params) | Fix request schema |
-| 401 | Unauthorized (invalid API key) | Check NVIDIA_API_KEY |
-| 429 | Rate limit exceeded | Implement exponential backoff |
-| 500 | Internal server error | Retry with backoff |
-| 503 | Service unavailable | Check NVIDIA status page |
-
-## 6. Rate Limits (Free Tier)
-
-| Limit | Value |
-|-------|-------|
-| Requests per minute | TBD |
-| Tokens per minute | TBD |
-| Tokens per day | TBD |
-
-> **See AI-0005-FreeTier-Strategy.md** for optimization strategies.
-
-## 7. Open WebUI Integration
-
-Open WebUI connects to NIM via its **OpenAI-compatible API** settings:
-
-- Base URL: `https://integrate.api.nvidia.com/v1`
-- API Key: `$NVIDIA_API_KEY`
-- Model ID: `nvidia/nemotron-3-ultra-550b`
+| 400 | Bad Request | Check request schema |
+| 401 | Unauthorized | Verify API key |
+| 429 | Rate Limited | Implement exponential backoff |
+| 500 | Server Error | Retry with backoff |
+| 503 | Service Unavailable | Retry after delay |
 
 ---
 
 ## TODO
 
-- [ ] Confirm exact model ID from NVIDIA NIM catalog
-- [ ] Document actual rate limits for free and paid tiers
-- [ ] Test streaming with Open WebUI
-- [ ] Implement retry wrapper for 429 and 503 errors
-- [ ] Document function calling schema if supported
+- [ ] Confirm exact rate limits for Free Tier
+- [ ] Document token pricing tiers
+- [ ] Test streaming response handling in Open WebUI
+- [ ] Document embedding endpoint if available
+- [ ] Add Python SDK example

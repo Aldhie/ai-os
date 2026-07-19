@@ -2,89 +2,92 @@
 
 | Field | Value |
 |-------|-------|
-| **Title** | Open WebUI Compatibility and Configuration Guide |
-| **Purpose** | Document how Open WebUI integrates with NVIDIA NIM and AI-OS runtime |
-| **Scope** | Open WebUI version compatibility, model connection, system prompt injection, UI configuration |
+| **Title** | Open WebUI Compatibility with NVIDIA NIM |
+| **Purpose** | Document how to configure Open WebUI to connect with NVIDIA NIM and Nemotron Ultra |
+| **Scope** | Open WebUI setup, model connection, feature compatibility, known issues |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | Aldhie / Global Telko Informatika |
-| **Created** | 2026-07-19 |
-| **Dependencies** | AI-0002-NVIDIA-NIM-API.md |
-| **References** | https://docs.openwebui.com |
+| **Owner** | Aldhie |
+| **Dependencies** | AI-0001, AI-0002 |
+| **References** | [Open WebUI Docs](https://docs.openwebui.com/), [Open WebUI GitHub](https://github.com/open-webui/open-webui) |
 
 ---
 
-## 1. Open WebUI Version Requirements
+## 1. Open WebUI Overview
 
-| Requirement | Value |
-|-------------|-------|
+Open WebUI is a self-hosted, extensible web interface for interacting with LLMs. It supports OpenAI-compatible APIs, making it fully compatible with NVIDIA NIM.
+
+| Property | Value |
+|----------|-------|
 | Minimum Version | 0.4.x |
-| Recommended Version | Latest stable |
-| Deployment | Docker (self-hosted) or cloud |
-| Node.js (build) | 18+ |
-| Database | SQLite (default) or PostgreSQL |
+| Deployment | Docker / Local / Cloud |
+| API Protocol | OpenAI-compatible |
+| Auth | API Key via environment variable |
 
-## 2. Model Connection Setup
+---
 
-### Step 1: Add OpenAI-compatible connection
+## 2. Connection Configuration
 
-1. Go to **Settings → Connections → OpenAI API**
-2. Set **Base URL**: `https://integrate.api.nvidia.com/v1`
-3. Set **API Key**: `$NVIDIA_API_KEY`
-4. Save and verify connection
+In Open WebUI Admin Panel:
 
-### Step 2: Select Model
+```
+Settings → Connections → OpenAI API
+  URL: https://integrate.api.nvidia.com/v1
+  Key: nvapi-xxxxxxxxxxxxxxxxxxxx
+```
 
-1. Go to **Models** and select `nvidia/nemotron-3-ultra-550b`
-2. Assign the system prompt from `prompts/nemotron-ultra/system.txt`
+Or via environment variable:
 
-## 3. System Prompt Injection
+```bash
+OPENAI_API_BASE_URL=https://integrate.api.nvidia.com/v1
+OPENAI_API_KEY=nvapi-xxxxxxxxxxxxxxxxxxxx
+```
 
-Open WebUI supports system prompt injection at three levels:
+---
 
-| Level | Scope | Priority |
-|-------|-------|----------|
-| Global system prompt | All conversations | Lowest |
-| Model-level system prompt | Per model | Medium |
-| Conversation system prompt | Per chat session | Highest |
+## 3. Feature Compatibility Matrix
 
-For AI-OS, use **model-level system prompt** as the primary injection point.
+| Feature | Open WebUI | NIM | Compatible |
+|---------|------------|-----|------------|
+| Chat completions | ✅ | ✅ | ✅ |
+| Streaming | ✅ | ✅ | ✅ |
+| System prompts | ✅ | ✅ | ✅ |
+| Tool/function calling | ✅ | ✅ | ✅ |
+| RAG (document Q&A) | ✅ | N/A | ✅ |
+| Image generation | ✅ | ❌ | ❌ |
+| Voice input | ✅ | ❌ | ❌ |
+| Vision (image input) | ✅ | ❌ | ❌ |
+| Web search | ✅ | N/A | ✅ |
+| Extended thinking | ❌ native | ✅ | ⚠️ Partial |
 
-## 4. Supported Features
+---
 
-| Feature | Supported | Notes |
-|---------|-----------|-------|
-| Streaming | ✅ | SSE via OpenAI format |
-| Multi-turn conversation | ✅ | Native |
-| System prompt | ✅ | Model-level and global |
-| File upload / RAG | ✅ | Requires embedding model |
-| Function calling | 🔄 | Depends on NIM support |
-| Image input | ❓ | Verify with Nemotron 550B |
-| Voice input | ✅ | Requires Whisper integration |
+## 4. Model Selection in Open WebUI
 
-## 5. Parameters Configuration
+After connection, select:
 
-See `configs/openwebui/parameters.json` for the full parameter set.
+```
+nvidia/llama-3.1-nemotron-ultra-253b-v1
+```
 
-Key parameters to tune in Open WebUI model settings:
+This model ID must be used exactly as listed in the NVIDIA NIM model catalog.
 
-- `temperature`
-- `top_p`
-- `max_tokens`
-- `system_prompt`
-- `context_length`
+---
 
-## 6. Known Issues
+## 5. Known Issues
 
-- Some Open WebUI versions do not pass `frequency_penalty` to external APIs — verify before deploying.
-- Streaming may timeout on very long responses — configure `WEBUI_REQUEST_TIMEOUT` accordingly.
+| Issue | Severity | Workaround |
+|-------|----------|------------|
+| Extended thinking tokens visible in output | Low | Strip `<think>` tags in filter |
+| Rate limit 429 shows as generic error | Medium | Monitor API logs |
+| Long system prompts may reduce response quality | Medium | Optimize prompt, see SystemPrompt.md |
 
 ---
 
 ## TODO
 
-- [ ] Test Open WebUI Docker deployment with NIM endpoint
-- [ ] Validate system prompt injection at model level
-- [ ] Configure RAG with embedding model for knowledge base
-- [ ] Document WEBUI_REQUEST_TIMEOUT recommendation
-- [ ] Test function calling if NIM supports it
+- [ ] Test Docker deployment on local machine
+- [ ] Document Open WebUI filter setup for thinking tokens
+- [ ] Test RAG pipeline with Nemotron Ultra
+- [ ] Create automated connection test script
+- [ ] Document Open WebUI version upgrade procedure

@@ -1,0 +1,59 @@
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Editor directories
+.vscode/
+.idea/
+*.code-workspace
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# API keys and secrets
+secrets/
+*.key
+*.pem
+*.p12
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs/
+*.log
+
+# Temporary and output
+tmp/
+temp/
+output/
+*.tmp
+*.bak
+
+# Large binary files
+*.bin
+*.gguf
+*.safetensors
+*.pt
+*.ckpt
+
+# Dataset raw (add explicitly what you want to track)
+dataset/raw/

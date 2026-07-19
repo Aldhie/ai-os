@@ -1,68 +1,58 @@
-# OS
+# OS artifacts
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Editor
+# Editor artifacts
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Environment
-.env
-.env.local
-.env.*.local
-*.env
-
-# Secrets and API keys
-secrets/
-*.key
-*.pem
-*.p12
-api_keys.json
-credentials.json
-
-# Python
+# Python (for scripts)
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 .Python
 venv/
-env/
 .venv/
+env/
+.env
 *.egg-info/
 dist/
 build/
 
-# Node
+# Node (if any tooling)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Logs
-logs/
-*.log
+# Secrets and credentials — NEVER commit these
+*.key
+*.pem
+*.p12
+*.pfx
+.env*
+secrets/
+credentials/
+api_keys.txt
 
-# Temporary files
+# Dataset sensitive files
+dataset/raw/
+dataset/private/
+
+# Benchmark output artifacts
+benchmark/output/
+benchmark/results/raw/
+
+# Temp and logs
+*.log
 tmp/
 temp/
-*.tmp
-*.bak
-*.cache
+.cache/
 
-# Dataset — raw files (large)
-dataset/raw/
-dataset/*.jsonl
-dataset/*.parquet
-dataset/*.csv
-
-# Benchmark outputs
-benchmark/outputs/
-benchmark/results/*.json
-
-# Build artifacts
-_site/
-.jekyll-cache/
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/

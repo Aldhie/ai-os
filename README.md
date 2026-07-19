@@ -1,181 +1,210 @@
 # AI-OS — AI Operating System Engineering Repository
 
-> **Version:** 0.1.0 | **Status:** Active | **Owner:** Aldhie | **License:** MIT
-
-This repository is the **engineering documentation hub** for building an AI Operating System powered by **NVIDIA Nemotron Ultra 550B** through **Open WebUI** and **NVIDIA Cloud NIM**.
-
-It is **not** application source code. It contains:
-
-- Engineering specifications and architecture decisions
-- System prompt templates and persona definitions
-- Runtime orchestration patterns (Planner, Critic, Reflection)
-- Benchmark cases and evaluation frameworks
-- Dataset schemas and fine-tuning guides
-- Configuration files for Open WebUI and NIM APIs
+> **Version:** 0.1.0  
+> **Status:** Active Development  
+> **Owner:** Aldhie  
+> **License:** MIT
 
 ---
 
-## Architecture Overview
+## Purpose
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      AI Operating System                    │
-├──────────────┬──────────────┬──────────────┬───────────────┤
-│   PLANNER    │    CRITIC    │  REFLECTION  │   WORKFLOW    │
-│  (Strategy)  │  (Evaluate)  │   (Improve)  │  (Execution)  │
-├──────────────┴──────────────┴──────────────┴───────────────┤
-│              SYSTEM PROMPT + PERSONA + MEMORY               │
-├─────────────────────────────────────────────────────────────┤
-│          NVIDIA Nemotron Ultra 550B via NIM API             │
-├─────────────────────────────────────────────────────────────┤
-│                Open WebUI (Frontend Interface)              │
-└─────────────────────────────────────────────────────────────┘
+This repository is the **single source of truth** for engineering, configuring, and evolving an AI Operating System built on:
+
+- **Model:** NVIDIA Nemotron 3 Ultra 550B
+- **Inference:** NVIDIA Cloud NIM (API-compatible)
+- **Frontend:** Open WebUI
+
+This is **NOT** application source code. It is an engineering documentation, architecture, benchmark, prompt, configuration, and dataset repository — designed to be maintainable for years.
+
+---
+
+## Architecture Diagram
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                        AI-OS STACK                              │
+├─────────────────────────────────────────────────────────────────┤
+│  USER INTERFACE                                                 │
+│  └── Open WebUI  (Browser / PWA)                                │
+├─────────────────────────────────────────────────────────────────┤
+│  RUNTIME LAYER                                                  │
+│  ├── Planner     (Task decomposition & goal tracking)           │
+│  ├── Reflection  (Self-evaluation & correction loop)            │
+│  └── Critic      (Output quality gating)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  CONFIGURATION LAYER                                            │
+│  ├── System Prompt  (Persona, rules, tone)                      │
+│  ├── Parameters     (Temperature, top-p, max tokens, etc.)      │
+│  ├── Memory Policy  (What to remember & for how long)           │
+│  ├── Knowledge Policy (RAG sources, retrieval rules)            │
+│  └── Tool Policy    (Which tools are enabled & when)            │
+├─────────────────────────────────────────────────────────────────┤
+│  INFERENCE ENGINE                                               │
+│  └── NVIDIA Cloud NIM  (Nemotron 3 Ultra 550B endpoint)         │
+├─────────────────────────────────────────────────────────────────┤
+│  DATA LAYER                                                     │
+│  ├── Dataset    (Curated training & evaluation data)            │
+│  └── Fine-tune  (LoRA / PEFT adapters and recipes)              │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Engineering Lifecycle
 
+```text
+  ┌──────────────┐
+  │  Engineering │  ← Architecture decisions, specs, API contracts
+  └──────┬───────┘
+         │
+  ┌──────▼───────┐
+  │Configuration │  ← System prompt, parameters, policies
+  └──────┬───────┘
+         │
+  ┌──────▼───────┐
+  │   Runtime    │  ← Planner, Reflection, Critic, Workflow
+  └──────┬───────┘
+         │
+  ┌──────▼───────┐
+  │   Dataset    │  ← Conversation logs, curated Q&A, eval sets
+  └──────┬───────┘
+         │
+  ┌──────▼───────┐
+  │  Fine-Tune   │  ← LoRA recipes, PEFT scripts, adapter registry
+  └──────┬───────┘
+         │
+  ┌──────▼───────┐
+  │  Benchmark   │  ← Regression, evaluation, performance tracking
+  └──────┬───────┘
+         │
+  ┌──────▼───────┐
+  │   Release    │  ← Semantic version tag, changelog, deployment
+  └──────────────┘
 ```
-Engineering
-     │
-     ▼
-Configuration
-     │
-     ▼
-Runtime
-     │
-     ▼
-Dataset
-     │
-     ▼
-Fine Tune
-     │
-     ▼
-Benchmark
-     │
-     ▼
-Release
-```
-
-| Phase | Folder | Description |
-|---|---|---|
-| Engineering | `docs/00_ENGINEERING/` | Specs, ADRs, API docs, compatibility |
-| Configuration | `docs/10_CONFIGURATION/` | Prompts, parameters, policies |
-| Runtime | `docs/20_RUNTIME/` | Planner, Critic, Reflection, Workflow |
-| Dataset | `docs/30_DATASET/` | Schema, sources, curation policy |
-| Fine Tune | `docs/40_FINETUNE/` | Fine-tuning strategy and procedures |
-| Benchmark | `docs/90_TESTING/` | Regression, evaluation, benchmark cases |
-| Release | `CHANGELOG.md` | Semantic versioned release notes |
 
 ---
 
 ## Repository Structure
 
-```
+```text
 ai-os/
 ├── README.md
 ├── LICENSE
 ├── .gitignore
 ├── docs/
-│   ├── 00_ENGINEERING/       # Core engineering specs and ADRs
-│   ├── 10_CONFIGURATION/     # System prompt, parameters, policies
-│   ├── 20_RUNTIME/           # Runtime orchestration patterns
-│   ├── 30_DATASET/           # Dataset documentation
-│   ├── 40_FINETUNE/          # Fine-tuning documentation
-│   └── 90_TESTING/           # Benchmark and evaluation
+│   ├── 00_ENGINEERING/         # Specs, ADR, API contracts
+│   ├── 10_CONFIGURATION/       # System prompt, parameters, policies
+│   ├── 20_RUNTIME/             # Planner, Reflection, Critic, Workflow
+│   ├── 30_DATASET/             # Dataset documentation
+│   ├── 40_FINETUNE/            # Fine-tuning recipes
+│   └── 90_TESTING/             # Regression, evaluation, benchmark cases
 ├── prompts/
-│   └── nemotron-ultra/       # Prompt templates for Nemotron Ultra
+│   └── nemotron-ultra/         # Raw prompt files
 ├── configs/
-│   └── openwebui/            # Open WebUI configuration files
-├── benchmark/                # Benchmark results and scripts
-├── dataset/                  # Dataset samples and schemas
-└── scripts/                  # Utility and automation scripts
+│   └── openwebui/              # Open WebUI JSON configurations
+├── benchmark/                  # Benchmark results and runner
+├── dataset/                    # Curated datasets
+└── scripts/                    # Automation and utility scripts
 ```
 
 ---
 
 ## Roadmap
 
-### v0.1.0 — Foundation (Current)
+### Phase 1 — Foundation (v0.1.x)
 
-- [x] Repository structure initialized
-- [x] Engineering specs drafted (AI-0001 to AI-0006)
-- [x] System prompt and persona templates
-- [x] Open WebUI base configuration
+- [x] Repository initialized
+- [ ] Engineering spec completed
+- [ ] System prompt v1 finalized
+- [ ] Parameters baseline established
+- [ ] NVIDIA NIM API integration documented
 
-### v0.2.0 — Runtime
+### Phase 2 — Runtime Intelligence (v0.2.x)
 
-- [ ] Planner/Critic/Reflection prompts finalized
-- [ ] Workflow automation documented
-- [ ] Initial benchmark baseline established
+- [ ] Planner workflow implemented
+- [ ] Reflection loop documented
+- [ ] Critic evaluation rules defined
+- [ ] Memory & Knowledge policy v1
 
-### v0.3.0 — Dataset
+### Phase 3 — Data & Evaluation (v0.3.x)
 
-- [ ] Dataset schema defined
-- [ ] Curation pipeline documented
-- [ ] First dataset version released
+- [ ] Dataset v1 curated (min 1,000 samples)
+- [ ] Benchmark baseline established
+- [ ] Regression test suite running
+- [ ] Evaluation metrics defined
 
-### v0.4.0 — Fine-Tune
+### Phase 4 — Fine-Tuning (v0.4.x)
 
-- [ ] Fine-tuning strategy approved
-- [ ] Training configuration documented
-- [ ] Evaluation framework ready
+- [ ] LoRA recipe for Nemotron Ultra documented
+- [ ] PEFT adapter registry created
+- [ ] Fine-tune evaluation pipeline ready
 
-### v1.0.0 — Production Release
+### Phase 5 — Release Candidate (v1.0.0)
 
-- [ ] All specs reviewed and approved
-- [ ] Benchmark baselines met
-- [ ] Full documentation complete
+- [ ] All documentation complete
+- [ ] Benchmark scores acceptable
+- [ ] Contribution guide reviewed
+- [ ] First stable release tagged
+
+---
+
+## Versioning
+
+This repository uses [Semantic Versioning](https://semver.org/):
+
+- `MAJOR` — Breaking changes to architecture or API contracts
+- `MINOR` — New features, new documents, new capabilities
+- `PATCH` — Fixes, corrections, minor updates
 
 ---
 
 ## Contribution Guide
 
-### Getting Started
+### Principles
 
-1. Fork this repository.
-2. Create a branch: `git checkout -b feature/your-feature-name`
-3. Follow the document template structure (Title, Purpose, Scope, Version, Status, Owner, Dependencies, References, TODO).
-4. Use Markdown lint-friendly formatting (no trailing spaces, blank line before headings).
-5. Submit a pull request with a clear description.
-
-### Document Naming Convention
-
-- Engineering specs: `AI-XXXX-Title.md` (e.g., `AI-0001-Nemotron-Engineering-Spec.md`)
-- Configuration docs: `PascalCase.md` (e.g., `SystemPrompt.md`)
-- Prompt files: `lowercase.txt` (e.g., `system.txt`)
-- Config files: `lowercase.json` (e.g., `parameters.json`)
-
-### Semantic Versioning
-
-This repository follows [SemVer](https://semver.org/):
-
-- **MAJOR**: Breaking architecture changes
-- **MINOR**: New features or documents added
-- **PATCH**: Corrections, clarifications, small updates
+1. **English only** for filenames, headers, and code.
+2. **Markdown lint-friendly** — use standard Markdown, avoid raw HTML.
+3. **Every file must have a header block** with: Title, Purpose, Scope, Version, Status, Owner, Dependencies, References, TODO.
+4. **Semantic commits** — follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 ### Commit Message Format
 
+```text
+<type>(<scope>): <subject>
+
+Types: feat | fix | docs | refactor | test | chore
+Scope: engineering | config | runtime | dataset | finetune | benchmark
+
+Examples:
+  feat(config): add memory policy v1
+  docs(engineering): update NIM API spec
+  fix(benchmark): correct evaluation metric formula
 ```
-feat: add new prompt template for critic
-fix: correct parameter range in parameters.json
-docs: update ADR-006 with new decision
-chore: update .gitignore
+
+### Branch Strategy
+
+```text
+main          ← stable, tagged releases only
+develop       ← integration branch
+feature/*     ← new features and documents
+fix/*         ← corrections and patches
 ```
+
+### Pull Request Checklist
+
+- [ ] File has complete header block
+- [ ] Markdown lints cleanly
+- [ ] References are linked
+- [ ] TODO items are tracked
+- [ ] Version bumped if applicable
 
 ---
 
-## Dependencies
+## References
 
-| Component | Version | Notes |
-|---|---|---|
-| NVIDIA Nemotron Ultra 550B | latest | Via NVIDIA Cloud NIM |
-| Open WebUI | latest | Self-hosted or cloud |
-| NVIDIA NIM API | v1 | REST API |
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE).
+- [NVIDIA Nemotron Model Card](https://huggingface.co/nvidia/Nemotron-3-8B-Base-4k)
+- [NVIDIA Cloud NIM Documentation](https://docs.api.nvidia.com/)
+- [Open WebUI Documentation](https://docs.openwebui.com/)
+- [Semantic Versioning](https://semver.org/)
+- [Conventional Commits](https://www.conventionalcommits.org/)

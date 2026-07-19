@@ -1,73 +1,123 @@
 # Planner
 
 | Field | Value |
-|-------|-------|
-| **Title** | Runtime Planner |
-| **Purpose** | Define how the AI OS plans multi-step tasks before execution |
-| **Scope** | Planning algorithm, decomposition strategy, plan format, integration with tools |
+|---|---|
+| **Title** | AI-OS Planner Module Specification |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
-| **Dependencies** | ToolPolicy.md, SystemPrompt.md, Workflow.md |
-| **References** | ReAct Paper (Yao et al. 2022), Plan-and-Solve (Wang et al. 2023) |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
-## 1. When to Plan
+## Purpose
 
-Activate the planner when the user request:
-
-- Requires more than 3 sequential steps
-- Involves multiple tools or external data sources
-- Has ambiguous requirements that need clarification before execution
-- Is a project-level task spanning multiple sessions
+Defines the Planner module, which decomposes complex user requests into structured, executable subtasks. The Planner is the first stage in the AI-OS runtime pipeline, responsible for understanding intent and generating an actionable plan before execution.
 
 ---
 
-## 2. Planning Algorithm
+## Scope
 
-```
-1. UNDERSTAND — Parse user intent and identify goals
-2. DECOMPOSE — Break into atomic, executable sub-tasks
-3. SEQUENCE — Order sub-tasks by dependency
-4. ESTIMATE — Predict effort, tokens, and tool calls needed
-5. VALIDATE — Check plan against tool availability and constraints
-6. EXECUTE — Run sub-tasks with Critic review at each step
-7. REPORT — Summarize results and next steps
-```
+- Triggered on: multi-step tasks, ambiguous requests, research queries, project planning
+- Output: structured plan consumed by execution loop
+- Applies to: Nemotron Ultra 550B via NVIDIA NIM
 
 ---
 
-## 3. Plan Format
+## Planner Architecture
 
-```markdown
-## Plan: [Task Title]
-
-**Goal:** [What success looks like]
-**Steps:**
-1. [Action] → [Expected output]
-2. [Action] → [Expected output]
-3. [Action] → [Expected output]
-
-**Tools Required:** [list]
-**Estimated Tokens:** [estimate]
-**Risk:** [any uncertainty]
+```text
+User Input
+    │
+    ▼
+[Intent Classifier]
+    │
+    ├── Simple Query ──────────────────► Direct Response
+    │
+    └── Complex Task ───────────────► [Planner]
+                                            │
+                                      [Plan Output]
+                                            │
+                                      [Executor]
+                                            │
+                                      [Reflection]
+                                            │
+                                      [Critic]
+                                            │
+                                       Final Output
 ```
 
 ---
 
-## 4. Plan Storage
+## Plan Output Schema
 
-- Active plans stored in conversation context
-- Long-running plans stored in memory
-- Completed plans archived with outcome
+```json
+{
+  "goal": "string",
+  "steps": [
+    {
+      "id": 1,
+      "action": "string",
+      "tool": "string | null",
+      "depends_on": [],
+      "expected_output": "string"
+    }
+  ],
+  "constraints": ["string"],
+  "success_criteria": "string"
+}
+```
+
+---
+
+## Planner Prompt
+
+See: `prompts/nemotron-ultra/planner.txt`
+
+---
+
+## Planner Parameters
+
+| Parameter | Value | Reason |
+|---|---|---|
+| Temperature | 0.3 | Structured, deterministic plans |
+| Max Tokens | 4096 | Allow full plan generation |
+| Format | JSON | Machine-parsable output |
+
+---
+
+## Trigger Conditions
+
+The Planner is activated when:
+
+1. Query contains 3+ distinct subtasks.
+2. Query requires tool use.
+3. Query involves multi-document research.
+4. Query is explicitly: "create a plan", "outline", "steps to".
+
+---
+
+## Dependencies
+
+- `prompts/nemotron-ultra/planner.txt`
+- `docs/20_RUNTIME/Reflection.md`
+- `docs/20_RUNTIME/Critic.md`
+- `docs/20_RUNTIME/Workflow.md`
+
+---
+
+## References
+
+- [ReAct: Synergizing Reasoning and Acting in LLMs](https://arxiv.org/abs/2210.03629)
+- [Plan-and-Solve Prompting](https://arxiv.org/abs/2305.04091)
 
 ---
 
 ## TODO
 
-- [ ] Implement planner prompt in `prompts/nemotron-ultra/planner.txt`
-- [ ] Test planner with 5+ step engineering tasks
-- [ ] Define plan interruption and recovery behavior
-- [ ] Integrate plan with Critic for step-level review
-- [ ] Benchmark planner accuracy on structured task decomposition
+- [ ] Write planner prompt in `prompts/nemotron-ultra/planner.txt`
+- [ ] Define intent classifier logic
+- [ ] Test plan schema validation
+- [ ] Build plan visualization for debugging
+- [ ] Measure planner quality vs direct response

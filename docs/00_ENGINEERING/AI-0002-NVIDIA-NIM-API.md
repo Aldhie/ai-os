@@ -1,83 +1,111 @@
-# AI-0002 — NVIDIA NIM API Integration
+# AI-0002 — NVIDIA NIM API Contract
 
 | Field | Value |
-|-------|-------|
-| **Title** | NVIDIA NIM API Integration |
+|---|---|
+| **Title** | NVIDIA NIM API Contract |
 | **Document ID** | AI-0002 |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | @Aldhie |
-| **Created** | 2026-07-19 |
-| **Updated** | 2026-07-19 |
-| **Dependencies** | AI-0001, AI-0003 |
+| **Owner** | Aldhie |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
 ## Purpose
 
-Documents how AI-OS integrates with NVIDIA Cloud NIM via the OpenAI-compatible REST API. Covers authentication, endpoint configuration, request/response structure, error handling, and rate limit management.
+Defines the complete API contract between AI-OS and NVIDIA Cloud NIM. This document covers authentication, endpoint specification, request/response schema, error handling, streaming, and rate limits.
 
 ---
 
 ## Scope
 
-- API base URL and authentication
-- Chat completions endpoint usage
-- Streaming vs non-streaming
-- Error codes and retry strategy
-- Rate limit tracking
-- Model listing
+- NVIDIA Cloud NIM public API
+- Model: `nvidia/nemotron-ultra-253b-v1`
+- Transport: HTTPS REST
+- Excludes: On-premise NIM deployments
 
 ---
 
-## API Configuration
+## Authentication
 
-| Property | Value |
-|----------|-------|
-| **Base URL** | `https://integrate.api.nvidia.com/v1` |
-| **Auth Header** | `Authorization: Bearer {NVIDIA_API_KEY}` |
-| **API Compatibility** | OpenAI SDK v1.x compatible |
-| **Protocol** | HTTPS |
-| **Format** | JSON |
+```text
+Method:    Bearer Token
+Header:    Authorization: Bearer {NVIDIA_API_KEY}
+Token:     Obtained from https://build.nvidia.com/
+Expiry:    Per key policy (check dashboard)
+```
+
+**Security Rule:** API keys must NEVER be committed to this repository. Use environment variables only.
+
+```bash
+export NVIDIA_API_KEY="nvapi-xxxxxxxxxxxx"
+```
 
 ---
 
-## Chat Completions Endpoint
+## Endpoints
 
-```
-POST /chat/completions
-Content-Type: application/json
-Authorization: Bearer {NVIDIA_API_KEY}
+### Chat Completions
+
+```text
+POST https://integrate.api.nvidia.com/v1/chat/completions
 ```
 
-### Request Schema
+### Models List
+
+```text
+GET https://integrate.api.nvidia.com/v1/models
+```
+
+---
+
+## Request Schema
 
 ```json
 {
-  "model": "nvidia/nemotron-3-ultra-550b-instruct",
+  "model": "nvidia/nemotron-ultra-253b-v1",
   "messages": [
-    {"role": "system", "content": "<system_prompt>"},
-    {"role": "user", "content": "<user_message>"}
+    {
+      "role": "system | user | assistant | tool",
+      "content": "string"
+    }
   ],
   "temperature": 0.6,
-  "top_p": 0.9,
+  "top_p": 0.95,
   "max_tokens": 4096,
-  "stream": true
+  "stream": false,
+  "tools": [],
+  "tool_choice": "auto | none | required",
+  "response_format": {
+    "type": "text | json_object"
+  },
+  "stop": ["string"],
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0,
+  "seed": null
 }
 ```
 
-### Response Schema (Non-streaming)
+---
+
+## Response Schema
 
 ```json
 {
-  "id": "chatcmpl-xxx",
+  "id": "chatcmpl-xxxx",
   "object": "chat.completion",
-  "model": "nvidia/nemotron-3-ultra-550b-instruct",
+  "created": 1234567890,
+  "model": "nvidia/nemotron-ultra-253b-v1",
   "choices": [
     {
       "index": 0,
-      "message": {"role": "assistant", "content": "..."},
-      "finish_reason": "stop"
+      "message": {
+        "role": "assistant",
+        "content": "string",
+        "tool_calls": []
+      },
+      "finish_reason": "stop | length | tool_calls | content_filter"
     }
   ],
   "usage": {
@@ -90,54 +118,62 @@ Authorization: Bearer {NVIDIA_API_KEY}
 
 ---
 
-## Error Handling
+## Streaming
 
-| HTTP Code | Meaning | Retry Strategy |
-|-----------|---------|----------------|
-| 400 | Bad Request | Fix payload; no retry |
-| 401 | Unauthorized | Check API key |
-| 429 | Rate Limited | Exponential backoff: 1s, 2s, 4s, 8s |
-| 500 | Server Error | Retry up to 3x with 2s delay |
-| 503 | Unavailable | Retry with 5s delay |
+Set `"stream": true` to receive Server-Sent Events (SSE):
 
----
+```text
+data: {"id":"...","object":"chat.completion.chunk","choices":[{"delta":{"content":"tok"}}]}
+data: [DONE]
+```
 
-## Rate Limit Strategy
-
-See `AI-0005-FreeTier-Strategy.md` for full free tier management.
-
-| Tier | RPM | TPM | Strategy |
-|------|-----|-----|----------|
-| Free | ~10 | ~50K | Queue + cache + deduplicate |
-| Build | Higher | Higher | TBD |
+Open WebUI natively supports SSE streaming.
 
 ---
 
-## Open WebUI Integration
+## Error Codes
 
-Open WebUI connects to NIM as an OpenAI-compatible endpoint:
+| HTTP Code | Meaning | Action |
+|---|---|---|
+| 400 | Bad Request | Check request schema |
+| 401 | Unauthorized | Verify API key |
+| 429 | Rate Limited | Back-off, see AI-0005 |
+| 500 | Server Error | Retry with exponential back-off |
+| 503 | Service Unavailable | Retry after delay |
 
-1. Set **API Base URL** to `https://integrate.api.nvidia.com/v1`
-2. Set **API Key** to your `NVIDIA_API_KEY`
-3. Select model `nvidia/nemotron-3-ultra-550b-instruct`
+---
 
-See `AI-0003-OpenWebUI-Compatibility.md` for full Open WebUI setup.
+## Rate Limits (Free Tier)
+
+| Limit | Value |
+|---|---|
+| Requests per minute | TBD (check NVIDIA dashboard) |
+| Tokens per minute | TBD |
+| Requests per day | TBD |
+| Context window max | 128K tokens |
+
+See [AI-0005-FreeTier-Strategy.md](AI-0005-FreeTier-Strategy.md) for mitigation strategies.
+
+---
+
+## Dependencies
+
+- [AI-0001-Nemotron-Engineering-Spec.md](AI-0001-Nemotron-Engineering-Spec.md)
+- [AI-0005-FreeTier-Strategy.md](AI-0005-FreeTier-Strategy.md)
 
 ---
 
 ## References
 
-- [NVIDIA NIM API Reference](https://docs.api.nvidia.com)
-- [NVIDIA Build Portal](https://build.nvidia.com)
-- AI-0001-Nemotron-Engineering-Spec.md
-- AI-0005-FreeTier-Strategy.md
+- [NVIDIA NIM API Docs](https://docs.api.nvidia.com/)
+- [OpenAI API Reference](https://platform.openai.com/docs/api-reference) (compatible schema)
 
 ---
 
 ## TODO
 
-- [ ] Document function calling schema examples
-- [ ] Test JSON mode structured output
-- [ ] Add Python snippet using `openai` SDK
-- [ ] Track and document actual rate limits per tier
-- [ ] Add token counting utility reference
+- [ ] Confirm actual rate limits from NVIDIA dashboard
+- [ ] Test tool calling with Open WebUI format
+- [ ] Document streaming behavior in Open WebUI
+- [ ] Add retry logic recommendation for scripts
+- [ ] Validate JSON mode output consistency

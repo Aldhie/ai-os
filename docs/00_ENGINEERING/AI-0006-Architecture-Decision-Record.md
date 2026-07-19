@@ -1,118 +1,134 @@
-# AI-0006 — Architecture Decision Record
+# AI-0006 — Architecture Decision Record (ADR)
 
 | Field | Value |
-|-------|-------|
+|---|---|
 | **Title** | Architecture Decision Record |
 | **Document ID** | AI-0006 |
 | **Version** | 0.1.0 |
-| **Status** | Living Document |
-| **Owner** | @Aldhie |
-| **Created** | 2026-07-19 |
-| **Updated** | 2026-07-19 |
-| **Dependencies** | All AI-00xx documents |
+| **Status** | Active |
+| **Owner** | Aldhie |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
 ## Purpose
 
-Records all significant architectural decisions made for AI-OS, including the context, options considered, decision made, and consequences. Follows the [MADR format](https://adr.github.io/madr/).
+Records all significant architectural decisions made during the design and evolution of AI-OS. Each ADR captures the context, decision, rationale, and consequences to support long-term maintainability and institutional memory.
 
 ---
 
-## Scope
+## ADR Template
 
-All decisions related to:
+```markdown
+### ADR-XXXX: [Title]
 
-- Model selection
-- Integration architecture
-- Prompt engineering strategy
-- Runtime design
-- Tooling choices
+**Date:** YYYY-MM-DD  
+**Status:** Proposed | Accepted | Deprecated | Superseded  
+**Supersedes:** ADR-XXXX (if applicable)  
 
----
+**Context:**  
+[What is the situation that requires a decision?]
 
-## ADR-0001: Use NVIDIA Nemotron Ultra 550B as Core Model
+**Decision:**  
+[What was decided?]
 
-**Date**: 2026-07-19
-**Status**: Accepted
+**Rationale:**  
+[Why was this decision made?]
 
-### Context
-
-Needed to select a high-capability LLM for an AI Operating System that can handle complex reasoning, tool use, and long-context understanding.
-
-### Options Considered
-
-| Option | Pros | Cons |
-|--------|------|------|
-| GPT-4o | High capability, mature API | Closed, cost |
-| Claude 3.5 | Strong reasoning | Closed, cost |
-| Llama 3.1 405B | Open weights | Requires own infra |
-| **Nemotron Ultra 550B** | NVIDIA-optimized, NIM API, free tier | Less community doc |
-
-### Decision
-
-Use **Nemotron Ultra 550B** via NVIDIA Cloud NIM. Primary rationale: NVIDIA-first stack coherence, NIM free tier availability, and 128K context window.
-
-### Consequences
-
-- Must manage NIM free tier limits carefully
-- Must document NIM-specific behaviors
-- Cannot use OpenAI-only features (e.g., Assistants API)
+**Consequences:**  
+[What are the trade-offs and downstream effects?]
+```
 
 ---
 
-## ADR-0002: Use Open WebUI as Interface Layer
+## ADR-0001: Use NVIDIA NIM as Inference Backend
 
-**Date**: 2026-07-19
-**Status**: Accepted
+**Date:** 2026-07-20  
+**Status:** Accepted
 
-### Context
+**Context:**  
+Need a high-quality, scalable LLM inference backend accessible via API without self-hosting.
 
-Needed a user interface that supports OpenAI-compatible backends, tool calling, RAG, and is self-hostable.
+**Decision:**  
+Use NVIDIA Cloud NIM with Nemotron Ultra 550B as the primary inference engine.
 
-### Decision
+**Rationale:**  
+- Nemotron Ultra 550B is among the top open-weight models for reasoning and instruction following.
+- NVIDIA NIM provides an OpenAI-compatible API, making integration straightforward.
+- Free tier available for development and testing.
+- No GPU infrastructure required.
 
-Use **Open WebUI** as the primary UI layer.
-
-### Consequences
-
-- UI is decoupled from model provider
-- Must configure NIM as OpenAI-compatible endpoint
-- Feature set limited to Open WebUI capabilities
+**Consequences:**  
+- Dependency on NVIDIA cloud availability.
+- Rate limits constrain heavy usage (mitigated by AI-0005).
+- API key management required.
 
 ---
 
-## ADR-0003: Planner-Critic-Reflection Runtime Pattern
+## ADR-0002: Use Open WebUI as Frontend
 
-**Date**: 2026-07-19
-**Status**: Draft
+**Date:** 2026-07-20  
+**Status:** Accepted
 
-### Context
+**Context:**  
+Need a feature-rich, self-hostable frontend for AI interaction with support for RAG, memory, tools, and custom models.
 
-Needed a runtime pattern that improves output quality through self-correction without requiring separate model calls for each step.
+**Decision:**  
+Use Open WebUI as the primary user-facing interface.
 
-### Decision
+**Rationale:**  
+- Open source (MIT license), actively maintained.
+- Supports OpenAI-compatible backends natively.
+- Built-in RAG, memory, tool calling, and filter pipeline support.
+- Active community and rapid development cadence.
 
-Implement a **Planner → Execute → Critic → Reflect** loop within a single model (Nemotron Ultra), using structured prompt templates for each role.
+**Consequences:**  
+- Feature availability depends on Open WebUI release schedule.
+- Some NIM-specific features may require custom filters.
+- Must stay current with Open WebUI updates.
 
-### Consequences
+---
 
-- Increases token usage per response
-- Requires careful prompt design
-- Improves output quality measurably (to be benchmarked)
+## ADR-0003: Documentation-First Repository
+
+**Date:** 2026-07-20  
+**Status:** Accepted
+
+**Context:**  
+Need a structure to maintain AI-OS engineering knowledge over years.
+
+**Decision:**  
+This repository contains documentation, prompts, and configuration only — no application source code.
+
+**Rationale:**  
+- Separates concerns cleanly.
+- Documentation can evolve independently of deployment infrastructure.
+- Enables version-controlled prompt and configuration management.
+- Low barrier to contribution (no coding required for docs).
+
+**Consequences:**  
+- Scripts are allowed but must be utilities only.
+- All decisions must be recorded here (not in chat logs or emails).
+
+---
+
+## Dependencies
+
+- All other AI-000x documents
 
 ---
 
 ## References
 
-- [MADR: Markdown Any Decision Records](https://adr.github.io/madr/)
-- All AI-00xx engineering specs
+- [Michael Nygard's ADR Format](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
+- [ADR GitHub Organization](https://adr.github.io/)
 
 ---
 
 ## TODO
 
-- [ ] Add ADR-0004: Memory architecture decision
-- [ ] Add ADR-0005: Dataset format decision
-- [ ] Add ADR-0006: Fine-tuning approach decision
-- [ ] Review ADR-0003 after Planner/Critic benchmarks
+- [ ] Record ADR for memory/knowledge policy decisions
+- [ ] Record ADR for fine-tuning strategy
+- [ ] Record ADR for dataset curation methodology
+- [ ] Record ADR for versioning strategy

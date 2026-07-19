@@ -1,115 +1,118 @@
 # AI-0005 — Free Tier Strategy
 
 | Field | Value |
-|-------|-------|
-| **Title** | Free Tier Strategy |
+|---|---|
+| **Title** | NVIDIA NIM Free Tier Strategy |
 | **Document ID** | AI-0005 |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
-| **Owner** | @Aldhie |
-| **Created** | 2026-07-19 |
-| **Updated** | 2026-07-19 |
-| **Dependencies** | AI-0002 |
+| **Owner** | Aldhie |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
 ## Purpose
 
-Documents the strategy for operating AI-OS within the constraints of the NVIDIA NIM free tier, including token budgeting, request queuing, caching, and graceful degradation.
+Defines the strategy for operating AI-OS efficiently within NVIDIA NIM free tier limits. Covers prompt optimization, token budgeting, caching strategies, and graceful degradation patterns.
 
 ---
 
 ## Scope
 
-- Free tier limits (as known)
-- Token budget management
-- Request rate control
-- Caching strategy
-- Fallback strategy
-- Cost monitoring
+- NVIDIA NIM free tier API
+- Open WebUI frontend
+- Daily operational usage, testing, and development
 
 ---
 
-## Known Free Tier Limits
+## Free Tier Constraints
 
-> Note: Limits subject to change. Always verify at [build.nvidia.com](https://build.nvidia.com).
+> Note: Verify current limits at [build.nvidia.com](https://build.nvidia.com/).
 
-| Limit Type | Estimated Value | Source |
-|------------|----------------|--------|
-| Credits on signup | ~1000 API credits | NVIDIA Build Portal |
-| RPM (Requests/min) | ~10 | Empirical observation |
-| TPM (Tokens/min) | ~50,000 | Estimated |
-| Max tokens/request | 4096 output | Verified |
-
----
-
-## Token Budget Management
-
-| Strategy | Description |
-|----------|-------------|
-| System prompt compression | Keep system prompt under 2000 tokens |
-| Memory truncation | Inject only top-3 most relevant memories |
-| RAG truncation | Max 3 RAG chunks, 500 tokens each |
-| Conversation pruning | Keep last 20 turns maximum in context |
-| Response capping | Default max_tokens = 2048 in free tier mode |
+| Resource | Estimated Limit | Notes |
+|---|---|---|
+| API calls/day | ~40 (nemotron-ultra) | Check dashboard |
+| Tokens/minute | TBD | Monitor |
+| Tokens/day | TBD | Monitor |
+| Context per call | 128K max | Stay under 16K |
 
 ---
 
-## Request Rate Control
+## Token Budget Guidelines
 
-```
-Incoming Request
-      │
-      ▼
-  Rate Limiter (token bucket, 10 RPM)
-      │
-  ├── Queue if burst
-  └── Pass if within limit
-      │
-      ▼
-  Cache Check ─── Hit → Return cached
-      │ Miss
-      ▼
-  NIM API Call
-      │
-      ▼
-  Cache Store → Return response
+### System Prompt Budget
+
+```text
+System Prompt:    ≤ 2,000 tokens
+Conversation:     ≤ 8,000 tokens
+RAG Context:      ≤ 4,000 tokens
+Response:         ≤ 2,048 tokens
+Total Target:     ≤ 16,000 tokens per call
 ```
 
----
+### Optimization Techniques
 
-## Caching Strategy
-
-| Cache Type | TTL | Scope |
-|------------|-----|-------|
-| Exact match (identical prompt) | 1 hour | In-memory |
-| Semantic similarity (>0.95 cosine) | 30 min | Vector cache |
-| System prompt + config hash | Session | Persistent |
+1. **Compress system prompts** — Remove redundancy, use bullet points over prose.
+2. **Conversation pruning** — Summarize or truncate older turns beyond 10 exchanges.
+3. **RAG snippet limiting** — Retrieve top-3 chunks only, max 500 tokens each.
+4. **Lazy tool calling** — Only invoke tools when explicitly needed.
+5. **Batch similar queries** — Combine related questions into one turn.
 
 ---
 
-## Fallback Strategy
+## Rate Limit Handling
 
-If NIM free tier is exhausted:
+### Retry Strategy
 
-1. **Degraded mode**: Route to a smaller, free-tier model (e.g., Mistral 7B via Ollama)
-2. **Queue mode**: Accept request, queue for next rate window
-3. **Notify user**: Surface a clear message about quota status
+```text
+On 429 (Rate Limited):
+  1. Wait: 60 seconds
+  2. Retry with backoff: 60s, 120s, 240s
+  3. After 3 retries: notify user, halt
+```
+
+### Graceful Degradation
+
+When limits are exhausted:
+
+1. Show user a friendly "API limit reached" message.
+2. Log the failed request for retry later.
+3. Switch to cached response if available.
+4. Resume when limit resets (usually UTC midnight).
+
+---
+
+## Cost Optimization Checklist
+
+- [ ] System prompt reviewed for token efficiency
+- [ ] Conversation history pruning enabled
+- [ ] RAG chunk limit set to ≤3
+- [ ] Tool calling policy reviewed (see `docs/10_CONFIGURATION/ToolPolicy.md`)
+- [ ] Streaming enabled (improves perceived latency, same token cost)
+- [ ] Temperature set appropriately (lower = faster convergence)
+
+---
+
+## Dependencies
+
+- [AI-0002-NVIDIA-NIM-API.md](AI-0002-NVIDIA-NIM-API.md)
+- `docs/10_CONFIGURATION/Parameters.md`
+- `docs/10_CONFIGURATION/ToolPolicy.md`
 
 ---
 
 ## References
 
-- [NVIDIA Build Portal](https://build.nvidia.com)
-- [NVIDIA API Rate Limits](https://docs.api.nvidia.com)
-- AI-0002-NVIDIA-NIM-API.md
+- [NVIDIA Build Platform](https://build.nvidia.com/)
+- [NIM API Pricing](https://www.nvidia.com/en-us/ai/)
 
 ---
 
 ## TODO
 
-- [ ] Implement token bucket rate limiter in scripts/
-- [ ] Add quota monitoring dashboard
-- [ ] Test fallback to Ollama local model
-- [ ] Document exact current free tier limits
-- [ ] Add credit burn rate calculator
+- [ ] Confirm exact free tier limits from NVIDIA dashboard
+- [ ] Implement token counter in Open WebUI filter
+- [ ] Build daily usage tracking script
+- [ ] Document reset schedule (UTC midnight?)
+- [ ] Test graceful degradation behavior

@@ -1,48 +1,72 @@
-# AI Operating System (AI-OS)
+# AI-OS — AI Operating System Engineering Repository
 
-> **Engineering Repository** — Architecture, Benchmark, Prompts, Configuration & Dataset for NVIDIA Nemotron Ultra 550B via Open WebUI + NVIDIA Cloud NIM
+> **Version:** 0.1.0 | **Status:** Active | **Owner:** Aldhie | **License:** MIT
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](CHANGELOG.md)
-[![Status](https://img.shields.io/badge/status-active--development-yellow.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+This repository is the **engineering documentation hub** for building an AI Operating System powered by **NVIDIA Nemotron Ultra 550B** through **Open WebUI** and **NVIDIA Cloud NIM**.
+
+It is **not** application source code. It contains:
+
+- Engineering specifications and architecture decisions
+- System prompt templates and persona definitions
+- Runtime orchestration patterns (Planner, Critic, Reflection)
+- Benchmark cases and evaluation frameworks
+- Dataset schemas and fine-tuning guides
+- Configuration files for Open WebUI and NIM APIs
 
 ---
 
-## Purpose
+## Architecture Overview
 
-This repository is **not source code**. It is the engineering backbone of an AI Operating System — a curated collection of:
-
-- Engineering specifications and architecture decisions
-- System prompts, planner, critic, and reflection prompts
-- Configuration files for Open WebUI + NVIDIA Cloud NIM
-- Benchmark cases, evaluation criteria, and regression tests
-- Dataset schemas and fine-tuning strategies
-
-The target model is **NVIDIA Nemotron 3 Ultra 550B** served via **NVIDIA Cloud NIM**, integrated with **Open WebUI**.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      AI Operating System                    │
+├──────────────┬──────────────┬──────────────┬───────────────┤
+│   PLANNER    │    CRITIC    │  REFLECTION  │   WORKFLOW    │
+│  (Strategy)  │  (Evaluate)  │   (Improve)  │  (Execution)  │
+├──────────────┴──────────────┴──────────────┴───────────────┤
+│              SYSTEM PROMPT + PERSONA + MEMORY               │
+├─────────────────────────────────────────────────────────────┤
+│          NVIDIA Nemotron Ultra 550B via NIM API             │
+├─────────────────────────────────────────────────────────────┤
+│                Open WebUI (Frontend Interface)              │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Engineering Lifecycle
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    AI-OS Engineering Lifecycle                   │
-├──────────────┬──────────────┬──────────────┬────────────────────┤
-│  1. Engineer │ 2. Configure │  3. Runtime  │   4. Dataset       │
-│              │              │              │                    │
-│  Spec, ADR,  │  SysPrompt,  │  Planner,    │  Collect, Label,   │
-│  NIM API,    │  Params,     │  Critic,     │  Schema, Version   │
-│  Arch Docs   │  Persona     │  Reflection  │                    │
-└──────┬───────┴──────┬───────┴──────┬───────┴────────┬───────────┘
-       │              │              │                │
-       ▼              ▼              ▼                ▼
-┌──────────────┐ ┌──────────┐ ┌──────────────┐ ┌──────────────────┐
-│ 5. Fine-Tune │ │6.Benchmark│ │  7. Release  │ │  8. Maintain     │
-│              │ │          │ │              │ │                  │
-│ LoRA, RLHF,  │ │ Eval,    │ │ Changelog,   │ │ Versioning,      │
-│ SFT Dataset  │ │ Regress. │ │ Tag, Deploy  │ │ ADR updates      │
-└──────────────┘ └──────────┘ └──────────────┘ └──────────────────┘
+Engineering
+     │
+     ▼
+Configuration
+     │
+     ▼
+Runtime
+     │
+     ▼
+Dataset
+     │
+     ▼
+Fine Tune
+     │
+     ▼
+Benchmark
+     │
+     ▼
+Release
 ```
+
+| Phase | Folder | Description |
+|---|---|---|
+| Engineering | `docs/00_ENGINEERING/` | Specs, ADRs, API docs, compatibility |
+| Configuration | `docs/10_CONFIGURATION/` | Prompts, parameters, policies |
+| Runtime | `docs/20_RUNTIME/` | Planner, Critic, Reflection, Workflow |
+| Dataset | `docs/30_DATASET/` | Schema, sources, curation policy |
+| Fine Tune | `docs/40_FINETUNE/` | Fine-tuning strategy and procedures |
+| Benchmark | `docs/90_TESTING/` | Regression, evaluation, benchmark cases |
+| Release | `CHANGELOG.md` | Semantic versioned release notes |
 
 ---
 
@@ -50,159 +74,108 @@ The target model is **NVIDIA Nemotron 3 Ultra 550B** served via **NVIDIA Cloud N
 
 ```
 ai-os/
-├── README.md                          # This file
-├── LICENSE                            # MIT License
-├── .gitignore                         # Ignored files
-│
+├── README.md
+├── LICENSE
+├── .gitignore
 ├── docs/
-│   ├── 00_ENGINEERING/                # Core engineering specs
-│   │   ├── AI-0001-Nemotron-Engineering-Spec.md
-│   │   ├── AI-0002-NVIDIA-NIM-API.md
-│   │   ├── AI-0003-OpenWebUI-Compatibility.md
-│   │   ├── AI-0004-Benchmark.md
-│   │   ├── AI-0005-FreeTier-Strategy.md
-│   │   └── AI-0006-Architecture-Decision-Record.md
-│   ├── 10_CONFIGURATION/              # Prompt & parameter configuration
-│   │   ├── SystemPrompt.md
-│   │   ├── Parameters.md
-│   │   ├── MemoryPolicy.md
-│   │   ├── KnowledgePolicy.md
-│   │   ├── ToolPolicy.md
-│   │   └── Persona.md
-│   ├── 20_RUNTIME/                    # Runtime behavior
-│   │   ├── Planner.md
-│   │   ├── Reflection.md
-│   │   ├── Critic.md
-│   │   └── Workflow.md
-│   ├── 30_DATASET/                    # Dataset documentation
-│   │   └── README.md
-│   ├── 40_FINETUNE/                   # Fine-tuning documentation
-│   │   └── README.md
-│   └── 90_TESTING/                    # Testing & evaluation
-│       ├── Regression.md
-│       ├── Evaluation.md
-│       └── BenchmarkCases.md
-│
+│   ├── 00_ENGINEERING/       # Core engineering specs and ADRs
+│   ├── 10_CONFIGURATION/     # System prompt, parameters, policies
+│   ├── 20_RUNTIME/           # Runtime orchestration patterns
+│   ├── 30_DATASET/           # Dataset documentation
+│   ├── 40_FINETUNE/          # Fine-tuning documentation
+│   └── 90_TESTING/           # Benchmark and evaluation
 ├── prompts/
-│   └── nemotron-ultra/                # Model-specific prompts
-│       ├── system.txt
-│       ├── planner.txt
-│       ├── critic.txt
-│       └── reflection.txt
-│
+│   └── nemotron-ultra/       # Prompt templates for Nemotron Ultra
 ├── configs/
-│   └── openwebui/                     # Open WebUI configuration
-│       ├── parameters.json
-│       ├── capabilities.json
-│       └── filters.json
-│
-├── benchmark/                         # Benchmark results
-│   └── README.md
-│
-├── dataset/                           # Dataset files
-│   └── README.md
-│
-└── scripts/                           # Utility scripts
-    └── README.md
-```
-
----
-
-## Architecture Overview
-
-```
-┌──────────────────────────────────────────────────────┐
-│                    User Interface                     │
-│                    Open WebUI                         │
-└───────────────────────┬──────────────────────────────┘
-                        │  REST / WebSocket
-┌───────────────────────▼──────────────────────────────┐
-│               AI-OS Runtime Layer                     │
-│  ┌─────────┐  ┌──────────┐  ┌──────────┐             │
-│  │ Planner │  │  Critic  │  │Reflection│             │
-│  └────┬────┘  └────┬─────┘  └────┬─────┘             │
-│       └────────────┴─────────────┘                   │
-│                    │ Orchestration                    │
-└────────────────────┼─────────────────────────────────┘
-                     │  OpenAI-Compatible API
-┌────────────────────▼─────────────────────────────────┐
-│              NVIDIA Cloud NIM                         │
-│         Nemotron 3 Ultra 550B Instruct                │
-└──────────────────────────────────────────────────────┘
-                     │
-┌────────────────────▼─────────────────────────────────┐
-│           Supporting Services                         │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  │
-│  │  Vector DB  │  │   Web Tools  │  │   Memory    │  │
-│  │  (RAG)      │  │   (Search)   │  │   (Brain)   │  │
-│  └─────────────┘  └──────────────┘  └─────────────┘  │
-└──────────────────────────────────────────────────────┘
+│   └── openwebui/            # Open WebUI configuration files
+├── benchmark/                # Benchmark results and scripts
+├── dataset/                  # Dataset samples and schemas
+└── scripts/                  # Utility and automation scripts
 ```
 
 ---
 
 ## Roadmap
 
-| Version | Status | Description |
-|---------|--------|-------------|
-| v0.1.0  | ✅ Active | Initial engineering scaffold — specs, prompts, configs |
-| v0.2.0  | 🔲 Planned | Complete system prompt v1 + NIM API integration spec |
-| v0.3.0  | 🔲 Planned | Runtime workflow — Planner + Critic + Reflection loop |
-| v0.4.0  | 🔲 Planned | Benchmark suite v1 — first 50 evaluation cases |
-| v0.5.0  | 🔲 Planned | Dataset schema v1 + first labeled dataset |
-| v0.6.0  | 🔲 Planned | Fine-tuning strategy — LoRA / SFT pipeline doc |
-| v1.0.0  | 🔲 Planned | Production-ready AI-OS release |
+### v0.1.0 — Foundation (Current)
 
----
+- [x] Repository structure initialized
+- [x] Engineering specs drafted (AI-0001 to AI-0006)
+- [x] System prompt and persona templates
+- [x] Open WebUI base configuration
 
-## Versioning
+### v0.2.0 — Runtime
 
-This repository follows [Semantic Versioning 2.0.0](https://semver.org/).
+- [ ] Planner/Critic/Reflection prompts finalized
+- [ ] Workflow automation documented
+- [ ] Initial benchmark baseline established
 
-- **MAJOR**: Breaking changes to architecture or prompt contract
-- **MINOR**: New features, new docs, new benchmark sets
-- **PATCH**: Fixes, clarifications, typo corrections
+### v0.3.0 — Dataset
+
+- [ ] Dataset schema defined
+- [ ] Curation pipeline documented
+- [ ] First dataset version released
+
+### v0.4.0 — Fine-Tune
+
+- [ ] Fine-tuning strategy approved
+- [ ] Training configuration documented
+- [ ] Evaluation framework ready
+
+### v1.0.0 — Production Release
+
+- [ ] All specs reviewed and approved
+- [ ] Benchmark baselines met
+- [ ] Full documentation complete
 
 ---
 
 ## Contribution Guide
 
-### Adding a Document
+### Getting Started
 
-1. Place the file in the correct `docs/` subfolder.
-2. Follow the naming convention: `AI-XXXX-Title-In-Title-Case.md`
-3. Every document must contain the standard header block (see any existing doc).
-4. Use Markdown lint-friendly syntax (no trailing spaces, blank line before lists).
+1. Fork this repository.
+2. Create a branch: `git checkout -b feature/your-feature-name`
+3. Follow the document template structure (Title, Purpose, Scope, Version, Status, Owner, Dependencies, References, TODO).
+4. Use Markdown lint-friendly formatting (no trailing spaces, blank line before headings).
+5. Submit a pull request with a clear description.
 
-### Adding a Prompt
+### Document Naming Convention
 
-1. Place in `prompts/nemotron-ultra/` as a `.txt` file.
-2. Document the prompt intent in `docs/10_CONFIGURATION/SystemPrompt.md`.
-3. Version the prompt in the file header comment.
+- Engineering specs: `AI-XXXX-Title.md` (e.g., `AI-0001-Nemotron-Engineering-Spec.md`)
+- Configuration docs: `PascalCase.md` (e.g., `SystemPrompt.md`)
+- Prompt files: `lowercase.txt` (e.g., `system.txt`)
+- Config files: `lowercase.json` (e.g., `parameters.json`)
 
-### Commit Convention
+### Semantic Versioning
+
+This repository follows [SemVer](https://semver.org/):
+
+- **MAJOR**: Breaking architecture changes
+- **MINOR**: New features or documents added
+- **PATCH**: Corrections, clarifications, small updates
+
+### Commit Message Format
 
 ```
-feat:     New feature or document
-fix:      Fix error or outdated content
-docs:     Documentation-only changes
-refactor: Restructure without content change
-benchmark: Benchmark-related additions
-dataset:  Dataset changes
-chore:    Maintenance tasks
+feat: add new prompt template for critic
+fix: correct parameter range in parameters.json
+docs: update ADR-006 with new decision
+chore: update .gitignore
 ```
-
-### Pull Request
-
-- One PR per logical change.
-- Reference the relevant `AI-XXXX` document number in the PR description.
-- All Markdown files must pass `markdownlint`.
 
 ---
 
-## Owner
+## Dependencies
 
-- **Owner**: [@Aldhie](https://github.com/Aldhie)
-- **Created**: 2026-07-19
-- **Version**: 0.1.0
-- **Status**: Active Development
+| Component | Version | Notes |
+|---|---|---|
+| NVIDIA Nemotron Ultra 550B | latest | Via NVIDIA Cloud NIM |
+| Open WebUI | latest | Self-hosted or cloud |
+| NVIDIA NIM API | v1 | REST API |
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

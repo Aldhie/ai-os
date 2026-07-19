@@ -2,45 +2,67 @@
 .DS_Store
 Thumbs.db
 
-# Editors
+# Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Secrets & credentials
+# Environment
 .env
-.env.*
+.env.local
+.env.*.local
+*.env
+
+# Secrets and API keys
+secrets/
 *.key
 *.pem
-secrets/
+*.p12
+api_keys.json
+credentials.json
 
-# Python (scripts)
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
 *.egg-info/
 dist/
 build/
-.venv/
-venv/
 
-# Node (if any tooling)
+# Node
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Logs
-*.log
 logs/
+*.log
 
-# Dataset raw files (large)
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.cache
+
+# Dataset — raw files (large)
 dataset/raw/
 dataset/*.jsonl
 dataset/*.parquet
 dataset/*.csv
 
 # Benchmark outputs
-benchmark/results/
-benchmark/*.json
+benchmark/outputs/
+benchmark/results/*.json
 
-# Temp
-tmp/
-.tmp/
+# Build artifacts
+_site/
+.jekyll-cache/

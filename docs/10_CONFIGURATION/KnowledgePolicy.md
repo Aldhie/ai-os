@@ -1,8 +1,12 @@
 # Knowledge Policy
 
+---
+
+## Metadata
+
 | Field | Value |
-|---|---|
-| **Title** | AI-OS Knowledge & RAG Policy |
+|-------|-------|
+| **Document** | KnowledgePolicy.md |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
@@ -13,87 +17,79 @@
 
 ## Purpose
 
-Defines how AI-OS retrieves, uses, and cites external knowledge via Retrieval-Augmented Generation (RAG). Covers knowledge base organization, retrieval configuration, source trust levels, and citation policy.
+This document defines the knowledge policy for the AI OS. It governs how external knowledge is ingested, indexed, retrieved, and cited in AI responses.
 
 ---
 
 ## Scope
 
-- Open WebUI Knowledge (RAG) feature
-- Document ingestion, chunking, retrieval
-- All user queries that may benefit from external knowledge
-
----
-
-## Knowledge Base Organization
-
-| Collection | Content | Update Frequency |
-|---|---|---|
-| `ai-os-docs` | This repository's own documentation | On every commit |
-| `nvidia-nim-docs` | NVIDIA NIM API documentation | Monthly |
-| `openwebui-docs` | Open WebUI documentation | Monthly |
-| `research-papers` | Relevant AI research papers | As needed |
-| `user-documents` | User-uploaded documents | Real-time |
-
----
-
-## Retrieval Configuration
-
-```json
-{
-  "top_k": 3,
-  "similarity_threshold": 0.75,
-  "chunk_size": 512,
-  "chunk_overlap": 64,
-  "embedding_model": "nvidia/nv-embedqa-e5-v5",
-  "reranker": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
-}
-```
-
----
-
-## Trust Levels
-
-| Source | Trust Level | Citation Required |
-|---|---|---|
-| NVIDIA official docs | High | Yes |
-| Open WebUI official docs | High | Yes |
-| AI-OS repo docs | High | No (internal) |
-| Research papers (arXiv) | Medium | Yes |
-| Blog posts / web | Low | Yes + verify |
-| User-provided docs | Medium | Yes |
-
----
-
-## Retrieval Rules
-
-1. **Always retrieve** when the query involves technical specifications or external facts.
-2. **Never fabricate** citations — only cite what was retrieved.
-3. **Prefer recency** — more recent documents should be ranked higher for versioned topics.
-4. **Token budget:** Max 4,000 tokens of retrieved context per query.
-5. **Cite sources:** Always tell the user which document was used.
+- Knowledge base architecture (RAG)
+- Supported document types
+- Ingestion pipeline
+- Retrieval configuration
+- Citation policy
 
 ---
 
 ## Dependencies
 
-- `docs/10_CONFIGURATION/SystemPrompt.md`
-- Open WebUI RAG module
-- `dataset/` for curated knowledge
+- `docs/10_CONFIGURATION/SystemPrompt.md` — RAG instructions in prompt
+- Open WebUI Knowledge / RAG module
+- `docs/30_DATASET/README.md` — dataset sources
 
 ---
 
 ## References
 
-- [Open WebUI RAG Docs](https://docs.openwebui.com/features/workspace/knowledge)
-- [NVIDIA NV-Embed Models](https://build.nvidia.com/)
+- [Open WebUI RAG Documentation](https://docs.openwebui.com/features/rag/)
+- [RAG Best Practices](https://arxiv.org/abs/2312.10997)
+
+---
+
+## Knowledge Architecture
+
+```
+Documents → Ingestion Pipeline → Vector Store → Retrieval → Context Injection
+```
+
+### Supported Document Types
+
+| Format | Support | Notes |
+|--------|---------|-------|
+| PDF | ✅ | Via Open WebUI |
+| Markdown (.md) | ✅ | Native |
+| Plain Text (.txt) | ✅ | Native |
+| DOCX | ✅ | Via Open WebUI |
+| HTML | ✅ | Via Open WebUI |
+| CSV | ⚠️ | Limited |
+| JSONL | ❌ | Not supported natively |
+
+---
+
+## Retrieval Configuration
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Chunk size | 512 tokens | Adjust based on testing |
+| Chunk overlap | 50 tokens | Ensure context continuity |
+| Top-K retrieval | 5 chunks | Retrieve top 5 relevant chunks |
+| Similarity threshold | 0.75 | Minimum cosine similarity |
+
+---
+
+## Citation Policy
+
+- The assistant MUST cite sources when using retrieved knowledge
+- Citations must include document name and section
+- Conflicting knowledge sources must be flagged to the user
+- Outdated knowledge must be noted with a date caveat
 
 ---
 
 ## TODO
 
-- [ ] Set up `ai-os-docs` knowledge collection in Open WebUI
-- [ ] Configure NVIDIA embedding model
-- [ ] Test retrieval quality on AI-OS documentation
-- [ ] Define document ingestion pipeline
-- [ ] Set up automatic re-indexing on repo commit
+- [ ] Define knowledge base structure and naming conventions
+- [ ] Document ingestion pipeline setup in Open WebUI
+- [ ] Test retrieval quality with benchmark queries
+- [ ] Define knowledge update and version control process
+- [ ] Set up automatic re-indexing schedule

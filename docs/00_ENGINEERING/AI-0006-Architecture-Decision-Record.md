@@ -1,9 +1,13 @@
-# AI-0006 — Architecture Decision Record (ADR)
+# AI-0006: Architecture Decision Record (ADR)
+
+---
+
+## Metadata
 
 | Field | Value |
-|---|---|
-| **Title** | Architecture Decision Record |
+|-------|-------|
 | **Document ID** | AI-0006 |
+| **Title** | Architecture Decision Record |
 | **Version** | 0.1.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
@@ -14,121 +18,93 @@
 
 ## Purpose
 
-Records all significant architectural decisions made during the design and evolution of AI-OS. Each ADR captures the context, decision, rationale, and consequences to support long-term maintainability and institutional memory.
+This document records all significant architectural decisions made for the AI OS. Each decision is recorded with its context, rationale, alternatives considered, and consequences.
 
 ---
 
-## ADR Template
+## Scope
 
-```markdown
-### ADR-XXXX: [Title]
+All architectural decisions affecting: model selection, interface choice, deployment strategy, data architecture, and system design.
 
-**Date:** YYYY-MM-DD  
-**Status:** Proposed | Accepted | Deprecated | Superseded  
-**Supersedes:** ADR-XXXX (if applicable)  
+---
 
-**Context:**  
-[What is the situation that requires a decision?]
+## ADR Format
 
-**Decision:**  
-[What was decided?]
+Each ADR follows this structure:
 
-**Rationale:**  
-[Why was this decision made?]
-
-**Consequences:**  
-[What are the trade-offs and downstream effects?]
+```
+### ADR-XXXX: Title
+- Status: Proposed | Accepted | Deprecated | Superseded
+- Date: YYYY-MM-DD
+- Context: What problem are we solving?
+- Decision: What did we decide?
+- Alternatives: What else was considered?
+- Consequences: What are the trade-offs?
 ```
 
 ---
 
-## ADR-0001: Use NVIDIA NIM as Inference Backend
+## Decision Log
 
-**Date:** 2026-07-20  
-**Status:** Accepted
+### ADR-0001: Use NVIDIA Nemotron 3 Ultra 550B as Foundation Model
 
-**Context:**  
-Need a high-quality, scalable LLM inference backend accessible via API without self-hosting.
-
-**Decision:**  
-Use NVIDIA Cloud NIM with Nemotron Ultra 550B as the primary inference engine.
-
-**Rationale:**  
-- Nemotron Ultra 550B is among the top open-weight models for reasoning and instruction following.
-- NVIDIA NIM provides an OpenAI-compatible API, making integration straightforward.
-- Free tier available for development and testing.
-- No GPU infrastructure required.
-
-**Consequences:**  
-- Dependency on NVIDIA cloud availability.
-- Rate limits constrain heavy usage (mitigated by AI-0005).
-- API key management required.
+- **Status:** Accepted
+- **Date:** 2026-07-20
+- **Context:** We need a high-capability, instruction-following LLM that can power a general-purpose AI assistant.
+- **Decision:** Use NVIDIA Nemotron 3 Ultra 550B via NVIDIA Cloud NIM.
+- **Alternatives Considered:**
+  - GPT-4o via OpenAI API — proprietary, higher cost
+  - Claude 3.5 Sonnet via Anthropic API — proprietary, higher cost
+  - Llama 3.1 70B self-hosted — less capable, infrastructure overhead
+- **Consequences:** Free tier available on NIM; large model size means higher latency; excellent reasoning capabilities.
 
 ---
 
-## ADR-0002: Use Open WebUI as Frontend
+### ADR-0002: Use Open WebUI as the Interface Layer
 
-**Date:** 2026-07-20  
-**Status:** Accepted
-
-**Context:**  
-Need a feature-rich, self-hostable frontend for AI interaction with support for RAG, memory, tools, and custom models.
-
-**Decision:**  
-Use Open WebUI as the primary user-facing interface.
-
-**Rationale:**  
-- Open source (MIT license), actively maintained.
-- Supports OpenAI-compatible backends natively.
-- Built-in RAG, memory, tool calling, and filter pipeline support.
-- Active community and rapid development cadence.
-
-**Consequences:**  
-- Feature availability depends on Open WebUI release schedule.
-- Some NIM-specific features may require custom filters.
-- Must stay current with Open WebUI updates.
+- **Status:** Accepted
+- **Date:** 2026-07-20
+- **Context:** We need an interface that supports system prompts, memory, tools, RAG, and multi-model management.
+- **Decision:** Use Open WebUI as the primary user-facing interface.
+- **Alternatives Considered:**
+  - Custom frontend — too much development overhead
+  - Chatbot UI — limited features
+  - LobeChat — good but less extensible
+- **Consequences:** Open WebUI is actively maintained, open-source, and supports all required features.
 
 ---
 
-## ADR-0003: Documentation-First Repository
+### ADR-0003: Use NVIDIA Cloud NIM for Inference
 
-**Date:** 2026-07-20  
-**Status:** Accepted
-
-**Context:**  
-Need a structure to maintain AI-OS engineering knowledge over years.
-
-**Decision:**  
-This repository contains documentation, prompts, and configuration only — no application source code.
-
-**Rationale:**  
-- Separates concerns cleanly.
-- Documentation can evolve independently of deployment infrastructure.
-- Enables version-controlled prompt and configuration management.
-- Low barrier to contribution (no coding required for docs).
-
-**Consequences:**  
-- Scripts are allowed but must be utilities only.
-- All decisions must be recorded here (not in chat logs or emails).
+- **Status:** Accepted
+- **Date:** 2026-07-20
+- **Context:** Self-hosting a 550B parameter model is not feasible without specialized GPU infrastructure.
+- **Decision:** Use NVIDIA Cloud NIM serverless inference.
+- **Alternatives Considered:**
+  - Self-hosted on A100/H100 — prohibitively expensive
+  - Groq — does not host Nemotron 550B
+  - Together AI — does not host Nemotron 550B
+- **Consequences:** Dependent on NVIDIA uptime; free tier quota limits apply; no data residency control.
 
 ---
 
-## Dependencies
+### ADR-0004: Engineering Documentation-First Repository
 
-- All other AI-000x documents
-
----
-
-## References
-
-- [Michael Nygard's ADR Format](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
-- [ADR GitHub Organization](https://adr.github.io/)
+- **Status:** Accepted
+- **Date:** 2026-07-20
+- **Context:** The AI OS is primarily a configured, prompted, and fine-tuned system rather than a coded application.
+- **Decision:** Maintain all engineering knowledge in a structured documentation repository.
+- **Alternatives Considered:**
+  - Notion/Confluence — not version controlled, proprietary
+  - Wiki — less structured, harder to version
+- **Consequences:** All changes are tracked in Git; enables collaboration via PRs; markdown-first.
 
 ---
 
 ## TODO
 
-- [ ] Record ADR for memory/knowledge policy decisions
-- [ ] Record ADR for fine-tuning strategy
-- [ ] Record ADR for dataset curation methodology
-- [ ] Record ADR for versioning strategy
+- [ ] Add ADR for memory architecture decision
+- [ ] Add ADR for dataset storage strategy
+- [ ] Add ADR for fine-tuning approach
+- [ ] Add ADR for evaluation framework
+- [ ] Review ADRs quarterly

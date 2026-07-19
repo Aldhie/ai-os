@@ -1,9 +1,13 @@
-# AI-0002 — NVIDIA NIM API Contract
+# AI-0002: NVIDIA NIM API Integration Specification
+
+---
+
+## Metadata
 
 | Field | Value |
-|---|---|
-| **Title** | NVIDIA NIM API Contract |
+|-------|-------|
 | **Document ID** | AI-0002 |
+| **Title** | NVIDIA NIM API Integration Specification |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
@@ -14,48 +18,56 @@
 
 ## Purpose
 
-Defines the complete API contract between AI-OS and NVIDIA Cloud NIM. This document covers authentication, endpoint specification, request/response schema, error handling, streaming, and rate limits.
+This document defines how the AI OS connects to NVIDIA Cloud NIM for inference. It covers authentication, endpoint configuration, request/response schema, error handling, and rate limit management.
 
 ---
 
 ## Scope
 
-- NVIDIA Cloud NIM public API
-- Model: `nvidia/nemotron-ultra-253b-v1`
-- Transport: HTTPS REST
-- Excludes: On-premise NIM deployments
+- NIM API authentication and credentials management
+- OpenAI-compatible API interface
+- Request parameters and schema
+- Error codes and retry strategy
+- Rate limiting and quota management
 
 ---
 
-## Authentication
+## Dependencies
 
-```text
-Method:    Bearer Token
-Header:    Authorization: Bearer {NVIDIA_API_KEY}
-Token:     Obtained from https://build.nvidia.com/
-Expiry:    Per key policy (check dashboard)
-```
-
-**Security Rule:** API keys must NEVER be committed to this repository. Use environment variables only.
-
-```bash
-export NVIDIA_API_KEY="nvapi-xxxxxxxxxxxx"
-```
+- `AI-0001-Nemotron-Engineering-Spec.md` — model specification
+- `AI-0005-FreeTier-Strategy.md` — quota and cost management
+- `configs/openwebui/parameters.json` — runtime parameter configuration
 
 ---
 
-## Endpoints
+## References
 
-### Chat Completions
+- [NVIDIA NIM API Reference](https://docs.nvidia.com/nim/)
+- [NVIDIA Build Platform](https://build.nvidia.com/)
+- [OpenAI API Compatibility](https://platform.openai.com/docs/api-reference)
 
-```text
-POST https://integrate.api.nvidia.com/v1/chat/completions
+---
+
+## API Configuration
+
+### Base URL
+
+```
+https://integrate.api.nvidia.com/v1
 ```
 
-### Models List
+### Authentication
 
-```text
-GET https://integrate.api.nvidia.com/v1/models
+```http
+Authorization: Bearer <NVIDIA_API_KEY>
+```
+
+> **Security Note:** Never commit API keys to this repository. Store credentials in environment variables or a secret manager.
+
+### Endpoint
+
+```
+POST /chat/completions
 ```
 
 ---
@@ -64,26 +76,21 @@ GET https://integrate.api.nvidia.com/v1/models
 
 ```json
 {
-  "model": "nvidia/nemotron-ultra-253b-v1",
+  "model": "nvidia/nemotron-super-49b-v1",
   "messages": [
     {
-      "role": "system | user | assistant | tool",
-      "content": "string"
+      "role": "system",
+      "content": "<system_prompt>"
+    },
+    {
+      "role": "user",
+      "content": "<user_message>"
     }
   ],
   "temperature": 0.6,
   "top_p": 0.95,
   "max_tokens": 4096,
-  "stream": false,
-  "tools": [],
-  "tool_choice": "auto | none | required",
-  "response_format": {
-    "type": "text | json_object"
-  },
-  "stop": ["string"],
-  "frequency_penalty": 0.0,
-  "presence_penalty": 0.0,
-  "seed": null
+  "stream": true
 }
 ```
 
@@ -93,19 +100,18 @@ GET https://integrate.api.nvidia.com/v1/models
 
 ```json
 {
-  "id": "chatcmpl-xxxx",
+  "id": "chatcmpl-xxx",
   "object": "chat.completion",
-  "created": 1234567890,
-  "model": "nvidia/nemotron-ultra-253b-v1",
+  "created": 1700000000,
+  "model": "nvidia/nemotron-super-49b-v1",
   "choices": [
     {
       "index": 0,
       "message": {
         "role": "assistant",
-        "content": "string",
-        "tool_calls": []
+        "content": "<response>"
       },
-      "finish_reason": "stop | length | tool_calls | content_filter"
+      "finish_reason": "stop"
     }
   ],
   "usage": {
@@ -118,62 +124,44 @@ GET https://integrate.api.nvidia.com/v1/models
 
 ---
 
-## Streaming
-
-Set `"stream": true` to receive Server-Sent Events (SSE):
-
-```text
-data: {"id":"...","object":"chat.completion.chunk","choices":[{"delta":{"content":"tok"}}]}
-data: [DONE]
-```
-
-Open WebUI natively supports SSE streaming.
-
----
-
-## Error Codes
+## Error Handling
 
 | HTTP Code | Meaning | Action |
-|---|---|---|
-| 400 | Bad Request | Check request schema |
-| 401 | Unauthorized | Verify API key |
-| 429 | Rate Limited | Back-off, see AI-0005 |
-| 500 | Server Error | Retry with exponential back-off |
+|-----------|---------|--------|
+| 400 | Bad Request | Fix request schema |
+| 401 | Unauthorized | Check API key |
+| 429 | Rate Limited | Backoff and retry |
+| 500 | Server Error | Retry with exponential backoff |
 | 503 | Service Unavailable | Retry after delay |
 
----
+### Retry Strategy
 
-## Rate Limits (Free Tier)
-
-| Limit | Value |
-|---|---|
-| Requests per minute | TBD (check NVIDIA dashboard) |
-| Tokens per minute | TBD |
-| Requests per day | TBD |
-| Context window max | 128K tokens |
-
-See [AI-0005-FreeTier-Strategy.md](AI-0005-FreeTier-Strategy.md) for mitigation strategies.
+```
+Attempt 1: immediate
+Attempt 2: +2s
+Attempt 3: +4s
+Attempt 4: +8s
+Max attempts: 4
+```
 
 ---
 
-## Dependencies
+## Open WebUI Integration
 
-- [AI-0001-Nemotron-Engineering-Spec.md](AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0005-FreeTier-Strategy.md](AI-0005-FreeTier-Strategy.md)
+Open WebUI connects to NIM via its **OpenAI-compatible API** configuration:
 
----
-
-## References
-
-- [NVIDIA NIM API Docs](https://docs.api.nvidia.com/)
-- [OpenAI API Reference](https://platform.openai.com/docs/api-reference) (compatible schema)
+1. Navigate to **Settings > Connections**
+2. Add new connection:
+   - **Base URL:** `https://integrate.api.nvidia.com/v1`
+   - **API Key:** `<NVIDIA_API_KEY>`
+3. Select model: `nvidia/nemotron-3-ultra-550b` (verify exact model slug)
 
 ---
 
 ## TODO
 
-- [ ] Confirm actual rate limits from NVIDIA dashboard
-- [ ] Test tool calling with Open WebUI format
-- [ ] Document streaming behavior in Open WebUI
-- [ ] Add retry logic recommendation for scripts
-- [ ] Validate JSON mode output consistency
+- [ ] Confirm exact model slug for Nemotron 3 Ultra 550B on NIM
+- [ ] Document streaming SSE response format
+- [ ] Add token counting guidance for context management
+- [ ] Document function calling / tool use schema on NIM
+- [ ] Test and document connection setup steps in Open WebUI

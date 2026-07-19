@@ -1,0 +1,52 @@
+{
+  "_metadata": {
+    "version": "0.1.0",
+    "status": "draft",
+    "description": "Open WebUI model parameters for Nemotron 3 Ultra 550B via NVIDIA NIM",
+    "last_updated": "2026-07-20",
+    "owner": "Aldhie"
+  },
+  "model": {
+    "provider": "nvidia-nim",
+    "model_id": "nvidia/nemotron-3-ultra-550b",
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "api_key_env": "NVIDIA_API_KEY"
+  },
+  "inference": {
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_tokens": 2048,
+    "repetition_penalty": 1.1,
+    "stream": true,
+    "stop": []
+  },
+  "profiles": {
+    "general": {
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "max_tokens": 1024
+    },
+    "reasoning": {
+      "temperature": 0.3,
+      "top_p": 0.9,
+      "max_tokens": 4096
+    },
+    "creative": {
+      "temperature": 1.0,
+      "top_p": 0.98,
+      "max_tokens": 2048
+    },
+    "code": {
+      "temperature": 0.2,
+      "top_p": 0.85,
+      "max_tokens": 4096
+    }
+  },
+  "context": {
+    "system_prompt_budget_tokens": 500,
+    "history_budget_tokens": 4096,
+    "rag_budget_tokens": 2048,
+    "output_reserved_tokens": 2048
+  }
+}

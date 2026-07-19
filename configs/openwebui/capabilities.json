@@ -1,0 +1,41 @@
+{
+  "_metadata": {
+    "version": "0.1.0",
+    "status": "draft",
+    "description": "Open WebUI capability flags for AI OS",
+    "last_updated": "2026-07-20",
+    "owner": "Aldhie"
+  },
+  "capabilities": {
+    "memory": {
+      "enabled": true,
+      "auto_save": true,
+      "auto_recall": true,
+      "max_entries": 100,
+      "retention_days": {
+        "short_term": 7,
+        "long_term": -1
+      }
+    },
+    "rag": {
+      "enabled": true,
+      "top_k": 5,
+      "similarity_threshold": 0.75,
+      "chunk_size": 512,
+      "chunk_overlap": 50
+    },
+    "tools": {
+      "web_search": true,
+      "code_execution": true,
+      "image_generation": false,
+      "file_upload": true
+    },
+    "streaming": {
+      "enabled": true
+    },
+    "function_calling": {
+      "enabled": false,
+      "note": "Verify NIM support before enabling"
+    }
+  }
+}

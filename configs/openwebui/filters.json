@@ -1,0 +1,47 @@
+{
+  "_metadata": {
+    "version": "0.1.0",
+    "status": "draft",
+    "description": "Open WebUI pipeline filters configuration for AI OS",
+    "last_updated": "2026-07-20",
+    "owner": "Aldhie"
+  },
+  "input_filters": [
+    {
+      "name": "context_loader",
+      "enabled": true,
+      "description": "Load memory and knowledge context before inference",
+      "order": 1
+    },
+    {
+      "name": "intent_classifier",
+      "enabled": false,
+      "description": "Classify request complexity to route to planner",
+      "order": 2,
+      "note": "TODO: implement"
+    },
+    {
+      "name": "token_budget_enforcer",
+      "enabled": false,
+      "description": "Enforce token budget limits before sending to NIM",
+      "order": 3,
+      "note": "TODO: implement"
+    }
+  ],
+  "output_filters": [
+    {
+      "name": "memory_extractor",
+      "enabled": false,
+      "description": "Extract and save memories from assistant responses",
+      "order": 1,
+      "note": "TODO: implement"
+    },
+    {
+      "name": "citation_formatter",
+      "enabled": false,
+      "description": "Format inline citations from RAG sources",
+      "order": 2,
+      "note": "TODO: implement"
+    }
+  ]
+}

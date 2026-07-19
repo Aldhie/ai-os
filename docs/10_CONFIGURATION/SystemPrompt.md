@@ -1,73 +1,121 @@
-# System Prompt
+# System Prompt Specification
 
 | Field | Value |
-|-------|-------|
-| **Title** | AI OS System Prompt |
-| **Purpose** | Define the master system prompt injected into every conversation with Nemotron Ultra |
-| **Scope** | Identity, behavior, capability boundaries, tone, and safety guardrails |
+|---|---|
+| **Title** | AI-OS System Prompt Specification |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
-| **Dependencies** | Persona.md, ToolPolicy.md, MemoryPolicy.md |
-| **References** | AI-0001, Parameters.md |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
-## Design Principles
+## Purpose
 
-1. **Minimal footprint** — Under 2,000 tokens to preserve context budget
-2. **Explicit identity** — Model must know who it is and what it does
-3. **Clear boundaries** — What to do, what not to do
-4. **Tool awareness** — Know which tools are available and when to use them
-5. **Memory integration** — Reference and update memory when appropriate
+Specifies the structure, content, and versioning policy for the AI-OS system prompt. The system prompt is the primary mechanism for defining the AI's identity, behavior, constraints, and capabilities.
 
 ---
 
-## Prompt Structure
+## Scope
 
+- Applies to all interactions via Open WebUI with Nemotron Ultra 550B
+- Version-controlled alongside model configuration
+- Changes require regression testing before deployment
+
+---
+
+## System Prompt Structure
+
+The system prompt is organized into sections using XML-style delimiters:
+
+```xml
+<identity>
+  Who the AI is.
+</identity>
+
+<capabilities>
+  What the AI can do.
+</capabilities>
+
+<constraints>
+  What the AI must never do.
+</constraints>
+
+<tone>
+  How the AI communicates.
+</tone>
+
+<memory>
+  Memory rules (see MemoryPolicy.md).
+</memory>
+
+<tools>
+  Tool usage rules (see ToolPolicy.md).
+</tools>
+
+<knowledge>
+  Knowledge and RAG rules (see KnowledgePolicy.md).
+</knowledge>
 ```
-[IDENTITY]
-[CAPABILITIES]
-[BEHAVIOR RULES]
-[TOOL USAGE POLICY]
-[MEMORY POLICY]
-[KNOWLEDGE POLICY]
-[SAFETY GUARDRAILS]
-[OUTPUT FORMAT]
-```
 
 ---
 
-## Current Prompt (v0.1.0 — Draft)
+## Current System Prompt
 
-> Stored in: `prompts/nemotron-ultra/system.txt`
-
----
-
-## Prompt Changelog
-
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 0.1.0 | 2026-07-20 | Initial draft template | Aldhie |
+See: `prompts/nemotron-ultra/system.txt`
 
 ---
 
-## Evaluation Criteria
+## Versioning Policy
 
-A good system prompt should produce:
+- System prompt version follows the repository version.
+- Any change that alters behavior must increment at minimum PATCH version.
+- Any change that alters identity or constraints must increment MINOR version.
+- Prompt history is preserved via git commits.
 
-- [ ] Consistent persona across sessions
-- [ ] Correct tool selection without over-calling
-- [ ] Appropriate refusals for out-of-scope requests
-- [ ] Concise, structured responses
-- [ ] Memory usage without user prompting
+---
+
+## Token Budget
+
+- Target: ≤2,000 tokens
+- Hard limit: 4,000 tokens
+- Measure with: `scripts/count_tokens.py` (TBD)
+
+---
+
+## Testing Requirements
+
+Before merging system prompt changes:
+
+1. Run regression suite: `docs/90_TESTING/Regression.md`
+2. Verify persona consistency: `docs/10_CONFIGURATION/Persona.md`
+3. Verify constraint enforcement: adversarial test cases
+4. Token count within budget
+
+---
+
+## Dependencies
+
+- `prompts/nemotron-ultra/system.txt`
+- `docs/10_CONFIGURATION/Persona.md`
+- `docs/10_CONFIGURATION/MemoryPolicy.md`
+- `docs/10_CONFIGURATION/ToolPolicy.md`
+- `docs/10_CONFIGURATION/KnowledgePolicy.md`
+
+---
+
+## References
+
+- [Anthropic Prompt Engineering Guide](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering)
+- [OpenAI Prompt Engineering](https://platform.openai.com/docs/guides/prompt-engineering)
 
 ---
 
 ## TODO
 
-- [ ] Write v0.1 system prompt content
-- [ ] Run against benchmark cases (BenchmarkCases.md)
-- [ ] Optimize for token count
-- [ ] Test persona consistency across 20+ turns
-- [ ] Review safety guardrails with adversarial inputs
+- [ ] Write system prompt v1 in `prompts/nemotron-ultra/system.txt`
+- [ ] Build token counter script
+- [ ] Define regression test cases for system prompt
+- [ ] Create A/B test framework for prompt variants
+- [ ] Document prompt change review process

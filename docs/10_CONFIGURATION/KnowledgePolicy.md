@@ -1,72 +1,99 @@
 # Knowledge Policy
 
 | Field | Value |
-|-------|-------|
-| **Title** | Knowledge Policy |
-| **Purpose** | Define how the AI OS handles knowledge retrieval, RAG, and knowledge boundaries |
-| **Scope** | RAG configuration, knowledge sources, freshness policy, citation requirements |
+|---|---|
+| **Title** | AI-OS Knowledge & RAG Policy |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
-| **Dependencies** | SystemPrompt.md, ToolPolicy.md |
-| **References** | AI-0003 (Open WebUI Compatibility) |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
-## 1. Knowledge Hierarchy
+## Purpose
 
+Defines how AI-OS retrieves, uses, and cites external knowledge via Retrieval-Augmented Generation (RAG). Covers knowledge base organization, retrieval configuration, source trust levels, and citation policy.
+
+---
+
+## Scope
+
+- Open WebUI Knowledge (RAG) feature
+- Document ingestion, chunking, retrieval
+- All user queries that may benefit from external knowledge
+
+---
+
+## Knowledge Base Organization
+
+| Collection | Content | Update Frequency |
+|---|---|---|
+| `ai-os-docs` | This repository's own documentation | On every commit |
+| `nvidia-nim-docs` | NVIDIA NIM API documentation | Monthly |
+| `openwebui-docs` | Open WebUI documentation | Monthly |
+| `research-papers` | Relevant AI research papers | As needed |
+| `user-documents` | User-uploaded documents | Real-time |
+
+---
+
+## Retrieval Configuration
+
+```json
+{
+  "top_k": 3,
+  "similarity_threshold": 0.75,
+  "chunk_size": 512,
+  "chunk_overlap": 64,
+  "embedding_model": "nvidia/nv-embedqa-e5-v5",
+  "reranker": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+}
 ```
-Priority 1: User-provided documents (RAG)
-Priority 2: Memory (long-term learned facts)
-Priority 3: Web search (via tool)
-Priority 4: Model parametric knowledge (cutoff date)
-```
 
 ---
 
-## 2. RAG Configuration
+## Trust Levels
 
-| Setting | Value | Notes |
-|---------|-------|-------|
-| Chunk size | 1000 tokens | Balance between context and precision |
-| Overlap | 200 tokens | Maintains coherence across chunks |
-| Top-K retrieval | 5 | Number of chunks per query |
-| Similarity threshold | 0.7 | Minimum relevance score |
-
----
-
-## 3. Knowledge Freshness Policy
-
-| Source | Freshness | Action |
-|--------|-----------|--------|
-| User documents | User-defined | Notify user if document > 1 year old |
-| Web search | Real-time | Use for time-sensitive queries |
-| Model knowledge | Training cutoff | Acknowledge when uncertain |
+| Source | Trust Level | Citation Required |
+|---|---|---|
+| NVIDIA official docs | High | Yes |
+| Open WebUI official docs | High | Yes |
+| AI-OS repo docs | High | No (internal) |
+| Research papers (arXiv) | Medium | Yes |
+| Blog posts / web | Low | Yes + verify |
+| User-provided docs | Medium | Yes |
 
 ---
 
-## 4. Citation Policy
+## Retrieval Rules
 
-- Always cite the source when using RAG-retrieved information
-- Distinguish between model knowledge and retrieved knowledge
-- Use web search tool when user asks about recent events
+1. **Always retrieve** when the query involves technical specifications or external facts.
+2. **Never fabricate** citations — only cite what was retrieved.
+3. **Prefer recency** — more recent documents should be ranked higher for versioned topics.
+4. **Token budget:** Max 4,000 tokens of retrieved context per query.
+5. **Cite sources:** Always tell the user which document was used.
 
 ---
 
-## 5. Knowledge Boundaries
+## Dependencies
 
-The AI OS should explicitly acknowledge when:
+- `docs/10_CONFIGURATION/SystemPrompt.md`
+- Open WebUI RAG module
+- `dataset/` for curated knowledge
 
-- Information may be outdated (post training-cutoff)
-- Information is uncertain or contested
-- User should consult a domain expert (medical, legal, financial)
+---
+
+## References
+
+- [Open WebUI RAG Docs](https://docs.openwebui.com/features/workspace/knowledge)
+- [NVIDIA NV-Embed Models](https://build.nvidia.com/)
 
 ---
 
 ## TODO
 
-- [ ] Configure RAG chunking in Open WebUI
-- [ ] Test RAG retrieval accuracy with sample documents
-- [ ] Define knowledge base document structure
-- [ ] Implement freshness checks
-- [ ] Create citation format standard
+- [ ] Set up `ai-os-docs` knowledge collection in Open WebUI
+- [ ] Configure NVIDIA embedding model
+- [ ] Test retrieval quality on AI-OS documentation
+- [ ] Define document ingestion pipeline
+- [ ] Set up automatic re-indexing on repo commit

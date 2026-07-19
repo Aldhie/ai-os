@@ -1,67 +1,93 @@
 # Tool Policy
 
 | Field | Value |
-|-------|-------|
-| **Title** | Tool Usage Policy |
-| **Purpose** | Define which tools the AI OS uses, when to use them, and safety constraints |
-| **Scope** | Tool inventory, invocation rules, error handling, safety limits |
+|---|---|
+| **Title** | AI-OS Tool Usage Policy |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
-| **Dependencies** | SystemPrompt.md, AI-0002 |
-| **References** | Open WebUI Tools Documentation |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
-## 1. Tool Inventory
+## Purpose
 
-| Tool | Purpose | When to Use | Safety Level |
-|------|---------|------------|-------------|
-| `web_search` | Search the internet | Time-sensitive or fact-checking queries | Low |
-| `code_execution` | Run Python code | Calculations, data analysis | Medium |
-| `memory_read` | Read long-term memory | Session start, ambiguous context | Low |
-| `memory_write` | Write to memory | New persistent information detected | Low |
-| `file_read` | Read user files | User requests document analysis | Low |
-| `calendar` | Read/write calendar | Scheduling and time-related tasks | Medium |
+Defines which tools the AI-OS can invoke, when they should be used, and safety guardrails around tool execution. Prevents unnecessary tool calls that consume tokens and API quota.
 
 ---
 
-## 2. Tool Invocation Rules
+## Scope
 
-### ALWAYS use a tool when:
-
-- User asks about current events (use `web_search`)
-- User asks for calculations involving large datasets (use `code_execution`)
-- User references past context not in conversation (use `memory_read`)
-
-### NEVER use a tool when:
-
-- Answer is definitively known from model knowledge
-- Tool usage would reveal sensitive information
-- Cost (tokens, latency) exceeds benefit
-
-### ASK BEFORE using a tool when:
-
-- Tool would make external API calls with user data
-- Tool would write or modify persistent data
+- Open WebUI tool integrations
+- NVIDIA NIM function calling
+- All user sessions
 
 ---
 
-## 3. Tool Error Handling
+## Tool Registry
 
-| Error Type | Action |
-|------------|--------|
-| Tool not available | Acknowledge and answer from knowledge |
-| Tool timeout | Retry once, then acknowledge failure |
-| Tool returns empty result | Acknowledge and offer alternative |
-| Tool returns error | Log, acknowledge, do not retry infinitely |
+| Tool | Enabled | Trigger Condition | Risk Level |
+|---|---|---|---|
+| Web Search | Yes | User asks for current info | Low |
+| Calculator | Yes | Math operations requested | Low |
+| Code Execution | Restricted | Explicit code run request | Medium |
+| File Read | Yes | User provides file | Low |
+| File Write | No | Not allowed without review | High |
+| Email Send | No | Not allowed | Critical |
+| API Calls | Restricted | Explicit request only | High |
+
+---
+
+## Tool Usage Rules
+
+1. **Prefer no tool** — Only call a tool when the task genuinely requires it.
+2. **Explain before calling** — Tell the user what tool is being invoked and why.
+3. **Validate output** — Tool results must be verified before presenting to user.
+4. **Token awareness** — Tool output counts toward context. Summarize long results.
+5. **Error handling** — If a tool fails, report clearly and offer alternatives.
+6. **No chained destructive tools** — Never chain file-write, API-call, or delete tools.
+
+---
+
+## Tool Invocation Template
+
+When deciding to call a tool, the AI should reason:
+
+```text
+Thought: The user asked for X. To answer accurately, I need Y.
+Tool: [tool_name]
+Input: {"query": "..."}
+Reason: Without this tool, I cannot provide accurate current information.
+```
+
+---
+
+## Configuration File
+
+See: `configs/openwebui/filters.json`
+
+---
+
+## Dependencies
+
+- `configs/openwebui/capabilities.json`
+- `configs/openwebui/filters.json`
+- [AI-0005-FreeTier-Strategy.md](../00_ENGINEERING/AI-0005-FreeTier-Strategy.md)
+
+---
+
+## References
+
+- [Open WebUI Tools Docs](https://docs.openwebui.com/features/plugin/tools)
+- [OpenAI Function Calling](https://platform.openai.com/docs/guides/function-calling)
 
 ---
 
 ## TODO
 
-- [ ] Finalize tool list based on Open WebUI capabilities
-- [ ] Test each tool with edge cases
-- [ ] Define token cost estimates per tool call
-- [ ] Implement tool usage logging
-- [ ] Review safety boundaries for code execution
+- [ ] Implement web search tool in Open WebUI
+- [ ] Configure tool call schema for Nemotron Ultra
+- [ ] Test tool calling with `capabilities.json` flags
+- [ ] Define tool result summarization rules
+- [ ] Add tool audit logging

@@ -1,74 +1,142 @@
 # Memory Policy
 
 | Field | Value |
-|-------|-------|
-| **Title** | Memory Policy |
-| **Purpose** | Define rules for when and how the AI OS stores, retrieves, and manages long-term memory |
-| **Scope** | Memory triggers, retention rules, privacy constraints, memory types |
+|---|---|
+| **Title** | AI-OS Memory Policy |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
-| **Dependencies** | SystemPrompt.md, ToolPolicy.md |
-| **References** | Open WebUI Memory Docs |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
-## 1. Memory Types
+## Purpose
 
-| Type | Description | Retention |
-|------|-------------|----------|
-| **Factual** | User preferences, facts about the user | Permanent |
-| **Episodic** | Past conversations and events | 90 days |
-| **Procedural** | How-to knowledge learned from user | Permanent |
-| **Contextual** | Session-specific context | Session only |
+Defines what the AI-OS should remember, for how long, and how memory is managed across sessions. Memory is a critical component of persistent, context-aware AI behavior.
 
 ---
 
-## 2. Storage Triggers
+## Scope
 
-Store a memory when:
-
-- User states a preference explicitly ("I prefer...", "I always...", "I like...")
-- User shares a persistent fact about themselves or their environment
-- A decision is made that will affect future behavior
-- User corrects the AI's behavior (negative feedback = learning event)
+- Open WebUI memory feature
+- Cross-session user context retention
+- Applies to all user interactions
 
 ---
 
-## 3. Retrieval Policy
+## Memory Categories
 
-- Always search memory at the start of a new session
-- Search memory when context is ambiguous ("my project", "that document")
-- Do not retrieve memory for purely factual/informational queries
+### 1. User Identity
 
----
+**What:** Name, profession, location, language preference, timezone.
 
-## 4. Privacy Rules
+**Retention:** Permanent (until explicitly deleted).
 
-- Do not store passwords, API keys, or credentials
-- Do not store sensitive personal information without explicit user consent
-- User can request memory deletion at any time
-- Memory is scoped to the user's account only
+**Example:**
 
----
-
-## 5. Memory Format
-
+```text
+User prefers responses in Indonesian.
+User is a software engineer based in Indonesia.
 ```
-Type: [factual|episodic|procedural]
-Title: Short description (< 100 chars)
-Content: Full memory content
-Tags: [relevant tags]
-Created: YYYY-MM-DD
-Expires: YYYY-MM-DD or never
+
+---
+
+### 2. User Preferences
+
+**What:** Communication style, response format, depth level, topic interests.
+
+**Retention:** Permanent (updated on change).
+
+**Example:**
+
+```text
+User prefers bullet-point summaries for technical topics.
+User dislikes verbose preambles.
 ```
+
+---
+
+### 3. Project Context
+
+**What:** Active projects, goals, current tasks, blockers.
+
+**Retention:** Active project lifetime + 90 days.
+
+**Example:**
+
+```text
+User is building an AI Operating System called AI-OS.
+Current phase: Engineering documentation.
+```
+
+---
+
+### 4. Conversation History
+
+**What:** Recent conversation turns (last N exchanges).
+
+**Retention:** Session-scoped + 7 days in memory.
+
+**Pruning:** Summarize after 20 turns; keep summary + last 5 turns.
+
+---
+
+### 5. Factual Corrections
+
+**What:** Facts the user has explicitly corrected.
+
+**Retention:** Permanent.
+
+**Example:**
+
+```text
+User corrected: The project uses NIM API, not local Ollama.
+```
+
+---
+
+## Memory Rules
+
+1. **Never assume** — Only store what is explicitly stated or confirmed.
+2. **Never hallucinate memory** — Do not invent stored facts.
+3. **Respect deletion requests** — Remove memory immediately when asked.
+4. **Flag conflicts** — If new information conflicts with stored memory, ask for clarification.
+5. **Privacy first** — Never store sensitive data (passwords, API keys, PII).
+
+---
+
+## Memory Injection Format
+
+When injecting memory into system prompt:
+
+```xml
+<memory>
+  <user_identity>Name: Aldhie. Language: Indonesian/English. Timezone: WIB (UTC+7).</user_identity>
+  <preferences>Prefers concise answers. Bullet points for technical topics.</preferences>
+  <project>Currently working on AI-OS: engineering repo for Nemotron Ultra + Open WebUI.</project>
+</memory>
+```
+
+---
+
+## Dependencies
+
+- `docs/10_CONFIGURATION/SystemPrompt.md`
+- Open WebUI Memory module
+
+---
+
+## References
+
+- [Open WebUI Memory Docs](https://docs.openwebui.com/features/workspace/memory)
 
 ---
 
 ## TODO
 
-- [ ] Implement memory search at session start
-- [ ] Define memory namespace structure
-- [ ] Test memory retrieval accuracy
-- [ ] Create memory cleanup script
-- [ ] Define consent flow for sensitive information
+- [ ] Implement memory injection in system prompt
+- [ ] Build memory review script
+- [ ] Define memory export format (JSON)
+- [ ] Set up memory backup policy
+- [ ] Test memory conflict resolution behavior

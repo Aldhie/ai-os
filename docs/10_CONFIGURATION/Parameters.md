@@ -1,71 +1,147 @@
-# Parameters
+# Model Parameters Specification
 
 | Field | Value |
-|-------|-------|
-| **Title** | Model Parameters Configuration |
-| **Purpose** | Document and justify all inference parameters used for Nemotron Ultra |
-| **Scope** | Temperature, top_p, max_tokens, presence/frequency penalty, streaming |
+|---|---|
+| **Title** | AI-OS Model Parameters Specification |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
-| **Dependencies** | AI-0002 (NIM API), AI-0005 (Free Tier Strategy) |
-| **References** | `configs/openwebui/parameters.json` |
+| **Created** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 
 ---
 
-## Parameter Reference
+## Purpose
 
-| Parameter | Current Value | Range | Rationale |
-|-----------|---------------|-------|-----------|
-| `temperature` | 0.6 | 0.0–1.0 | Balanced creativity and consistency |
-| `top_p` | 0.95 | 0.0–1.0 | Nucleus sampling, high diversity |
-| `max_tokens` | 4096 | 1–32768 | Sufficient for most responses |
-| `presence_penalty` | 0.0 | -2.0–2.0 | No penalty by default |
-| `frequency_penalty` | 0.0 | -2.0–2.0 | No penalty by default |
-| `stream` | true | bool | Enables streaming response |
-| `top_k` | 50 | 1–1000 | NVIDIA-specific parameter |
+Defines the inference parameters used when calling Nemotron Ultra 550B via NVIDIA NIM. Documents the rationale for each value and the constraints within which they should be tuned.
 
 ---
 
-## Parameter Profiles
+## Scope
 
-### Creative Mode
-
-```json
-{"temperature": 0.9, "top_p": 0.95, "max_tokens": 8192}
-```
-
-### Precise Mode (Default)
-
-```json
-{"temperature": 0.6, "top_p": 0.95, "max_tokens": 4096}
-```
-
-### Analytical / Reasoning Mode
-
-```json
-{"temperature": 0.3, "top_p": 0.9, "max_tokens": 16384, "thinking": {"type": "enabled", "budget_tokens": 10000}}
-```
-
-### Fast / Summary Mode
-
-```json
-{"temperature": 0.5, "top_p": 0.9, "max_tokens": 1024}
-```
+- NVIDIA NIM API call parameters
+- Open WebUI model parameter configuration
+- Applies to all operational modes (chat, plan, reflect, critique)
 
 ---
 
-## Tuning History
+## Parameter Definitions
 
-| Version | Date | Change | Reason |
-|---------|------|--------|--------|
-| 0.1.0 | 2026-07-20 | Initial defaults | Baseline |
+### Temperature
+
+| Property | Value |
+|---|---|
+| Parameter | `temperature` |
+| Type | Float |
+| Range | 0.0 – 2.0 |
+| **AI-OS Default** | **0.6** |
+| Min (deterministic) | 0.0 |
+| Max (creative) | 1.2 |
+
+**Rationale:** 0.6 balances creativity and consistency. Lower values for Critic and Planner modes; higher for creative tasks.
+
+---
+
+### Top-P (Nucleus Sampling)
+
+| Property | Value |
+|---|---|
+| Parameter | `top_p` |
+| Type | Float |
+| Range | 0.0 – 1.0 |
+| **AI-OS Default** | **0.95** |
+
+**Rationale:** Standard value for high-quality generation. Do not combine with very low temperature.
+
+---
+
+### Max Tokens
+
+| Property | Value |
+|---|---|
+| Parameter | `max_tokens` |
+| Type | Integer |
+| **AI-OS Default** | **2048** |
+| Minimum | 256 |
+| Maximum | 8192 |
+
+**Rationale:** 2048 covers most responses while conserving API quota. Increase for long-form documents.
+
+---
+
+### Frequency Penalty
+
+| Property | Value |
+|---|---|
+| Parameter | `frequency_penalty` |
+| **AI-OS Default** | **0.1** |
+| Range | -2.0 – 2.0 |
+
+**Rationale:** Slight positive value reduces repetition in long outputs.
+
+---
+
+### Presence Penalty
+
+| Property | Value |
+|---|---|
+| Parameter | `presence_penalty` |
+| **AI-OS Default** | **0.0** |
+| Range | -2.0 – 2.0 |
+
+**Rationale:** Neutral default; increase if model tends to avoid topic shifts.
+
+---
+
+### Stream
+
+| Property | Value |
+|---|---|
+| Parameter | `stream` |
+| **AI-OS Default** | **true** |
+
+**Rationale:** Streaming improves perceived responsiveness. Always enabled in Open WebUI.
+
+---
+
+## Mode-Specific Parameter Sets
+
+| Mode | Temperature | Max Tokens | Notes |
+|---|---|---|---|
+| Chat | 0.6 | 2048 | General conversation |
+| Planner | 0.3 | 4096 | Structured output needed |
+| Reflection | 0.4 | 2048 | Self-evaluation |
+| Critic | 0.2 | 1024 | Deterministic grading |
+| Creative | 1.0 | 4096 | Creative writing |
+| Code | 0.2 | 4096 | Precise generation |
+
+---
+
+## Configuration File
+
+See: `configs/openwebui/parameters.json`
+
+---
+
+## Dependencies
+
+- `configs/openwebui/parameters.json`
+- [AI-0002-NVIDIA-NIM-API.md](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md)
+- [AI-0005-FreeTier-Strategy.md](../00_ENGINEERING/AI-0005-FreeTier-Strategy.md)
+
+---
+
+## References
+
+- [NVIDIA NIM Parameter Docs](https://docs.api.nvidia.com/)
+- [Temperature & Sampling Guide](https://platform.openai.com/docs/guides/text-generation)
 
 ---
 
 ## TODO
 
-- [ ] Run A/B test: temperature 0.6 vs 0.7
-- [ ] Benchmark reasoning mode with thinking enabled
-- [ ] Determine optimal max_tokens for daily use
-- [ ] Test frequency_penalty effect on repetition
+- [ ] Validate defaults against Nemotron Ultra behavior
+- [ ] Tune Critic mode temperature after baseline testing
+- [ ] Build parameter sweep test for optimal chat settings
+- [ ] Document seed usage for reproducibility testing
+- [ ] Add stop sequence recommendations

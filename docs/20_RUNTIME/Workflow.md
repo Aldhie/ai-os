@@ -1,8 +1,12 @@
-# Workflow
+# Runtime Workflow
+
+---
+
+## Metadata
 
 | Field | Value |
-|---|---|
-| **Title** | AI-OS Runtime Workflow Specification |
+|-------|-------|
+| **Document** | Workflow.md |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
@@ -13,82 +17,16 @@
 
 ## Purpose
 
-Documents the end-to-end runtime workflow of AI-OS, showing how each module (Planner, Executor, Reflection, Critic) interacts to process a user request from input to final output.
+This document defines the end-to-end runtime workflow of the AI OS. It specifies the sequence of operations from user input to final response delivery, integrating the Planner, Critic, and Reflection components.
 
 ---
 
 ## Scope
 
-- Complete request-response lifecycle
-- All runtime modes: Simple, Planned, Tool-Augmented
-- Open WebUI + NVIDIA NIM integration
-
----
-
-## Runtime Workflow
-
-```text
-┌────────────────────────────────────────────────┐
-│                    USER INPUT                          │
-└──────────────────────┬─────────────────────────┘
-                       │
-          ┌──────────┴──────────┐
-          │   PRE-PROCESSING FILTER    │  (Open WebUI Filter)
-          │   - Input sanitization      │
-          │   - Token count check       │
-          │   - Memory injection        │
-          │   - RAG retrieval           │
-          └──────────┬──────────┘
-                       │
-          ┌──────────┴──────────┐
-          │     INTENT CLASSIFIER      │
-          └───┬───────────────┬───┘
-              │                 │
-         Simple               Complex
-              │                 │
-         ┌───┴───┐      ┌───┴───┐
-         │ DIRECT  │      │ PLANNER │
-         │GENERATE │      │  LOOP  │
-         └───┬───┘      └───┬───┘
-              │                 │
-              └──────▼──────┘
-                       │
-          ┌──────────┴──────────┐
-          │       REFLECTION          │
-          └──────────┬──────────┘
-                       │
-          ┌──────────┴──────────┐
-          │         CRITIC            │
-          └───┬───────────────┬───┘
-         Pass                      Fail
-              │                 │
-   ┌─────────┴───┐   ┌────┴─────────┐
-   │ POST-PROCESS   │   │   REVISION  │
-   │ FILTER        │   │   (max 3x)  │
-   └──────┬──────┘   └────────────┘
-              │
-   ┌─────────┴─────────┐
-   │       USER OUTPUT       │
-   └───────────────────┘
-```
-
----
-
-## Workflow States
-
-| State | Description |
-|---|---|
-| `INPUT_RECEIVED` | Raw user message received |
-| `PRE_PROCESSED` | Filters applied, memory injected |
-| `CLASSIFIED` | Intent classified (simple/complex) |
-| `PLANNED` | Plan generated (complex only) |
-| `GENERATING` | Model generating response |
-| `REFLECTING` | Reflection check in progress |
-| `CRITIQUING` | Critic scoring in progress |
-| `REVISING` | Revision cycle triggered |
-| `POST_PROCESSED` | Output filters applied |
-| `DELIVERED` | Final response sent to user |
-| `FAILED` | Max retries exceeded |
+- Full request-to-response workflow
+- Component interaction sequence
+- Decision points and branching logic
+- Error handling and fallback flows
 
 ---
 
@@ -97,21 +35,72 @@ Documents the end-to-end runtime workflow of AI-OS, showing how each module (Pla
 - `docs/20_RUNTIME/Planner.md`
 - `docs/20_RUNTIME/Reflection.md`
 - `docs/20_RUNTIME/Critic.md`
-- `configs/openwebui/filters.json`
+- `docs/10_CONFIGURATION/MemoryPolicy.md`
+- `docs/10_CONFIGURATION/ToolPolicy.md`
 
 ---
 
-## References
+## End-to-End Workflow
 
-- [Open WebUI Pipelines](https://docs.openwebui.com/pipelines/)
-- [LangGraph Workflow Patterns](https://langchain-ai.github.io/langgraph/)
+```
+┌────────────────────────────────────────┐
+│          1. USER INPUT                    │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          2. CONTEXT LOADING               │
+│  Load memory + knowledge + system prompt  │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          3. INTENT CLASSIFICATION         │
+│  Simple? → Direct Response                │
+│  Complex? → Planner                       │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          4. PLANNING (if complex)         │
+│  Decompose into steps                     │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          5. EXECUTION                     │
+│  Tool calls, RAG, Memory reads            │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          6. RESPONSE GENERATION           │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          7. REFLECTION & CRITIC           │
+│  Self-evaluate → Revise if needed         │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          8. MEMORY UPDATE                 │
+│  Extract and store relevant memories      │
+└─────────────────┬──────────────────────┘
+                 │
+                 ▼
+┌────────────────────────────────────────┐
+│          9. DELIVER RESPONSE              │
+└────────────────────────────────────────┘
+```
 
 ---
 
 ## TODO
 
-- [ ] Implement workflow as Open WebUI pipeline
-- [ ] Build state machine for workflow tracking
-- [ ] Add telemetry for each workflow stage
-- [ ] Implement max-retry logic
-- [ ] Build workflow visualization dashboard
+- [ ] Implement workflow as Open WebUI pipeline/filter
+- [ ] Define workflow configuration toggle (enable/disable components)
+- [ ] Measure end-to-end latency per workflow stage
+- [ ] Document error recovery at each stage
+- [ ] Test workflow with all benchmark dimensions

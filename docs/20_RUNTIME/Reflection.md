@@ -1,8 +1,12 @@
-# Reflection
+# Runtime Reflection
+
+---
+
+## Metadata
 
 | Field | Value |
-|---|---|
-| **Title** | AI-OS Reflection Module Specification |
+|-------|-------|
+| **Document** | Reflection.md |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
@@ -13,108 +17,80 @@
 
 ## Purpose
 
-Defines the Reflection module, which enables AI-OS to self-evaluate its own outputs before presenting them to the user. Reflection implements a meta-cognitive loop that checks for accuracy, completeness, and alignment with the user's intent.
+This document defines the Reflection component of the AI OS runtime. Reflection enables the AI to evaluate its own outputs for quality, accuracy, and completeness before delivering the final response.
 
 ---
 
 ## Scope
 
-- Applied after each major output generation
-- Operates on: reasoning traces, factual claims, plan steps, code
-- Consumed by: Critic module for final quality gate
-
----
-
-## Reflection Loop
-
-```text
-Draft Response
-    │
-    ▼
-[Reflection Module]
-    │
-    ├── Accuracy Check:     Are all facts verifiable?
-    ├── Completeness Check: Does this fully answer the question?
-    ├── Alignment Check:    Does this match the user's intent?
-    ├── Constraint Check:   Are all persona/policy rules respected?
-    └── Quality Check:      Is this the best possible response?
-    │
-    ├── PASS ───► [Critic]
-    └── FAIL ───► [Re-generation with context]
-```
-
----
-
-## Reflection Output Schema
-
-```json
-{
-  "reflection": {
-    "accuracy": {"score": 0.0, "issues": []},
-    "completeness": {"score": 0.0, "missing": []},
-    "alignment": {"score": 0.0, "issues": []},
-    "constraints": {"score": 0.0, "violations": []},
-    "overall": "pass | fail",
-    "revision_notes": "string"
-  }
-}
-```
-
----
-
-## Reflection Prompt
-
-See: `prompts/nemotron-ultra/reflection.txt`
-
----
-
-## Reflection Parameters
-
-| Parameter | Value | Reason |
-|---|---|---|
-| Temperature | 0.4 | Semi-deterministic evaluation |
-| Max Tokens | 2048 | Reflection notes are concise |
-| Format | JSON | Machine-parsable |
-
----
-
-## Pass/Fail Thresholds
-
-| Check | Pass Threshold |
-|---|---|
-| Accuracy | ≥0.85 |
-| Completeness | ≥0.80 |
-| Alignment | ≥0.90 |
-| Constraints | 1.00 (no violations) |
-
----
-
-## Max Iterations
-
-- Maximum reflection-regeneration cycles: **3**
-- After 3 failures: escalate to user with honest acknowledgment of limitations.
+- Reflection design and principles
+- Reflection trigger conditions
+- Self-evaluation criteria
+- Memory extraction from reflection
 
 ---
 
 ## Dependencies
 
-- `prompts/nemotron-ultra/reflection.txt`
-- `docs/20_RUNTIME/Planner.md`
-- `docs/20_RUNTIME/Critic.md`
+- `docs/20_RUNTIME/Workflow.md` — when reflection occurs in the flow
+- `docs/20_RUNTIME/Critic.md` — critic evaluation complements reflection
+- `prompts/nemotron-ultra/reflection.txt` — reflection prompt
 
 ---
 
 ## References
 
-- [Self-Refine: Iterative Refinement with LLMs](https://arxiv.org/abs/2303.17651)
+- [Self-Refine: Iterative Refinement with Self-Feedback](https://arxiv.org/abs/2303.17651)
 - [Reflexion: Language Agents with Verbal Reinforcement](https://arxiv.org/abs/2303.11366)
+
+---
+
+## Reflection Design
+
+After generating a candidate response, the assistant applies a **self-evaluation loop**:
+
+```
+Candidate Response
+    ↓
+[CHECK] Does it answer the question?
+[CHECK] Is it factually accurate?
+[CHECK] Is it complete?
+[CHECK] Is it clear and well-structured?
+[CHECK] Does it respect all constraints?
+    ↓
+Pass? → Deliver Response
+Fail? → Revise and re-evaluate
+```
+
+---
+
+## Self-Evaluation Criteria
+
+| Criterion | Check |
+|-----------|-------|
+| Relevance | Does the response directly address the user's request? |
+| Accuracy | Are all facts correct and well-supported? |
+| Completeness | Are all parts of the request addressed? |
+| Clarity | Is the response easy to understand? |
+| Safety | Is the response free from harmful content? |
+| Format | Is the formatting appropriate for the context? |
+
+---
+
+## Memory Extraction
+
+During reflection, the assistant may identify facts worth storing in memory:
+
+- New user preferences revealed during conversation
+- Important facts the user shared
+- Corrections to previously stored information
 
 ---
 
 ## TODO
 
-- [ ] Write reflection prompt in `prompts/nemotron-ultra/reflection.txt`
-- [ ] Implement reflection score parser
-- [ ] Define regeneration strategy on failure
-- [ ] Test reflection loop with adversarial inputs
-- [ ] Measure quality improvement vs no-reflection baseline
+- [ ] Write reflection prompt v0.1.0
+- [ ] Define maximum reflection iterations
+- [ ] Measure quality improvement from reflection vs. direct response
+- [ ] Implement reflection as optional per-request toggle
+- [ ] Log reflection outcomes for analysis

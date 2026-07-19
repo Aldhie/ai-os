@@ -1,8 +1,12 @@
-# Fine-Tuning Documentation
+# Fine-Tuning Strategy
+
+---
+
+## Metadata
 
 | Field | Value |
-|---|---|
-| **Title** | AI-OS Fine-Tuning Documentation |
+|-------|-------|
+| **Document** | docs/40_FINETUNE/README.md |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
@@ -13,113 +17,75 @@
 
 ## Purpose
 
-Documents the strategy, methodology, and recipes for fine-tuning Nemotron Ultra 550B (or smaller proxy models) to specialize for AI-OS use cases. Covers LoRA, PEFT, and NVIDIA NeMo fine-tuning approaches.
+This directory documents the fine-tuning strategy for adapting Nemotron 3 Ultra 550B to the AI OS use case. It covers fine-tuning methods, infrastructure, procedures, and evaluation.
 
 ---
 
 ## Scope
 
-- Parameter-Efficient Fine-Tuning (PEFT) via LoRA
-- NVIDIA NeMo fine-tuning framework
-- Adapter registry and versioning
-- Excludes: Full fine-tuning (requires GPU cluster)
-
----
-
-## Fine-Tuning Strategy
-
-### Phase 1: Proxy Model
-
-Fine-tune a smaller Nemotron model (e.g., Nemotron-3-8B) as a proxy to:
-
-1. Validate dataset quality.
-2. Test training recipes.
-3. Measure improvement before committing to 550B compute.
-
-### Phase 2: Adapter Transfer
-
-Apply validated LoRA adapter patterns to the full Nemotron Ultra 550B once available via NIM fine-tuning API.
-
----
-
-## LoRA Configuration Template
-
-```yaml
-model:
-  name: nvidia/nemotron-3-8b-base
-  dtype: bfloat16
-
-training:
-  method: lora
-  lora_rank: 16
-  lora_alpha: 32
-  lora_dropout: 0.05
-  target_modules:
-    - q_proj
-    - v_proj
-    - k_proj
-    - o_proj
-
-data:
-  train: dataset/instruction/train.jsonl
-  validation: dataset/instruction/val.jsonl
-  format: chat_template
-
-hyperparameters:
-  learning_rate: 2.0e-4
-  batch_size: 4
-  gradient_accumulation: 8
-  epochs: 3
-  warmup_ratio: 0.03
-  lr_scheduler: cosine
-
-output:
-  adapter_path: adapters/v{version}/
-  save_steps: 100
-```
-
----
-
-## Adapter Registry
-
-| Adapter ID | Base Model | Dataset | Date | Status | Notes |
-|---|---|---|---|---|---|
-| ADAPT-001 | TBD | DS-001 | TBD | Planned | First instruction adapter |
-
----
-
-## Evaluation Requirements
-
-Before deploying any adapter:
-
-1. Run full benchmark suite (`docs/90_TESTING/BenchmarkCases.md`).
-2. Score must be ≥ Grade B (see `docs/00_ENGINEERING/AI-0004-Benchmark.md`).
-3. Compare against base model baseline.
-4. Document results in `benchmark/`.
+- Fine-tuning methods and trade-offs
+- Training infrastructure requirements
+- Fine-tuning procedure
+- Evaluation and validation of fine-tuned models
 
 ---
 
 ## Dependencies
 
-- `docs/30_DATASET/README.md`
-- `docs/00_ENGINEERING/AI-0004-Benchmark.md`
-- `dataset/` directory
+- `docs/30_DATASET/README.md` — training datasets
+- `docs/90_TESTING/Evaluation.md` — fine-tune evaluation
+- `AI-0001-Nemotron-Engineering-Spec.md` — model capabilities
 
 ---
 
 ## References
 
-- [NVIDIA NeMo Framework](https://docs.nvidia.com/nemo-framework/)
-- [LoRA Paper](https://arxiv.org/abs/2106.09685)
-- [QLoRA Paper](https://arxiv.org/abs/2305.14314)
-- [PEFT Library](https://github.com/huggingface/peft)
+- [NVIDIA NeMo Fine-Tuning](https://docs.nvidia.com/nemo-framework/)
+- [LoRA: Low-Rank Adaptation](https://arxiv.org/abs/2106.09685)
+- [RLHF Overview](https://arxiv.org/abs/2203.02155)
+
+---
+
+## Fine-Tuning Methods
+
+| Method | Description | Compute Cost | Use Case |
+|--------|-------------|-------------|----------|
+| **Full Fine-Tuning** | Update all model weights | Very High | Not feasible for 550B |
+| **LoRA** | Low-rank adapter layers | Medium | Preferred approach |
+| **QLoRA** | Quantized LoRA | Low | Resource-constrained |
+| **Prompt Tuning** | Tune soft prompts only | Low | Quick domain adaptation |
+| **RLHF** | Reinforcement from human feedback | Very High | Quality alignment |
+| **DPO** | Direct Preference Optimization | Medium | Preference alignment |
+
+---
+
+## Recommended Approach
+
+For the AI OS v0.x, the recommended approach is:
+
+1. **Prompt engineering first** — maximize quality without fine-tuning
+2. **LoRA fine-tuning** — for domain-specific adaptation if needed
+3. **DPO** — for preference alignment after LoRA
+
+---
+
+## Training Infrastructure
+
+> Note: Fine-tuning a 550B model requires significant GPU infrastructure. This is planned for future versions.
+
+| Requirement | Specification |
+|-------------|---------------|
+| GPU | NVIDIA H100 80GB (minimum 8x for 550B LoRA) |
+| Memory | 640GB+ GPU memory |
+| Storage | 2TB+ for checkpoints |
+| Framework | NVIDIA NeMo Framework |
 
 ---
 
 ## TODO
 
-- [ ] Set up NVIDIA NeMo training environment
-- [ ] Prepare DS-001 for LoRA training format
-- [ ] Run first proxy model fine-tune
-- [ ] Evaluate ADAPT-001 against benchmark
-- [ ] Document NeMo fine-tuning steps
+- [ ] Define fine-tuning objectives and success criteria
+- [ ] Source and prepare training datasets
+- [ ] Evaluate NVIDIA NeMo Framework compatibility
+- [ ] Estimate compute cost for LoRA fine-tuning
+- [ ] Define model checkpoint versioning strategy

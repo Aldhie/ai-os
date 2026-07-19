@@ -1,8 +1,12 @@
-# Critic
+# Runtime Critic
+
+---
+
+## Metadata
 
 | Field | Value |
-|---|---|
-| **Title** | AI-OS Critic Module Specification |
+|-------|-------|
+| **Document** | Critic.md |
 | **Version** | 0.1.0 |
 | **Status** | Draft |
 | **Owner** | Aldhie |
@@ -13,97 +17,74 @@
 
 ## Purpose
 
-Defines the Critic module, which performs the final quality gate before a response is delivered to the user. The Critic evaluates outputs against predefined rubrics, assigning scores and blocking responses that fall below threshold.
+This document defines the Critic component of the AI OS runtime. The Critic evaluates planned steps and generated outputs against quality and safety standards before execution or delivery.
 
 ---
 
 ## Scope
 
-- Final stage in AI-OS runtime pipeline
-- Evaluates: response quality, safety, format compliance, factual integrity
-- Output: Pass/Block decision + structured critique
-
----
-
-## Critic Rubric
-
-| Dimension | Weight | Description |
-|---|---|---|
-| Accuracy | 30% | Are facts correct and verifiable? |
-| Relevance | 25% | Does the response address the query? |
-| Format | 15% | Is formatting appropriate and Markdown-valid? |
-| Safety | 20% | Is the response safe and policy-compliant? |
-| Conciseness | 10% | Is the response appropriately concise? |
-
-**Passing Score:** ≥80% weighted average.
-
----
-
-## Critic Output Schema
-
-```json
-{
-  "critique": {
-    "accuracy": {"score": 0.0, "comment": "string"},
-    "relevance": {"score": 0.0, "comment": "string"},
-    "format": {"score": 0.0, "comment": "string"},
-    "safety": {"score": 0.0, "comment": "string"},
-    "conciseness": {"score": 0.0, "comment": "string"},
-    "weighted_score": 0.0,
-    "decision": "pass | block | revise",
-    "revision_guidance": "string"
-  }
-}
-```
-
----
-
-## Critic Prompt
-
-See: `prompts/nemotron-ultra/critic.txt`
-
----
-
-## Critic Parameters
-
-| Parameter | Value | Reason |
-|---|---|---|
-| Temperature | 0.2 | Highly deterministic scoring |
-| Max Tokens | 1024 | Concise critique only |
-| Format | JSON | Machine-parsable scores |
-
----
-
-## Decision Rules
-
-| Weighted Score | Decision | Action |
-|---|---|---|
-| ≥80% | Pass | Deliver response to user |
-| 60–79% | Revise | Send back to reflection loop |
-| <60% | Block | Regenerate from scratch |
-| Safety <0.8 | Block | Immediate block regardless of other scores |
+- Critic design and role
+- Evaluation rubric
+- Integration with Planner and Reflection
+- Override and escalation policy
 
 ---
 
 ## Dependencies
 
-- `prompts/nemotron-ultra/critic.txt`
-- `docs/20_RUNTIME/Reflection.md`
-- `docs/20_RUNTIME/Planner.md`
+- `docs/20_RUNTIME/Planner.md` — plans evaluated by Critic
+- `docs/20_RUNTIME/Reflection.md` — outputs refined with Critic feedback
+- `docs/20_RUNTIME/Workflow.md` — Critic position in the workflow
+- `prompts/nemotron-ultra/critic.txt` — critic prompt
 
 ---
 
 ## References
 
 - [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073)
-- [RLHF and Reward Modeling](https://arxiv.org/abs/2203.02155)
+- [LLM-as-a-Judge](https://arxiv.org/abs/2306.05685)
+
+---
+
+## Critic Role
+
+The Critic acts as an internal quality gate:
+
+```
+Plan or Draft Response
+    ↓
+[CRITIC] Evaluate against rubric
+    ↓
+Approved? → Proceed
+Rejected? → Return to Planner / Reflector with feedback
+```
+
+---
+
+## Evaluation Rubric
+
+| Dimension | Weight | Criteria |
+|-----------|--------|----------|
+| Safety | Critical | No harmful, illegal, or unethical content |
+| Accuracy | High | Factually correct and supported |
+| Relevance | High | Directly addresses the user's request |
+| Quality | Medium | Well-structured, clear, and concise |
+| Completeness | Medium | All parts of the request addressed |
+
+---
+
+## Override Policy
+
+- Safety violations are **non-negotiable** — the Critic always blocks unsafe outputs
+- Quality issues trigger revision, not hard block
+- Maximum 2 revision cycles before delivering best available response
 
 ---
 
 ## TODO
 
-- [ ] Write critic prompt in `prompts/nemotron-ultra/critic.txt`
-- [ ] Implement weighted scoring calculator
-- [ ] Test critic with known good and bad responses
-- [ ] Tune safety dimension threshold
-- [ ] Build critic audit log for quality tracking
+- [ ] Write critic prompt v0.1.0
+- [ ] Define scoring thresholds for each dimension
+- [ ] Test Critic with adversarial benchmark cases
+- [ ] Measure false positive rate (good responses blocked)
+- [ ] Log all Critic interventions for analysis

@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "artifact": "profile.json",
+    "version": "1.0.0",
+    "description": "Default production profile. Override per-session with profile configs in runtime/openwebui/profiles/"
+  },
+  "default_profile": "discussion",
+  "active_profile": "discussion",
+  "profile_selection": "manual",
+  "profiles_available": [
+    "discussion",
+    "coding",
+    "architecture",
+    "creative",
+    "analysis"
+  ],
+  "profiles_path": "runtime/openwebui/profiles/"
+}

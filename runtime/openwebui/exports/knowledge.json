@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "artifact": "knowledge.json",
+    "version": "1.0.0",
+    "spec_ref": "AI-0001-Part2 §5, runtime/openwebui/knowledge/"
+  },
+  "rag": {
+    "enabled": true,
+    "hybrid_search": true,
+    "reranking": true,
+    "top_k": 5,
+    "min_similarity": 0.75,
+    "max_injection_tokens": 4000,
+    "chunk_size": 512,
+    "chunk_overlap": 50
+  },
+  "knowledge_bases": [
+    {
+      "id": "ai-os-engineering-specs",
+      "name": "AI-OS Engineering Specifications",
+      "source": "docs/00_ENGINEERING/",
+      "priority": 1,
+      "auto_load": true
+    },
+    {
+      "id": "ai-os-benchmark",
+      "name": "AI-OS Benchmark Tests",
+      "source": "benchmark/tests/",
+      "priority": 2,
+      "auto_load": false
+    }
+  ],
+  "citation": {
+    "enabled": true,
+    "format": "inline",
+    "include_source_name": true
+  }
+}

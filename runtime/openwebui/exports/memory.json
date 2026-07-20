@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "artifact": "memory.json",
+    "version": "1.0.0",
+    "spec_ref": "AI-0001-Part2 §4, runtime/openwebui/memory/memory_policy_v1.md"
+  },
+  "enabled": true,
+  "provider": "open_webui_native",
+  "loading": {
+    "strategy": "semantic_search",
+    "max_tokens": 500,
+    "top_k": 10,
+    "min_similarity": 0.75,
+    "load_on_session_start": true,
+    "announce_load": false
+  },
+  "tiers": {
+    "T1_identity": { "persist": true, "auto_evict": false },
+    "T2_domain": { "persist": true, "auto_evict": false },
+    "T3_project": { "persist": true, "auto_evict": true, "evict_after_days": 180 },
+    "T4_behavioral": { "persist": true, "auto_evict": false },
+    "T5_session": { "persist": false, "auto_evict": true },
+    "T6_transient": { "persist": false, "auto_evict": true, "ttl_hours": 24 }
+  },
+  "compression": {
+    "enabled": true,
+    "trigger_threshold_tokens": 10000,
+    "schedule": "off_peak"
+  },
+  "privacy": {
+    "scope": "user_id",
+    "cross_user_access": false
+  }
+}

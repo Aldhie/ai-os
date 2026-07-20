@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "artifact": "filters.json",
+    "version": "1.0.0",
+    "note": "Open WebUI filter pipeline definitions. Actual pipeline code is Sprint 1.1."
+  },
+  "filters": [
+    {
+      "id": "thinking_injector",
+      "name": "Thinking Mode Injector",
+      "type": "inlet",
+      "description": "Detects /think and /nothink prefixes; injects extra_body.thinking into request",
+      "enabled": true,
+      "status": "spec_complete_implementation_sprint_1_1",
+      "spec_ref": "runtime/openwebui/model/thinking_policy.md"
+    },
+    {
+      "id": "rpm_guard",
+      "name": "RPM Budget Guard",
+      "type": "inlet",
+      "description": "Tracks request count; blocks or warns when approaching 40 RPM or 1,000/day",
+      "enabled": true,
+      "status": "spec_complete_implementation_sprint_1_1",
+      "spec_ref": "AI-0005-FreeTier-Strategy.md"
+    },
+    {
+      "id": "memory_injector",
+      "name": "Memory Context Injector",
+      "type": "inlet",
+      "description": "Loads user memory and injects into system context per memory_loading_strategy.md",
+      "enabled": true,
+      "status": "spec_complete_implementation_sprint_1_1",
+      "spec_ref": "runtime/openwebui/memory/memory_loading_strategy.md"
+    },
+    {
+      "id": "profile_selector",
+      "name": "Dynamic Profile Selector",
+      "type": "inlet",
+      "description": "Detects intent and switches active parameter profile dynamically",
+      "enabled": false,
+      "status": "planned_sprint_1_2",
+      "spec_ref": "runtime/openwebui/profiles/"
+    }
+  ]
+}

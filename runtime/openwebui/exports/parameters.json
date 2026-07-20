@@ -1,0 +1,75 @@
+{
+  "_meta": {
+    "artifact": "parameters.json",
+    "version": "1.0.0",
+    "description": "Complete NIM API parameter matrix with compatibility status",
+    "spec_ref": "AI-0002-NVIDIA-NIM-API.md, AI-0003-OpenWebUI-Compatibility.md"
+  },
+  "supported": {
+    "temperature": {
+      "value": 1.0,
+      "type": "float",
+      "range": [0.0, 2.0],
+      "recommendation": "Keep at 1.0 per NVIDIA tuning guide"
+    },
+    "top_p": {
+      "value": 0.95,
+      "type": "float",
+      "range": [0.0, 1.0]
+    },
+    "max_tokens": {
+      "value": 4096,
+      "type": "integer",
+      "range": [1, 32768],
+      "note": "Increase per profile: coding=8192, architecture=8192"
+    },
+    "presence_penalty": {
+      "value": 0.0,
+      "type": "float",
+      "range": [-2.0, 2.0]
+    },
+    "frequency_penalty": {
+      "value": 0.0,
+      "type": "float",
+      "range": [-2.0, 2.0]
+    },
+    "stream": {
+      "value": true,
+      "type": "boolean"
+    },
+    "seed": {
+      "value": null,
+      "type": "integer",
+      "note": "Set for reproducibility in benchmarks"
+    },
+    "stop": {
+      "value": null,
+      "type": "array",
+      "warning": "Do NOT set to ['</s>'] — incompatible with Nemotron (ref: AI-0003 §4.4)"
+    }
+  },
+  "forbidden": {
+    "top_k": "Not supported by NIM API. Will cause error. (ref: AI-0003 §4.2)",
+    "repetition_penalty": "Not supported by NIM API. (ref: AI-0003 §4.2)",
+    "thinking_top_level": "Must be in extra_body only. (ref: AI-0003 §4.3)"
+  },
+  "extra_body": {
+    "thinking_standard": {
+      "thinking": {
+        "type": "enabled",
+        "budget_tokens": 10000
+      }
+    },
+    "thinking_deep": {
+      "thinking": {
+        "type": "enabled",
+        "budget_tokens": 32000
+      }
+    },
+    "thinking_disabled": {
+      "thinking": {
+        "type": "disabled"
+      }
+    }
+  }
+}

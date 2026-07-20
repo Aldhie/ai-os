@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "artifact": "model.json",
+    "sprint": "1.0",
+    "version": "1.0.0",
+    "description": "Open WebUI model configuration for NVIDIA Nemotron Ultra 550B via NIM",
+    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md, AI-0002-NVIDIA-NIM-API.md, AI-0003-OpenWebUI-Compatibility.md",
+    "import_path": "Open WebUI → Admin Panel → Models → Import"
+  },
+  "id": "nemotron-ultra-550b-aios",
+  "name": "Nemotron Ultra 550B — AI-OS",
+  "base_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "meta": {
+    "description": "NVIDIA Nemotron Ultra 550B via Cloud NIM, configured for AI Operating System runtime. Production-tuned with modular prompt architecture, memory orchestration, and Free Tier RPM optimization.",
+    "tags": ["nvidia", "nemotron", "nim", "production", "ai-os"],
+    "capabilities": {
+      "vision": false,
+      "citations": true,
+      "usage": true,
+      "tools": true
+    }
+  },
+  "params": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "max_tokens": 4096,
+    "stream": true,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "system": "[Compiled from runtime/openwebui/model/system_prompt_v1.md]"
+  },
+  "_warnings": [
+    "Do NOT set top_k — not supported by NIM (ref: AI-0003 §4.2)",
+    "Do NOT set thinking as top-level param — use extra_body only (ref: AI-0003 §4.3)",
+    "Do NOT add stop: ['</s>'] — LLaMA token, wrong model family (ref: AI-0003 §4.4)",
+    "temperature must be 1.0 per NVIDIA recommendation (ref: AI-0001 §3.2)"
+  ]
+}

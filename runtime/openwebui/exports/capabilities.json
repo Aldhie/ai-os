@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "artifact": "capabilities.json",
+    "version": "1.0.0",
+    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md £2"
+  },
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "architecture": "Mixture-of-Experts (MoE)",
+  "active_parameters": "55B of 550B",
+  "context_window": 128000,
+  "features": {
+    "extended_thinking": true,
+    "function_calling": true,
+    "streaming": true,
+    "structured_output": true,
+    "system_prompt": true,
+    "multi_turn": true,
+    "vision": false,
+    "image_generation": false,
+    "embeddings": false
+  },
+  "nim_endpoint": "https://integrate.api.nvidia.com/v1",
+  "nim_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "free_tier": {
+    "rpm": 40,
+    "rpd": 1000,
+    "note": "Ref: AI-0005-FreeTier-Strategy.md"
+  }
+}

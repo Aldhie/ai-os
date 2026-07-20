@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "profile": "minimal",
+    "description": "Greeting and simple factual queries. No thinking. Minimum latency.",
+    "use_when": ["greeting", "simple_fact", "ack"],
+    "version": "1.0.0"
+  },
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "temperature": 0.3,
+  "top_p": 0.9,
+  "max_tokens": 150,
+  "stream": true,
+  "extra_body": {
+    "thinking": {
+      "type": "disabled"
+    }
+  }
+}

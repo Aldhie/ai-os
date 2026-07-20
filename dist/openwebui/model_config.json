@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "description": "NIM model configuration for Open WebUI import",
+    "version": "1.0.0",
+    "last_updated": "2026-07-20"
+  },
+  "model_id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "base_url": "https://integrate.api.nvidia.com/v1",
+  "api_key_env": "NVIDIA_API_KEY",
+  "capabilities": {
+    "thinking": true,
+    "tool_use": true,
+    "streaming": true,
+    "context_window": 128000,
+    "max_output_tokens": 4096
+  },
+  "free_tier": {
+    "rpm_limit": 40,
+    "daily_request_limit": 1000,
+    "sla": "none",
+    "notes": "Free tier for development. No SLA. Rate limits apply."
+  },
+  "recommended_settings": {
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "stream": true,
+    "max_context_used": 32000,
+    "thinking_budget_default": 5000
+  }
+}

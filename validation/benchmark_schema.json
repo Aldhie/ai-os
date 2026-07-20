@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Aldhie/ai-os/validation/benchmark_schema.json",
+  "title": "AI-OS Benchmark Result Schema",
+  "description": "Machine-readable schema for all AI-OS benchmark evaluations",
+  "type": "object",
+  "required": ["run_id", "timestamp", "model", "scores", "metadata"],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Unique run identifier: {YYYY-MM-DD}_{model_short}_{profile}"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model identifier e.g. nvidia/llama-3.1-nemotron-ultra-253b-v1"
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["minimal", "standard", "deep", "maximum"]
+    },
+    "git_sha": {
+      "type": "string",
+      "description": "Repository commit SHA at time of benchmark"
+    },
+    "scores": {
+      "type": "object",
+      "required": ["capability", "latency", "reasoning", "tool_usage", "memory", "knowledge", "overall"],
+      "properties": {
+        "capability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "General task completion accuracy"
+        },
+        "latency": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Score based on latency vs target (100 = meets or beats target)"
+        },
+        "reasoning": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Multi-step reasoning accuracy"
+        },
+        "tool_usage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Correctness of tool selection and usage"
+        },
+        "memory": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Memory recall and integration accuracy"
+        },
+        "knowledge": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "RAG / knowledge base retrieval accuracy"
+        },
+        "overall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Weighted composite: capability 30%, reasoning 25%, latency 20%, knowledge 10%, tool 10%, memory 5%"
+        }
+      }
+    },
+    "latency_metrics": {
+      "type": "object",
+      "properties": {
+        "ttft_p50_ms": {"type": "number"},
+        "ttft_p95_ms": {"type": "number"},
+        "total_p50_ms": {"type": "number"},
+        "total_p95_ms": {"type": "number"},
+        "thinking_tokens_avg": {"type": "number"},
+        "output_tokens_avg": {"type": "number"}
+      }
+    },
+    "regression": {
+      "type": "object",
+      "properties": {
+        "previous_run_id": {"type": "string"},
+        "score_delta": {"type": "number"},
+        "regression_detected": {"type": "boolean"},
+        "regression_threshold": {"type": "number", "default": -3}
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "task_class", "prompt", "expected", "actual", "score", "pass"],
+        "properties": {
+          "id": {"type": "string"},
+          "task_class": {"type": "string"},
+          "prompt": {"type": "string"},
+          "expected": {"type": "string"},
+          "actual": {"type": "string"},
+          "score": {"type": "number", "minimum": 0, "maximum": 1},
+          "pass": {"type": "boolean"},
+          "latency_ms": {"type": "number"},
+          "thinking_tokens": {"type": "number"}
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "evaluator": {"type": "string"},
+        "environment": {"type": "string"},
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}

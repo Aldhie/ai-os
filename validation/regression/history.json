@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Regression history index for AI-OS benchmark runs",
+  "runs": [],
+  "baseline": null,
+  "notes": "Populate after first benchmark run. First run becomes the baseline."
+}

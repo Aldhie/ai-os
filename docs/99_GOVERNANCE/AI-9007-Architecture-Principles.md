@@ -12,94 +12,165 @@
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 | **Category** | Governance |
 
----
+## Cross-References
 
-## Cross References
-
-- [AI-0001 — Nemotron Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0006 — Architecture Decision Record](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md)
-- [AI-9008 — Engineering Decision Record Standard](AI-9008-Engineering-Decision-Record-Standard.md)
-
----
-
-## 1. Purpose
-
-Defines the non-negotiable architectural principles for the `ai-os` system. Every architecture decision, configuration change, and engineering document must be consistent with these principles. When a decision conflicts with a principle, the conflict must be explicitly documented as an ADR.
+| Document | Relationship |
+|----------|--------------|
+| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Primary model spec |
+| [AI-0006](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md) | ADR records |
+| [AI-9008](AI-9008-Engineering-Decision-Record-Standard.md) | ADR standard |
 
 ---
 
-## 2. Core Principles
+## 1. Core Architecture Philosophy
 
-### P-001: Evidence Before Configuration
+The `ai-os` system is built on **four non-negotiable principles**:
 
-> No configuration parameter is set without L1 or L2 evidence that it (a) is supported by the target model/API, and (b) improves the target metric.
+### P1: Separation of Concerns
+Every layer has exactly one responsibility:
+- **Model layer** (NIM): Token generation only
+- **Inference layer** (parameters): Control generation quality
+- **Integration layer** (Open WebUI): User interaction, tool execution, memory
+- **Knowledge layer** (RAG): Domain context injection
+- **Governance layer** (this repo): Engineering decisions and traceability
 
-**Rationale:** The AI-0003-Audit discovered that `top_k` and `repetition_penalty` were silently ignored by NVIDIA NIM, creating false confidence in the system configuration. This principle prevents recurrence.
+Violating this separation creates tight coupling that makes the system brittle to model upgrades.
 
-**Implication:** Every parameter in `configs/` must cite its evidence source in the `_metadata.audit` field.
+### P2: Evidence-First Engineering
+No engineering decision is made without a classification:
+- `[FACT: Official Doc]` — directly from vendor documentation
+- `[FACT: Benchmark]` — measured in our own benchmark suite
+- `[FACT: Experiment]` — validated in controlled experiment
+- `[HYPOTHESIS]` — reasonable belief awaiting validation
+- `[ASSUMPTION]` — known unknown being tracked
 
----
+Every `[HYPOTHESIS]` has a validation plan. Every `[ASSUMPTION]` has a risk mitigation.
 
-### P-002: Benchmark Before Production
+### P3: Traceability by Default
+Every configuration value traces to:
+1. A requirement (REQ-AI-XXXX)
+2. An engineering decision (AI-0006 ADR)
+3. An evidence source (Official Doc, Benchmark, or Experiment)
 
-> No feature is marked Active or promoted to production configuration until a benchmark test case (TC-xxx) has been executed and passed.
+An undocumented configuration value is a liability, not an asset.
 
-**Rationale:** Features marked [UNKNOWN] or [HYPOTHESIS] in AI-0003 represent operational risk. Benchmarks convert uncertainty into engineering fact.
-
-**Implication:** `capabilities.json` fields cannot be `enabled: true` without a corresponding `TC-xxx` result.
-
----
-
-### P-003: Explicit Reasoning Mode
-
-> Every agent, pipeline, and model profile must explicitly declare its reasoning mode (`/think`, `/nothink`, `medium_effort`, or `reasoning_budget`).
-
-**Rationale:** Default reasoning mode behavior is model-version dependent and can change with NIM updates. Undeclared mode = undefined behavior.
-
-**Evidence:** [NVIDIA NIM Official Docs](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b) — `enable_thinking` parameter is not on by default for all deployment configurations.
-
----
-
-### P-004: Separation of Concerns — OW vs NIM
-
-> Open WebUI features are classified as either OW-side (processed before the NIM API call) or NIM-side (sent in the API payload). These must never be conflated in documentation or configuration.
-
-**Rationale:** This distinction is the foundation of AI-0003 and prevents misattribution of failures. A RAG failure is an OW-side failure; a parameter rejection is a NIM-side failure.
-
----
-
-### P-005: Token Budget Awareness
-
-> Every prompt, RAG configuration, and conversation setting must be designed with explicit awareness of the token budget split.
-
-**Rationale:** Nemotron Ultra 550B defaults to 256K context on Cloud NIM (not 1M — see AI-0003-Audit NEW-04). Uncontrolled context growth causes request failures and unpredictable cost.
+### P4: Graceful Degradation
+The system is designed to fail predictably:
+- If NIM returns an unsupported parameter error → log, alert, continue with defaults
+- If embeddings endpoint is unavailable → fail with explicit error, not silent wrong behavior
+- If tool calling fails → return error to user, do not silently ignore
+- If context limit is exceeded → explicit truncation warning, not silent truncation
 
 ---
 
-### P-006: Pipeline Over Workaround
+## 2. System Architecture Diagram
 
-> When Open WebUI UI cannot expose a required NIM parameter (e.g., `extra_body.chat_template_kwargs`), the solution is a validated Pipeline, not an undocumented workaround.
-
-**Rationale:** Pipelines are first-class Open WebUI features with version control, logging, and testability. Undocumented workarounds accumulate as technical debt.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        USER LAYER                           │
+│  Browser / API Client / Automated Agent                     │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│                   OPEN WEBUI LAYER                          │
+│  ┌─────────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐  │
+│  │ Auth / RBAC │  │  Memory  │  │   RAG    │  │  Tools  │  │
+│  └──────┬──────┘  └────┬─────┘  └────┬─────┘  └────┬────┘  │
+│         └──────────────┴─────────────┴─────────────┘        │
+│                              │                              │
+│                    ┌─────────▼──────────┐                   │
+│                    │  Pipeline Layer    │                   │
+│                    │  (extra_body inj.) │                   │
+│                    └─────────┬──────────┘                   │
+└──────────────────────────────┼──────────────────────────────┘
+                               │ HTTPS POST /v1/chat/completions
+┌──────────────────────────────▼──────────────────────────────┐
+│              NVIDIA NIM CLOUD LAYER                         │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  integrate.api.nvidia.com/v1                        │    │
+│  │  Model: nvidia/nemotron-3-ultra-550b-a55b           │    │
+│  │  Backend: vLLM / SGLang / TRT-LLM (NVIDIA-managed) │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-### P-007: Fail Loudly, Not Silently
+## 3. Integration Architecture: Open WebUI × NIM
 
-> System configurations and pipelines must be designed to surface errors explicitly (400, 422, 429 from NIM) rather than allowing silent failures.
+```
+Open WebUI Request Pipeline:
 
-**Rationale:** The discovery that `top_k` is silently dropped by NIM illustrates the danger of silent failures. A system that fails loudly is debuggable; one that fails silently is not.
+User Input
+    │
+    ├─► Memory Retrieval (OW-side)
+    ├─► RAG Document Retrieval (OW-side)
+    ├─► Tool Pre-processing (OW-side)
+    │
+    ▼
+Pipeline Filter (if configured)
+    │
+    ├─► Inject extra_body.chat_template_kwargs [REQUIRED for tools + reasoning]
+    ├─► Validate parameters (remove top_k, repetition_penalty)
+    ├─► Apply profile parameters
+    │
+    ▼
+NIM API Call
+    │
+    ▼
+NIM Response
+    │
+    ├─► Stream SSE chunks (if stream: true)
+    ├─► Tool call execution (OW-side, if tool_calls in response)
+    ├─► Memory save (OW-side)
+    │
+    ▼
+User Display
+```
 
 ---
 
-### P-008: No Orphan Documents
+## 4. Reasoning Architecture
 
-> Every document must link to at least two other related documents. Every configuration file must cite its engineering spec.
+Nemotron Ultra 550B operates in two distinct modes. [FACT: Official Doc]
 
-**Rationale:** An isolated document is undiscoverable and unmaintainable. Cross-references create a navigable knowledge graph.
+```
+Reasoning ON (/think):
+  ┌─────────────────────────────────────────┐
+  │  <think>                                │
+  │    [Internal reasoning trace]           │  Hidden from user in standard UI
+  │    [Multi-step analysis]                │
+  │  </think>                               │
+  │  [Final answer]                         │  Visible to user
+  └─────────────────────────────────────────┘
+
+Reasoning OFF (/nothink):
+  ┌─────────────────────────────────────────┐
+  │  [Direct answer, no reasoning trace]    │  Faster, cheaper
+  └─────────────────────────────────────────┘
+```
+
+Token cost implication: reasoning traces consume tokens. [HYPOTHESIS: reasoning traces average 500-2000 tokens per complex query — needs EXP-0003 validation]
+
+---
+
+## 5. Decision Framework
+
+When making an architectural decision:
+
+```
+1. IDENTIFY: What problem are we solving?
+2. EVIDENCE: What do official docs say?
+3. OPTIONS: What are the alternatives?
+4. EVALUATE: What are the trade-offs?
+5. DECIDE: Which option and why?
+6. RECORD: ADR in AI-0006
+7. VALIDATE: Benchmark or experiment assigned
+8. REVIEW: Schedule for re-evaluation
+```
 
 ---
 
@@ -107,4 +178,4 @@ Defines the non-negotiable architectural principles for the `ai-os` system. Ever
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial architecture principles — derived from AI-0003-Audit findings |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial architecture principles |

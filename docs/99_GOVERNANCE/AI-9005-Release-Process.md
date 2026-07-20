@@ -12,55 +12,83 @@
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 | **Category** | Governance |
 
----
+## Cross-References
 
-## Cross References
-
-- [AI-9004 — Versioning Policy](AI-9004-Versioning-Policy.md)
-- [AI-9006 — Repository Structure](AI-9006-Repository-Structure.md)
+| Document | Relationship |
+|----------|--------------|
+| [AI-9004](AI-9004-Versioning-Policy.md) | Version scheme |
+| [AI-9006](AI-9006-Repository-Structure.md) | Structure it operates on |
+| [AI-9001](AI-9001-Documentation-Standard.md) | Document quality gate |
 
 ---
 
 ## 1. Release Types
 
-| Type | Trigger | Branch | Tag Format |
-|------|---------|--------|------------|
-| Configuration Release | Config files updated and validated | `main` | `cfg-v1.1.0` |
-| Documentation Release | Major doc update or new spec | `main` | `docs-v1.x.0` |
-| Benchmark Release | New benchmark results committed | `main` | `bench-v1.x.0` |
-| Architecture Release | New ADR or major spec change | `main` | `arch-v1.x.0` |
+| Type | Trigger | Scope |
+|------|---------|-------|
+| **Patch Release** | Config fixes, doc corrections | `configs/`, typo fixes |
+| **Minor Release** | New experiments, new benchmarks | `docs/05_EXPERIMENTS/`, `benchmark/` |
+| **Major Release** | Architecture changes, new documents | All `docs/00_ENGINEERING/` changes |
+| **Emergency Fix** | Critical finding validation | Immediate push to `main` |
 
 ---
 
 ## 2. Release Checklist
 
-Before any release tag is created:
-
+### Pre-Release
 ```
-[ ] All documents in scope have Status: Active (not Draft)
-[ ] All claims marked [HYPOTHESIS] have an assigned EXP-xxx
-[ ] All items marked [UNKNOWN] have an assigned TC-xxx
-[ ] No prohibited patterns (see AI-9001 §10)
-[ ] CHANGELOG.md updated
+[ ] All changed documents pass AI-9001 review checklist
+[ ] No Draft documents cited as authoritative sources
 [ ] Cross-references verified (no broken links)
-[ ] Configuration files pass syntax validation
-[ ] Benchmark results for changed configs are recorded
+[ ] Changelog updated in all modified documents
+[ ] configs/ versions bumped if changed
+[ ] REQ-INDEX updated if requirements changed
+```
+
+### Release
+```
+[ ] Commit message follows convention: type(scope): description
+[ ] Push to main branch
+[ ] Git tag created: repo-vX.Y.Z
+[ ] AUDIT document updated with release date
+```
+
+### Post-Release
+```
+[ ] Brain Memory updated with key decisions (via MCP)
+[ ] Any new open benchmarks logged in AI-0004
+[ ] Any new open experiments logged in experiment index
 ```
 
 ---
 
-## 3. Hotfix Process
+## 3. Commit Message Convention
 
-For critical fixes (incorrect engineering claim, broken config):
+```
+type(scope): description [version]
+```
 
-1. Create issue with label `critical-finding`
-2. Fix directly on `main` with commit type `fix:`
-3. Reference the finding ID in commit message: `fix(params): remove top_k — confirmed unsupported (AI-0003-Audit R-01)`
-4. Update affected document version (PATCH bump)
-5. Update Risk Register if finding was a known risk
+| Type | When |
+|------|------|
+| `feat` | New document or feature |
+| `fix` | Correction to existing content |
+| `refactor` | Structural reorganization |
+| `docs` | Documentation-only change |
+| `benchmark` | Benchmark test case changes |
+| `config` | Configuration file changes |
+| `exp` | Experiment document changes |
+| `governance` | Governance document changes |
+
+Examples:
+```
+feat(engineering): add AI-0007 agent workflow spec v1.0.0
+fix(config): remove top_k and repetition_penalty from parameters.json v1.1.0
+benchmark(reasoning): add TC-0001 through TC-0003 for reasoning category
+refactor: upgrade repository to production architecture
+```
 
 ---
 

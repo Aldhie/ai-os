@@ -12,161 +12,144 @@
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 | **Category** | Governance |
+| **Evidence Level** | Official Doc + Experiment |
 
----
+## Cross-References
 
-## Cross References
-
-- [AI-9001 — Documentation Standard](AI-9001-Documentation-Standard.md)
-- [AI-0001 — Nemotron Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0002 — NVIDIA NIM API Reference](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md)
-- [EXP-0004 — System Prompt Experiment](../05_EXPERIMENTS/EXP-0004-SystemPrompt.md)
-- [prompts/](../../prompts/)
+| Document | Relationship |
+|----------|--------------|
+| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Model capabilities spec |
+| [AI-0002](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md) | API parameters |
+| [AI-9001](AI-9001-Documentation-Standard.md) | Parent standard |
+| [EXP-0004](../05_EXPERIMENTS/EXP-0004-SystemPrompt.md) | System prompt experiments |
+| [EXP-0003](../05_EXPERIMENTS/EXP-0003-Thinking.md) | Thinking mode experiments |
 
 ---
 
 ## 1. Purpose
 
-Defines standards for authoring, versioning, and validating system prompts for Nemotron Ultra 550B via NVIDIA Cloud NIM. Prompt engineering decisions have direct impact on reasoning quality, token consumption, and agent behavior. Every prompt in this repository is a production artifact, not a scratchpad.
+This standard defines the engineering rules for all prompts in `Aldhie/ai-os`. Prompts are treated as **software artifacts** with version control, testing, and quality requirements.
 
 ---
 
-## 2. Prompt Classification
+## 2. Nemotron Ultra 550B — Model-Specific Rules
 
-| Type | Description | Location |
-|------|-------------|----------|
-| System Prompt | Model persona and behavioral contract | `prompts/system/` |
-| Task Prompt | Specific task instruction template | `prompts/tasks/` |
-| RAG Prompt | Context injection template | `prompts/rag/` |
-| Tool Prompt | Tool selection and format guidance | `prompts/tools/` |
-| Reasoning Control | Thinking mode directives | Inline in system prompt |
+Based on [FACT: Official Doc — NVIDIA NIM API Reference]:
+
+### 2.1 Thinking Mode Control
+
+| Method | Mechanism | Use When |
+|--------|-----------|----------|
+| System prompt `/think` | `{"role": "system", "content": "/think"}` | Default reasoning ON |
+| System prompt `/nothink` | `{"role": "system", "content": "/nothink"}` | Disable reasoning |
+| `extra_body` (Pipeline only) | `{"chat_template_kwargs": {"enable_thinking": true}}` | Programmatic control |
+| `medium_effort` (Pipeline only) | `{"chat_template_kwargs": {"medium_effort": true}}` | Token-efficient reasoning |
+
+**Rule:** Never mix `/think` and `/nothink` in the same system prompt. The last directive wins.
+
+### 2.2 Recommended Base Parameters
+
+[FACT: Official Doc — NVIDIA NIM examples use `temperature=1.0, top_p=0.95` for all tasks]
+
+```json
+{
+ "temperature": 1.0,
+ "top_p": 0.95
+}
+```
+
+**Forbidden parameters** (silently ignored by NIM):
+- `top_k` — not supported [FACT: Official Doc]
+- `repetition_penalty` — not supported [FACT: Official Doc]
+
+### 2.3 System Prompt Architecture
+
+```
+[Role Definition]
+[Thinking Mode: /think or /nothink]
+[Behavioral Constraints]
+[Output Format]
+[Domain Context if applicable]
+```
+
+Maximum system prompt: 500 tokens (reserve budget). [HYPOTHESIS: Longer system prompts reduce effective reasoning budget — needs EXP-0004 validation]
 
 ---
 
-## 3. Reasoning Mode Control — Documented Methods
+## 3. Prompt File Naming Convention
 
-> **Evidence Level: L1** — Source: [NVIDIA NIM Official Docs](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b)
-
-### Method 1: System Prompt Token (Primary Open WebUI Method)
-
-```python
-# Reasoning ON
-{"role": "system", "content": "You are a helpful assistant. /think"}
-
-# Reasoning OFF
-{"role": "system", "content": "You are a helpful assistant. /nothink"}
 ```
-
-### Method 2: `extra_body.chat_template_kwargs` (Pipeline Method)
-
-```python
-# Full reasoning
-extra_body={"chat_template_kwargs": {"enable_thinking": True}}
-
-# Medium effort — RECOMMENDED as starting point
-extra_body={"chat_template_kwargs": {"enable_thinking": True, "medium_effort": True}}
-
-# Reasoning OFF
-extra_body={"chat_template_kwargs": {"enable_thinking": False}}
-```
-
-### Method 3: `reasoning_budget` Hard Cap
-
-```python
-# Hard cap on reasoning trace tokens (closes trace at next newline before budget)
-result = client.chat_completion(
-    model="nvidia/nemotron-3-ultra-550b-a55b",
-    messages=[...],
-    reasoning_budget=512,
-    max_tokens=1024,
-)
-```
-
-> **Warning:** If no newline found within 500 tokens of budget, trace closes abruptly.
-
-### Method 4: Force Non-Empty Content (Coding Agents)
-
-```python
-# Required for coding agents to prevent content: null responses
-extra_body={"chat_template_kwargs": {
-    "enable_thinking": True,
-    "force_nonempty_content": True
-}}
+prompts/
+ system/
+ [profile-name]-system.md     # e.g., reasoning-system.md
+ task/
+ [task-name]-task.md          # e.g., code-review-task.md
+ few-shot/
+ [task-name]-fewshot.md       # e.g., classification-fewshot.md
 ```
 
 ---
 
-## 4. System Prompt Template Standard
+## 4. Prompt Version Header
 
-Every system prompt file must:
-
-1. Declare its reasoning mode: `/think` or `/nothink`
-2. Declare its intended agent profile (`reasoning`, `creative`, `code`, `general`)
-3. Include a version comment
-4. Be benchmarked against EXP-0004 before promotion to Active
-
-### Example Structure
+Every prompt file MUST include:
 
 ```markdown
-<!-- Prompt ID: SP-001 | Version: 1.0.0 | Profile: reasoning | Mode: /think -->
-You are an expert AI assistant specializing in [domain]. /think
-
-You must:
-1. [Behavioral directive 1]
-2. [Behavioral directive 2]
-
-You must NOT:
-1. [Prohibition 1]
-
-Output Format: [Specification]
+---
+Prompt ID: PROMPT-[XXXX]
+Version: X.Y.Z
+Profile: [general / reasoning / code / creative / medium_effort]
+Thinking Mode: [on / off / medium_effort]
+Temperature: [value]
+Top-P: [value]
+Max Tokens: [value]
+Last Validated: [YYYY-MM-DD]
+Benchmark: [BM-XX or PENDING]
+---
 ```
 
 ---
 
-## 5. Token Budget Planning
+## 5. Prompt Quality Criteria
 
-> **Evidence Level: L1** — Context window default is 256K tokens on Cloud NIM.
-
-For every system prompt, calculate the budget split:
-
-| Component | Budget (tokens) | Configurable |
-|-----------|----------------|--------------|
-| System Prompt | ≤ 500 | Yes |
-| Conversation History | ≤ 8,192 | Yes |
-| RAG Context | ≤ 4,096 | Yes |
-| Output Reserved | ≤ 4,096 | Yes |
-| **Total Used** | **≤ 16,884** | — |
-| **Available Buffer** | **~239,116** | — |
-
-For long-context tasks, expand `RAG Context` up to 128K tokens while monitoring cost.
+| Criterion | Standard |
+|-----------|----------|
+| Specificity | Every instruction is unambiguous |
+| Completeness | No implicit expectations |
+| Testability | Has at least one benchmark TC |
+| Mode declaration | Explicit thinking mode |
+| Format declaration | Explicit output format |
+| Token efficiency | No unnecessary verbose phrases |
 
 ---
 
-## 6. Prompt Versioning
+## 6. Anti-Patterns
 
-All prompts follow SemVer:
-- **Major:** Behavioral change (different task, different persona)
-- **Minor:** Quality improvement (better instruction, added constraint)
-- **Patch:** Typo fix, formatting fix
-
-Prompts must be committed with a message format:
-```
-prompt(SP-001): [description of change] — profile:reasoning v1.1.0
-```
+| Anti-Pattern | Problem | Fix |
+|-------------|---------|-----|
+| `Be helpful and accurate` | Vague — model default anyway | Specify exact behavior |
+| `Think step by step` | Redundant with `/think` mode | Remove, use system directive |
+| Mixed `/think` + `/nothink` | Undefined behavior | Choose one |
+| Prompt > 1000 tokens | Exceeds system prompt budget | Compress or move to knowledge base |
+| No output format | Model chooses format | Specify markdown/json/plain |
+| `Answer in any language` | Inconsistent UX | Specify language policy |
 
 ---
 
-## 7. Prompt Anti-Patterns (Prohibited)
+## 7. Prompt Testing Requirements
 
-| Anti-Pattern | Problem | Correct Approach |
-|--------------|---------|------------------|
-| `Be helpful and harmless` | Too vague | Specify exact behavioral constraints |
-| `Think step by step` | Redundant with `/think` | Remove — use `/think` token instead |
-| `As an AI language model...` | Role confusion | Define specific persona |
-| Prompt > 1000 tokens for simple tasks | Token waste | Audit and trim |
-| No reasoning mode declaration | Undefined behavior | Always declare `/think` or `/nothink` |
+Before any system prompt is promoted to `Active`:
+
+```
+[ ] Runs successfully on at least 3 test cases
+[ ] Thinking mode behavior verified (on/off as intended)
+[ ] Output format is consistent
+[ ] Token count within budget
+[ ] Benchmark TC assigned
+[ ] No forbidden parameters referenced
+```
 
 ---
 
@@ -174,4 +157,4 @@ prompt(SP-001): [description of change] — profile:reasoning v1.1.0
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial prompt engineering standard — incorporates AI-0003-Audit findings |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial prompt engineering standard |

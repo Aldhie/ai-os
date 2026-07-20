@@ -12,94 +12,94 @@
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 | **Category** | Governance |
 
+## Cross-References
+
+| Document | Relationship |
+|----------|--------------|
+| [AI-9001](AI-9001-Documentation-Standard.md) | Depends on version scheme |
+| [AI-9005](AI-9005-Release-Process.md) | Implements version bump process |
+
 ---
 
-## Cross References
+## 1. Semantic Versioning for Engineering Documents
 
-- [AI-9005 — Release Process](AI-9005-Release-Process.md)
-- [AI-9006 — Repository Structure](AI-9006-Repository-Structure.md)
-
----
-
-## 1. Semantic Versioning (SemVer)
-
-All documents, configurations, and prompts use [SemVer 2.0.0](https://semver.org/):
+All documents and configuration files use **Semantic Versioning (SemVer)**:
 
 ```
 MAJOR.MINOR.PATCH
 ```
 
-| Change Type | Version Bump | Example Trigger |
-|-------------|-------------|-----------------|
-| Breaking change, structural rewrite | MAJOR | Removing a section, changing document scope |
-| New content, new section, new finding | MINOR | Adding benchmark results, new risk items |
-| Typo, formatting, link fix | PATCH | Correcting URL, fixing table alignment |
+| Component | Increment When |
+|-----------|----------------|
+| `MAJOR` | Breaking change to engineering claims, structure, or decisions |
+| `MINOR` | New content added, existing content expanded |
+| `PATCH` | Corrections, typo fixes, clarifications without new information |
 
 ---
 
-## 2. Git Commit Message Convention
+## 2. Version States
 
-Format: `<type>(<scope>): <description>`
+| Version Range | State | Meaning |
+|---------------|-------|---------|
+| `0.x.y` | Draft | Content not yet validated |
+| `1.0.0` | Stable | First validated production version |
+| `≥ 1.0.0` | Production | Can be cited in other documents |
+| `DEPRECATED` | Legacy | Superseded; do not use for new work |
 
-| Type | When to Use |
-|------|-------------|
-| `feat` | New document, new feature, new benchmark |
-| `fix` | Correcting incorrect engineering claim |
-| `refactor` | Restructuring without content change |
-| `docs` | Documentation improvement |
-| `benchmark` | Adding or updating benchmark results |
-| `experiment` | Adding or updating experiment records |
-| `config` | Configuration file changes |
-| `prompt` | Prompt file changes |
-| `chore` | Maintenance (dependency updates, CI) |
-
-**Examples:**
-```
-feat(AI-0003): add function calling compatibility matrix
-fix(configs): remove top_k parameter — not supported by NIM (AI-0003-Audit)
-benchmark(TC-NIM-001): record initial tool calling round-trip results
-experiment(EXP-0001): complete temperature sweep results
-```
+**Rule:** Documents in state `0.x.y` MUST NOT be cited as authoritative sources in other documents.
 
 ---
 
-## 3. Configuration File Versioning
+## 3. Version Bump Protocol
 
-All configuration files must include a `_metadata` block:
+### MAJOR bump triggers:
+- An existing engineering claim is proven wrong by benchmark or experiment
+- Document structure is significantly reorganized
+- A critical finding invalidates a previous decision
+
+### MINOR bump triggers:
+- New section added
+- New benchmark results added
+- New experiments added
+- Existing content expanded with new evidence
+
+### PATCH bump triggers:
+- Typo or grammar correction
+- Metadata update (date, owner)
+- Cross-reference link updated
+
+---
+
+## 4. Configuration File Versioning
+
+All JSON/YAML configuration files MUST include:
 
 ```json
 {
-  "_metadata": {
-    "version": "1.1.0",
-    "status": "active",
-    "audit": "AI-0003-Audit v1.0 — 2026-07-20",
-    "description": "Description of this config",
-    "last_updated": "2026-07-20",
-    "owner": "Aldhie",
-    "changelog": [
-      {"version": "1.1.0", "date": "2026-07-20", "changes": "Removed top_k, repetition_penalty. Fixed temperature to 1.0."}
-    ]
-  }
+ "_metadata": {
+ "version": "X.Y.Z",
+ "status": "draft | active | deprecated",
+ "last_updated": "YYYY-MM-DD",
+ "owner": "[username]",
+ "changelog": [
+ {"version": "1.0.0", "date": "YYYY-MM-DD", "changes": "[description]"}
+ ]
+ }
 }
 ```
 
 ---
 
-## 4. Document ID Assignment
+## 5. Git Tag Convention
 
-| Range | Series | Purpose |
-|-------|--------|---------|
-| AI-0001 – AI-0099 | Engineering Specs | Architecture, model, API, compatibility |
-| AI-0100 – AI-0199 | Configuration Docs | Runtime config documentation |
-| AI-0200 – AI-0299 | Runbooks | Operational procedures |
-| EXP-0001 – EXP-0099 | Experiments | Empirical investigation records |
-| TC-xxxx | Test Cases | Benchmark test cases (by category) |
-| ADR-0001 – ADR-0099 | Architecture Decisions | One per major decision |
-| REQ-AI-0001 – REQ-AI-9999 | Requirements | System requirements with traceability |
-| AI-9001 – AI-9099 | Governance | Standards and policies |
+```
+repo-vX.Y.Z — Full repository milestone release
+doc/AI-XXXX-vX.Y.Z — Individual document version tag
+benchmark/CATEGORY-vX.Y.Z — Benchmark suite version tag
+```
 
 ---
 

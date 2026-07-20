@@ -12,153 +12,219 @@
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 | **Category** | Governance |
 
----
+## Cross-References
 
-## Cross References
-
-- [AI-9001 — Documentation Standard](AI-9001-Documentation-Standard.md)
-- [AI-9003 — Prompt Engineering Standard](AI-9003-Prompt-Engineering-Standard.md)
-- [AI-0004 — Benchmark Index](../00_ENGINEERING/AI-0004-Benchmark.md)
-- [EXP-0001 to EXP-0010](../05_EXPERIMENTS/)
+| Document | Relationship |
+|----------|--------------|
+| [AI-9001](AI-9001-Documentation-Standard.md) | Parent standard |
+| [AI-9003](AI-9003-Prompt-Engineering-Standard.md) | Prompt format for benchmarks |
+| [AI-0004](../00_ENGINEERING/AI-0004-Benchmark.md) | Benchmark execution records |
+| [benchmark/](../../benchmark/) | All benchmark test cases |
 
 ---
 
 ## 1. Purpose
 
-Defines the mandatory structure, scoring methodology, and execution process for all benchmark test cases in `benchmark/tests/`. Benchmarks are the empirical foundation of every engineering decision. A claim without a benchmark is a hypothesis; a hypothesis without a benchmark is folklore.
+This standard defines the mandatory structure, scoring methodology, and lifecycle for all benchmark test cases in `Aldhie/ai-os`. Benchmarks are the **primary mechanism** for converting hypotheses into validated engineering facts.
+
+**Engineering Principle:** A claim that cannot be benchmarked is an assumption. An assumption that is not tracked is a risk.
 
 ---
 
-## 2. Test Case Mandatory Structure
+## 2. Benchmark Categories
 
-Every `TC-xxxx.md` file must contain all of the following sections:
+| Category | Path | Scope |
+|----------|------|-------|
+| `discussion` | `benchmark/tests/discussion/` | General conversational quality |
+| `reasoning` | `benchmark/tests/reasoning/` | Multi-step logical reasoning |
+| `planning` | `benchmark/tests/planning/` | Task planning and decomposition |
+| `architecture` | `benchmark/tests/architecture/` | System design and ADR quality |
+| `coding` | `benchmark/tests/coding/` | Code generation and debugging |
+| `debugging` | `benchmark/tests/debugging/` | Bug identification and resolution |
+| `hospitality` | `benchmark/tests/hospitality/` | Domain-specific: hospitality industry |
+| `business` | `benchmark/tests/business/` | Business analysis and strategy |
+| `docker` | `benchmark/tests/docker/` | Containerization and deployment |
+| `openwebui` | `benchmark/tests/openwebui/` | Open WebUI integration behavior |
+| `nim` | `benchmark/tests/nim/` | NVIDIA NIM API behavior |
+| `memory` | `benchmark/tests/memory/` | Long-term memory and recall |
+| `rag` | `benchmark/tests/rag/` | Retrieval-Augmented Generation |
+
+---
+
+## 3. Mandatory Test Case Structure
+
+Every test case file MUST follow this exact template:
 
 ```markdown
-# TC-[CATEGORY]-[NUMBER]: [Title]
+# [CATEGORY]-TC-[XXXX]: [Short Title]
+
+---
 
 ## Metadata
+
 | Field | Value |
 |-------|-------|
-| Test ID | TC-[CATEGORY]-[NUMBER] |
-| Category | [discussion/reasoning/planning/...] |
-| Difficulty | Easy / Medium / Hard / Expert |
-| Required Capability | [tool_calling / reasoning / RAG / ...] |
-| Status | Pending / Running / Complete |
-| Last Run | [ISO 8601 date or N/A] |
-| References | [AI-xxx links] |
+| **TC ID** | [CATEGORY]-TC-[XXXX] |
+| **Category** | [category] |
+| **Difficulty** | [Trivial / Easy / Medium / Hard / Expert] |
+| **Required Capability** | [list of model capabilities tested] |
+| **Status** | [Pending / Running / Complete / Retired] |
+| **Created** | [YYYY-MM-DD] |
+| **Last Run** | [YYYY-MM-DD or N/A] |
+| **References** | [links to relevant docs, APIs, papers] |
+
+---
 
 ## Objective
-[One sentence: what specifically is being measured]
+
+[1-2 sentences: what specific behavior this test validates]
+
+---
+
+## Hypothesis
+
+[Specific, falsifiable claim: "The model will X when given Y"]
+
+---
 
 ## Question / Prompt
-[Exact prompt sent to the model — no paraphrase]
 
-## System Prompt Used
-[Exact system prompt, or "none"]
+```
+[Exact prompt text that will be sent to the model]
+```
 
-## Parameters Used
+---
+
+## Environment
+
 | Parameter | Value |
-| temperature | 1.0 |
-| top_p | 0.95 |
-| max_tokens | [N] |
-| thinking | on / off / medium_effort |
+|-----------|-------|
+| **Model** | nvidia/nemotron-3-ultra-550b-a55b |
+| **Temperature** | [value] |
+| **Top-P** | [value] |
+| **Max Tokens** | [value] |
+| **Thinking Mode** | [on / off / medium_effort] |
+| **System Prompt** | [text or reference] |
+| **Open WebUI Version** | [version] |
+| **NIM Endpoint** | https://integrate.api.nvidia.com/v1 |
+
+---
 
 ## Expected Behavior
-[Precise description of what a correct response contains]
+
+[Precise description of what a correct response looks like]
+
+---
 
 ## Evaluation Criteria
-| Criterion | Weight | Pass Condition |
-|-----------|--------|----------------|
+
+| Criterion | Weight | Description |
+|-----------|--------|-------------|
+| [criterion 1] | [0-100] | [what counts as passing] |
+| [criterion 2] | [0-100] | [what counts as passing] |
+
+---
 
 ## Scoring
-| Score | Condition |
-|-------|----------|
-| 5 | All criteria met; response is exemplary |
-| 4 | All criteria met; minor quality issues |
-| 3 | Most criteria met; one significant gap |
-| 2 | Partial; multiple gaps |
-| 1 | Minimal; major failure |
-| 0 | Complete failure or harmful output |
 
-## Failure Condition
-[Exact condition under which the test is marked FAIL]
+| Score | Label | Meaning |
+|-------|-------|---------|
+| 90-100 | PASS | Meets all criteria |
+| 70-89 | PARTIAL | Meets major criteria, misses minor |
+| 50-69 | WEAK | Partially correct, significant gaps |
+| 0-49 | FAIL | Does not meet criteria |
+
+---
 
 ## Success Condition
-[Exact condition under which the test is marked PASS — minimum score 3]
+
+[Score ≥ X AND specific observable output Y]
+
+---
+
+## Failure Condition
+
+[Score < X OR observable failure pattern Z]
+
+---
 
 ## Actual Result
-[Filled in after execution — verbatim or summarized response]
 
-## Score Achieved
-[Number 0–5]
+> Status: PENDING
+
+```
+[Actual model output when run]
+```
+
+---
+
+## Score
+
+| Criterion | Score | Notes |
+|-----------|-------|-------|
+| [criterion 1] | PENDING | |
+
+**Total Score: PENDING**
+
+---
 
 ## Analysis
-[Engineering analysis of result]
+
+[What the result reveals about model capability]
+
+---
+
+## Conclusion
+
+[Pass/Fail verdict with evidence-tagged claim]
+
+---
 
 ## Decision
-[What engineering decision follows from this result]
+
+[Engineering action taken based on result]
+
+---
+
+## References
+
+- [links]
 ```
 
 ---
 
-## 3. Benchmark Categories
+## 4. Difficulty Scale
 
-| Category | Directory | Measures |
-|----------|-----------|----------|
-| `discussion` | `benchmark/tests/discussion/` | General reasoning, conversation quality |
-| `reasoning` | `benchmark/tests/reasoning/` | Multi-step reasoning, chain-of-thought |
-| `planning` | `benchmark/tests/planning/` | Task decomposition, agentic planning |
-| `architecture` | `benchmark/tests/architecture/` | System design quality |
-| `coding` | `benchmark/tests/coding/` | Code correctness, debugging |
-| `debugging` | `benchmark/tests/debugging/` | Root cause analysis, error diagnosis |
-| `hospitality` | `benchmark/tests/hospitality/` | Domain knowledge (Ezy Stay) |
-| `business` | `benchmark/tests/business/` | Business analysis, strategy |
-| `docker` | `benchmark/tests/docker/` | Container engineering |
-| `openwebui` | `benchmark/tests/openwebui/` | Open WebUI feature behavior |
-| `nim` | `benchmark/tests/nim/` | NVIDIA NIM API behavior |
-| `memory` | `benchmark/tests/memory/` | Memory retention, recall accuracy |
-| `rag` | `benchmark/tests/rag/` | RAG retrieval quality |
+| Level | Meaning | Expected Pass Rate |
+|-------|---------|-------------------|
+| `Trivial` | Any competent LLM should pass | > 95% |
+| `Easy` | Standard capability, well-documented | > 80% |
+| `Medium` | Requires reasoning or domain knowledge | 60-80% |
+| `Hard` | Requires advanced reasoning + domain expertise | 40-60% |
+| `Expert` | State-of-the-art capability required | < 40% |
 
 ---
 
-## 4. Scoring Methodology
+## 5. Benchmark Execution Protocol
 
-### 4.1 Multi-Criterion Scoring
-
-For each test case with `n` criteria:
-
-```
-Final Score = Σ(criterion_score × weight) / Σ(weights)
-```
-
-Where `criterion_score` is 0 (fail) or 1 (pass) per criterion, and `weight` is the assigned weight from the evaluation criteria table.
-
-### 4.2 Pass/Fail Threshold
-
-- **PASS:** Final Score ≥ 3.0 / 5.0 (60%)
-- **FAIL:** Final Score < 3.0 / 5.0
-- **CRITICAL FAIL:** Score = 0 or harmful output
-
-### 4.3 Benchmark Run Requirements
-
-A benchmark result is only valid if:
-- Run 3 times minimum (to account for model stochasticity at `temperature: 1.0`)
-- All 3 runs use identical parameters
-- Mean and variance reported
-- Run date and model version recorded
+1. **Pre-run:** Verify environment parameters match TC spec
+2. **Isolation:** Run each TC independently (no shared context)
+3. **Repetition:** For stochastic tests, run minimum 3 times and report median
+4. **Recording:** Copy exact model output verbatim into `Actual Result` section
+5. **Scoring:** Apply criteria independently before reading score
+6. **Post-run:** Update `Last Run` date and promote TC to `Complete`
+7. **Failure:** If FAIL, open a GitHub Issue tagged `benchmark-failure`
 
 ---
 
-## 5. Benchmark Traceability
+## 6. Benchmark-to-Requirement Linking
 
-Every benchmark must map to at least one of:
-- An engineering requirement (`REQ-AI-xxxx`)
-- A configuration parameter (in `configs/`)
-- An experiment (`EXP-xxxx`)
-- A risk item from the Risk Register
+Every benchmark TC MUST link to at least one requirement in [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md).
+
+Every requirement with `Verification Method: Benchmark` MUST have at least one TC assigned.
 
 ---
 

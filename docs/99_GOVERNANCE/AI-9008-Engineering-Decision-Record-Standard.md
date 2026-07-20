@@ -12,95 +12,111 @@
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
+| **Updated** | 2026-07-20 |
 | **Category** | Governance |
 
----
+## Cross-References
 
-## Cross References
-
-- [AI-9001 — Documentation Standard](AI-9001-Documentation-Standard.md)
-- [AI-9007 — Architecture Principles](AI-9007-Architecture-Principles.md)
-- [AI-0006 — Architecture Decision Record](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md)
+| Document | Relationship |
+|----------|--------------|
+| [AI-9001](AI-9001-Documentation-Standard.md) | Parent standard |
+| [AI-9007](AI-9007-Architecture-Principles.md) | Principles that drive ADRs |
+| [AI-0006](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md) | ADR register |
 
 ---
 
 ## 1. Purpose
 
-An Engineering Decision Record (EDR) captures a significant engineering decision: what was decided, why it was decided, what alternatives were considered, and what consequences follow. EDRs are immutable once Active — they are never edited, only superseded.
+An Engineering Decision Record (EDR) documents **why** an engineering decision was made, not just **what** was decided. EDRs prevent the same debates from recurring and enable future engineers to understand the context of decisions.
+
+**Engineering Principle:** The cost of re-litigating a past decision exceeds the cost of documenting it the first time.
 
 ---
 
-## 2. Mandatory EDR Template
+## 2. When to Write an EDR
+
+Write an EDR when:
+- Choosing between two or more valid technical approaches
+- Accepting a known limitation or risk
+- Overturning a previous decision based on new evidence
+- Making a decision that will be expensive to reverse
+- Establishing a new default or policy
+
+---
+
+## 3. EDR Template
 
 ```markdown
-# ADR-[NUMBER]: [Title]
+## EDR-[XXXX]: [Short Title]
 
-## Metadata
-| Field | Value |
-|-------|-------|
-| ADR ID | ADR-[NUMBER] |
-| Date | [ISO 8601] |
-| Status | Proposed / Accepted / Superseded / Deprecated |
-| Deciders | [Names] |
-| Technical Area | [API / Config / Prompt / Architecture / ...] |
+**Date:** YYYY-MM-DD
+**Status:** Proposed | Accepted | Deprecated | Superseded by EDR-XXXX
+**Owner:** [username]
 
-## Context
-[What situation forced this decision? Include relevant constraints.]
+### Context
 
-## Decision
-[What was decided, in a single clear sentence.]
+[What situation forced this decision? What were the constraints?]
 
-## Alternatives Considered
-| Option | Pros | Cons | Why Rejected |
-|--------|------|------|---------------|
+### Decision
 
-## Rationale
-[Why this option was selected over alternatives. Must reference evidence.]
+[What was decided, stated clearly and unambiguously]
 
-## Consequences
-### Positive
-- [Benefit 1]
+### Options Considered
 
-### Negative / Tradeoffs
-- [Tradeoff 1]
+| Option | Pros | Cons | Evidence |
+|--------|------|------|----------|
+| Option A | | | |
+| Option B | | | |
 
-### Neutral
-- [Side effect 1]
+### Rationale
 
-## Related Documents
-- [Link to relevant AI-xxxx, EXP-xxxx, TC-xxxx]
+[Why this option over the others. Must reference evidence.]
 
-## Superseded By
-[ADR-xxx — Title] or N/A
+### Consequences
+
+**Positive:**
+- [expected benefit 1]
+
+**Negative / Trade-offs:**
+- [expected cost or limitation 1]
+
+**Risks:**
+- [risk if decision proves wrong]
+
+### Validation Plan
+
+- Benchmark: [BM-XX or N/A]
+- Experiment: [EXP-XX or N/A]
+- Target Date: [YYYY-MM-DD]
+
+### References
+
+- [Official doc URL, paper, benchmark result]
 ```
 
 ---
 
-## 3. When to Create an EDR
+## 4. EDR Lifecycle
 
-Create an EDR when:
-- A new tool, model, or infrastructure component is adopted
-- A configuration is changed for a non-obvious reason
-- An audit finding results in a breaking change
-- Two valid approaches were considered and one was selected
-- A principle from AI-9007 is violated (requires explicit justification)
+```
+Proposed → Accepted → (optionally) Deprecated
+                              ↓
+                      Superseded by EDR-XXXX
+```
 
-**Do not** create an EDR for:
-- Typo fixes
-- Pure documentation improvements
-- Version bumps without behavioral change
+An EDR is never deleted. A superseded EDR is marked `Superseded by EDR-XXXX` and remains in the record as historical context.
 
 ---
 
-## 4. EDR Immutability Rule
+## 5. EDR Quality Rules
 
-Once an EDR has Status: `Accepted`, its content must not be modified. If the decision changes:
-1. Create a new ADR
-2. Set the old ADR Status to `Superseded`
-3. Link `Superseded By` to the new ADR
-
-This preserves the full decision history and makes the evolution of engineering thinking traceable.
+| Rule | Requirement |
+|------|-------------|
+| Every decision has evidence | At least one `[FACT]` or explicit `[HYPOTHESIS]` |
+| Options are evaluated | Minimum 2 options considered |
+| Consequences are honest | Both positive AND negative consequences documented |
+| Validation planned | Every `[HYPOTHESIS]` decision has a validation plan |
+| Cross-referenced | Linked from the engineering spec it affects |
 
 ---
 

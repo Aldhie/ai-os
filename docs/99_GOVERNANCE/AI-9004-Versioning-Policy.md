@@ -13,114 +13,96 @@
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Governance |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-9001](AI-9001-Documentation-Standard.md) | Documentation standard |
-| [AI-9005](AI-9005-Release-Process.md) | Release process |
-| [AI-9006](AI-9006-Repository-Structure.md) | Repository structure |
+- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
+- [AI-9005 Release Process](AI-9005-Release-Process.md)
+- [AI-9006 Repository Structure](AI-9006-Repository-Structure.md)
 
 ---
 
 ## 1. Purpose
 
-This document defines versioning rules for all artifacts in the `ai-os` repository: documents, configurations, system prompts, benchmark suites, and experiments.
+Defines semantic versioning rules for all documents, configurations, prompts, and benchmarks in this repository. Consistent versioning enables engineering traceability and safe rollback.
 
 ---
 
-## 2. Semantic Versioning (Documents)
+## 2. Semantic Versioning Schema
 
-All documents follow `MAJOR.MINOR.PATCH`:
+All versioned artifacts follow `MAJOR.MINOR.PATCH`:
 
-| Increment | Trigger | Example |
-|-----------|---------|--------|
-| **MAJOR** | Breaking change to configuration, behavior, or interface | Parameter removed, thinking mode default changed |
-| **MINOR** | New section added, new requirement added, new EDR added | New benchmark category, new compatibility row |
-| **PATCH** | Correction, clarification, typo fix, link update | Fixed broken link, corrected spec value |
+| Component | Increment When |
+|-----------|---------------|
+| `MAJOR` | Engineering decision changes; interface changes; incompatible structural change |
+| `MINOR` | New sections, new evidence, new requirements added |
+| `PATCH` | Typo fix, formatting, broken link repair, metadata update |
+
+### 2.1 Examples
+
+| Change | Before | After |
+|--------|--------|-------|
+| Discovered `top_k` is unsupported (breaking config change) | 0.1.0 | 1.0.0 |
+| Added `medium_effort` profile section | 1.0.0 | 1.1.0 |
+| Fixed typo in table | 1.1.0 | 1.1.1 |
+| Changed recommended temperature from 0.6 to 1.0 | 1.1.1 | 2.0.0 |
 
 ---
 
-## 3. Configuration Versioning
+## 3. Config File Versioning
 
-Configuration files in `configs/` follow a separate version tracked in a `metadata` block inside each config:
+All config files (`parameters.json`, `capabilities.json`, etc.) additionally carry:
 
 ```json
 {
-  "metadata": {
-    "version": "1.2.0",
-    "created": "2026-07-20",
-    "updated": "2026-07-20",
-    "owner": "Aldhie",
-    "changelog": [
-      {"version": "1.2.0", "date": "2026-07-20", "change": "Updated temperature to 1.0 per EXP-0001 results"}
-    ]
+  "_metadata": {
+    "version": "1.1.0",
+    "status": "active",
+    "previous_version": "1.0.0",
+    "breaking_changes": ["removed top_k", "removed repetition_penalty"],
+    "audit_reference": "AI-0003-Critical-Findings-Audit.md"
   }
 }
 ```
 
 ---
 
-## 4. Experiment Versioning
+## 4. Branch and Tag Strategy
 
-Experiments follow a lifecycle, not semantic versioning:
-
-| Status | Meaning |
+| Branch | Purpose |
 |--------|---------|
-| `Pending Execution` | Designed, not run |
-| `In Progress` | Currently being run |
-| `Completed` | Results recorded, analysis done |
-| `Superseded` | Replaced by newer experiment |
-| `Archived` | No longer relevant |
+| `main` | Production-equivalent. All documents are `Active` or `Review`. |
+| `draft/[topic]` | Work-in-progress documents. May contain `[ASSUMPTION]` tags. |
+| `experiment/[id]` | Active experiment branches. Merged when EXP document completed. |
 
-Experiment designs may be revised (MINOR/PATCH changes to the design document) before execution. After execution, only the Results and Analysis sections may be updated. Conclusions and Decisions are immutable once written.
-
----
-
-## 5. Benchmark TC Versioning
-
-Benchmark TCs are versioned independently. Results are IMMUTABLE once recorded.
-
-| Version Change | Trigger |
-|---------------|--------|
-| PATCH | Clarification to question wording that does not change difficulty |
-| MINOR | New evaluation criterion added |
-| MAJOR | Question changed materially — previous results are no longer comparable |
-
-When a TC increments MAJOR, all previous results are archived (not deleted) and labeled with the old version.
-
----
-
-## 6. Repository Release Versioning
-
-The repository itself is versioned via Git tags:
-
+Tags:
 ```
-v0.1.0   Initial structure
-v0.2.0   First benchmark suite
-v0.3.0   First experiment results
-v1.0.0   Production-ready: all TCs pass, all critical experiments complete
+v1.0.0          — Repository-level release
+doc/AI-0001-v2  — Document-specific version tag
+exp/EXP-0001    — Experiment execution snapshot
 ```
 
-See [AI-9005](AI-9005-Release-Process.md) for release criteria.
-
 ---
 
-## 7. Changelog Rules
+## 5. Deprecation Policy
 
-Every document MUST include a Changelog table as its LAST section:
+1. No document is deleted. Documents are marked `Deprecated`.
+2. Deprecated documents MUST contain a header pointing to the replacement:
 
 ```markdown
-## Changelog
-
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | YYYY-MM-DD | [author] | [description] |
+> ⚠️ DEPRECATED as of YYYY-MM-DD. Superseded by [AI-XXXX](link). This document is preserved for historical reference.
 ```
 
-Changelogs are append-only. Never delete changelog entries.
+3. Config keys deprecated in config files MUST be moved to a `_deprecated` block, not deleted:
+
+```json
+{
+  "_deprecated": {
+    "top_k": { "removed_version": "1.1.0", "reason": "Not supported by NVIDIA NIM", "reference": "AI-0003-Critical-Findings-Audit.md" },
+    "repetition_penalty": { "removed_version": "1.1.0", "reason": "Not supported by NVIDIA NIM", "reference": "AI-0003-Critical-Findings-Audit.md" }
+  }
+}
+```
 
 ---
 
@@ -128,4 +110,4 @@ Changelogs are append-only. Never delete changelog entries.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial versioning policy |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial release |

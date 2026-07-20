@@ -13,117 +13,117 @@
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Governance |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-9007](AI-9007-Architecture-Principles.md) | Principles that EDRs must implement |
-| [AI-0006](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md) | Active EDR log |
-| [AI-9001](AI-9001-Documentation-Standard.md) | Documentation standard |
+- [AI-9007 Architecture Principles](AI-9007-Architecture-Principles.md)
+- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
+- [AI-0006 Architecture Decision Record](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md)
 
 ---
 
 ## 1. Purpose
 
-This document defines the Engineering Decision Record (EDR) standard for the `ai-os` repository. An EDR is the authoritative record of a significant engineering decision: what was decided, why, what alternatives were considered, and what evidence supported the decision.
+Defines the mandatory structure for Engineering Decision Records (EDRs) in this repository. Every significant engineering decision — parameter choice, architecture pattern, integration approach, tool selection — requires an EDR.
 
 ---
 
 ## 2. When to Write an EDR
 
-Write an EDR when:
+An EDR is required when:
 
-| Trigger | Example |
-|---------|--------|
-| A configuration value changes from default | temperature: 0.6 → 1.0 |
-| A platform integration choice is made | Use Pipeline vs. system prompt for thinking control |
-| A benchmark reveals an unexpected result | temperature=1.0 scores lower than 0.6 on factual Q&A |
-| A previously-held assumption is invalidated | Memory injection at 50+ facts causes quality degradation |
-| A new capability is adopted or rejected | Tool calling: adopt/reject for primary profile |
+1. A configuration parameter is changed from default
+2. A new external service or API is integrated
+3. A previously used approach is abandoned
+4. An architecture principle (AI-9007) is deviated from
+5. A benchmark result contradicts previous assumptions
+6. A security-relevant decision is made
+7. A performance trade-off is accepted
+
+An EDR is NOT required for:
+- Typo fixes
+- Formatting changes
+- Adding documentation without changing behavior
+- Running a benchmark (use EXP-xxxx instead)
 
 ---
 
-## 3. EDR Structure
+## 3. EDR Template
 
-All EDRs MUST use this structure (stored in AI-0006):
+EDRs are stored in `AI-0006-Architecture-Decision-Record.md` as numbered sections. Each EDR follows:
 
 ```markdown
-### EDR-XXX: [Short Title]
+### EDR-NNNN: [Decision Title]
 
 **Date:** YYYY-MM-DD
-**Status:** Proposed / Accepted / Superseded / Rejected
-**Supersedes:** EDR-YYY (if applicable)
+**Status:** Proposed / Accepted / Superseded / Deprecated
+**Decider:** [name]
+**Supersedes:** [EDR-NNNN or None]
 
 #### Context
-[The situation and problem that required a decision. What was the constraint?]
+
+[What situation or problem required a decision? What constraints existed?]
 
 #### Decision
-[What was decided, in one clear sentence.]
+
+[What was decided? Be specific. Include exact parameter values, API choices, etc.]
 
 #### Alternatives Considered
+
 | Alternative | Reason Rejected |
 |-------------|----------------|
-| Option A | [reason] |
-| Option B | [reason] |
+| [Option A] | [Why not] |
+| [Option B] | [Why not] |
 
-#### Evidence
-[FACT/HYPOTHESIS/ASSUMPTION labels required]
-- [FACT: Benchmark] TC-XXXX score: ...
-- [HYPOTHESIS] Expected that ... — pending EXP-XXXX
+#### Rationale
+
+[Why was this decision made? What evidence supports it? Reference [FACT] tags.]
 
 #### Consequences
-| Consequence | Positive/Negative | Mitigated By |
-|-------------|-------------------|--------------|
-| ... | | |
 
-#### Validation
-[How will this decision be validated? Link to EXP or benchmark TC.]
+**Positive:**
+- [What improves]
 
-#### Changelog
-| Date | Change |
-|------|--------|
-| YYYY-MM-DD | Initial record |
+**Negative:**
+- [What gets worse or is lost]
+
+**Risks:**
+- [Known risks]
+
+#### Verification
+
+[How do we know this decision is correct? Which benchmark or experiment validates it?]
+
+#### References
+
+- [Official doc URL or experiment reference]
 ```
 
 ---
 
-## 4. EDR Numbering
+## 4. EDR Index Format
 
-| Range | Category |
-|-------|----------|
-| EDR-001 to EDR-099 | Model configuration decisions |
-| EDR-100 to EDR-199 | Platform integration decisions |
-| EDR-200 to EDR-299 | Benchmark framework decisions |
-| EDR-300 to EDR-399 | Memory and RAG decisions |
-| EDR-400 to EDR-499 | Agentic workflow decisions |
-| EDR-900 to EDR-999 | Governance and process decisions |
+`AI-0006` must maintain an index table at the top:
+
+```markdown
+## EDR Index
+
+| ID | Title | Status | Date | Decider |
+|----|-------|--------|------|---------|
+| EDR-0001 | Use temperature=1.0 not 0.6 | Accepted | 2026-07-20 | Aldhie |
+| EDR-0002 | Remove top_k from parameters.json | Accepted | 2026-07-20 | Aldhie |
+```
 
 ---
 
 ## 5. EDR Lifecycle
 
 ```
-Proposed → Accepted → (Superseded | Archived)
-     ↑              ↓
-   Rejected      Rejected (with reason)
+Proposed → Accepted → [Superseded]
+         → Rejected
 ```
 
-- **Proposed:** Written, not yet validated by experiment/benchmark
-- **Accepted:** Validated by evidence; configuration updated
-- **Superseded:** A newer EDR replaces this one; original kept
-- **Rejected:** Proposal was evaluated and not adopted; kept for learning
-
----
-
-## 6. EDR Immutability
-
-Once an EDR reaches **Accepted** status:
-- The **Decision** field is immutable
-- The **Evidence** field may be updated with new facts
-- The **Consequences** field may be annotated with observed outcomes
-- To change the decision: write a new EDR that supersedes this one
+Superseded EDRs are NOT deleted. The superseding EDR references the old one.
 
 ---
 
@@ -131,4 +131,4 @@ Once an EDR reaches **Accepted** status:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial EDR standard |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial release |

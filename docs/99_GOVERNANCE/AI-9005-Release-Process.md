@@ -13,91 +13,84 @@
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Governance |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-9004](AI-9004-Versioning-Policy.md) | Versioning rules |
-| [AI-9006](AI-9006-Repository-Structure.md) | Structure |
-| [AI-9002](AI-9002-Benchmark-Standard.md) | Benchmark requirements |
+- [AI-9004 Versioning Policy](AI-9004-Versioning-Policy.md)
+- [AI-9006 Repository Structure](AI-9006-Repository-Structure.md)
+- [AI-9002 Benchmark Standard](AI-9002-Benchmark-Standard.md)
 
 ---
 
 ## 1. Purpose
 
-This document defines the criteria, process, and gate controls for releasing a new version of the `ai-os` repository.
+Defines the process for releasing new versions of engineering configurations, prompts, and benchmark frameworks into the `main` branch.
 
 ---
 
-## 2. Release Levels
+## 2. Release Checklist
 
-| Release | Criteria |
-|---------|----------|
-| **PATCH** (0.0.x) | Documentation corrections, link fixes, result updates |
-| **MINOR** (0.x.0) | New benchmark TCs, new experiments, new governance docs, config updates |
-| **MAJOR** (x.0.0) | Production-ready milestone: see Section 3 |
+Before any commit to `main` that changes `Active` engineering documents or config files:
 
----
+### 2.1 Pre-Release
 
-## 3. Production Release Criteria (v1.0.0)
+- [ ] All changed documents have updated version numbers
+- [ ] All changed documents have updated changelog entries
+- [ ] All `[ASSUMPTION]` tags are still valid or escalated to benchmark items
+- [ ] No `TODO` without linked benchmark or experiment
+- [ ] All new facts cite official documentation or experiment ID
+- [ ] Cross-references verified — no broken links
+- [ ] Config files pass JSON validation
+- [ ] Any removed config keys are in `_deprecated` block
 
-The repository is considered production-ready when ALL of the following are complete:
+### 2.2 Benchmark Gate
 
-| Criterion | Status |
-|-----------|---------|
-| All critical experiments (EXP-0001 through EXP-0010) completed | PENDING |
-| All benchmark TCs pass (≥70/100) | PENDING |
-| AI-0001 through AI-0005 fully validated (no unresolved hypotheses) | PENDING |
-| configs/openwebui/parameters.json validated by benchmarks | PENDING |
-| No open HIGH priority issues in GitHub Issues | PENDING |
-| All cross-references in all documents are valid (no broken links) | PENDING |
-| Documentation standard (AI-9001) compliance checked for all docs | PENDING |
+For any change affecting model parameters or system prompts:
 
----
+- [ ] Minimum 1 benchmark test case re-run with new config
+- [ ] Result documented in relevant EXP-xxxx document
+- [ ] Score >= 3.0/5.0 or explicit exception documented
 
-## 4. Release Process Steps
+### 2.3 Commit Message Format
 
 ```
-1. Create release branch: release/vX.Y.Z
-2. Run full benchmark suite
-3. Verify all cross-references
-4. Update CHANGELOG.md with all changes
-5. Update version field in all modified documents
-6. Tag release: git tag vX.Y.Z
-7. Push tag to main
-8. Create GitHub Release with release notes
+<type>(<scope>): <summary>
+
+[optional body]
+
+[optional footer]
 ```
 
----
+Types:
+- `feat` — new capability or document
+- `fix` — correction of error or broken reference
+- `refactor` — restructuring without behavior change
+- `docs` — documentation update
+- `benchmark` — benchmark result recorded
+- `experiment` — experiment result recorded
+- `config` — configuration change
+- `governance` — governance document update
 
-## 5. Hotfix Process
-
-For critical fixes to `main` outside the normal release cycle:
-
+Examples:
 ```
-1. Create branch: hotfix/description
-2. Apply fix
-3. Verify benchmark TCs for affected area
-4. Fast-merge to main with commit message: hotfix: [description]
-5. Increment PATCH version
+docs(AI-0001): add reasoning_budget section — validated against NIM docs
+config(parameters): remove top_k and repetition_penalty — not supported by NIM [AI-0003-Audit]
+benchmark(TC-0001): record initial temperature experiment result — score 4/5
 ```
 
 ---
 
-## 6. Breaking Changes
+## 3. Repository Release Tags
 
-A change is considered breaking if it:
-- Changes default parameter values
-- Changes system prompt directive behavior
-- Changes benchmark scoring criteria
-- Renames document IDs or requirement IDs
+Repository-level releases are tagged when:
+- A complete audit cycle is completed
+- A major configuration version is deployed
+- A full experiment cycle (EXP-0001 through EXP-0010) is completed
 
-Breaking changes require:
-- EDR in AI-0006
-- MAJOR version increment
-- Migration notes in CHANGELOG
+```bash
+git tag -a v1.0.0 -m "Production architecture — complete engineering docs, governance, benchmarks"
+git push origin v1.0.0
+```
 
 ---
 
@@ -105,4 +98,4 @@ Breaking changes require:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial release process |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial release |

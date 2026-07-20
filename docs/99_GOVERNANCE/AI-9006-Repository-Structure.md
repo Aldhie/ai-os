@@ -13,41 +13,42 @@
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Governance |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-9001](AI-9001-Documentation-Standard.md) | Documentation standard |
-| [AI-9004](AI-9004-Versioning-Policy.md) | Versioning |
-| [AI-9005](AI-9005-Release-Process.md) | Release |
+- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
+- [AI-9004 Versioning Policy](AI-9004-Versioning-Policy.md)
+- [AI-9007 Architecture Principles](AI-9007-Architecture-Principles.md)
 
 ---
 
 ## 1. Purpose
 
-This document defines the authoritative directory structure for the `ai-os` repository and the purpose of each folder and file.
+Defines the canonical directory structure and naming conventions for `Aldhie/ai-os`. Every engineer working on this repository must follow this structure.
 
 ---
 
-## 2. Directory Tree
+## 2. Full Repository Map
 
 ```
-ai-os/
-├── README.md                          # Repository overview and quick start
-├── CHANGELOG.md                       # Repository-level changelog
+Aldhie/ai-os/
+│
+├── README.md                         ← Repository index and quick-start
+├── LICENSE
+├── .gitignore
+│
 ├── docs/
-│   ├── 00_ENGINEERING/                # Core engineering specifications
-│   │   ├── AI-0001-*.md               # Model engineering spec
-│   │   ├── AI-0002-*.md               # NIM API spec
-│   │   ├── AI-0003-*.md               # Open WebUI compatibility
-│   │   ├── AI-0003-Critical-*.md      # Compatibility audit findings
-│   │   ├── AI-0005-*.md               # Workflows
-│   │   ├── AI-0006-*.md               # Architecture Decision Records
-│   │   ├── REQ-INDEX.md               # Requirement traceability index
-│   │   └── AI-XXXX-*.md               # Future engineering specs
-│   ├── 05_EXPERIMENTS/                # Experiments (hypothesis-driven)
+│   ├── 00_ENGINEERING/               ← Core engineering specs, ADRs, requirements
+│   │   ├── AI-0001-*.md              ← Nemotron Engineering Spec
+│   │   ├── AI-0002-*.md              ← NVIDIA NIM API Reference
+│   │   ├── AI-0003-*.md              ← Open WebUI Compatibility Matrix
+│   │   ├── AI-0004-*.md              ← Benchmark Framework
+│   │   ├── AI-0005-*.md              ← Free Tier Strategy
+│   │   ├── AI-0006-*.md              ← Architecture Decision Record
+│   │   ├── REQ-INDEX.md              ← All requirements (traceability index)
+│   │   └── AUDIT-YYYY-MM-DD.md      ← Periodic audit reports
+│   │
+│   ├── 05_EXPERIMENTS/               ← Experiment design and results
 │   │   ├── EXP-0001-Temperature.md
 │   │   ├── EXP-0002-TopP.md
 │   │   ├── EXP-0003-Thinking.md
@@ -58,37 +59,68 @@ ai-os/
 │   │   ├── EXP-0008-Reflection.md
 │   │   ├── EXP-0009-Critic.md
 │   │   └── EXP-0010-Agent.md
-│   └── 99_GOVERNANCE/                 # Standards, policies, processes
+│   │
+│   ├── 10_CONFIGURATION/             ← Configuration documentation
+│   │   └── CFG-0001-OpenWebUI.md
+│   │
+│   ├── 20_RUNTIME/                   ← Runtime procedures and runbooks
+│   │   └── RUN-0001-Deployment.md
+│   │
+│   ├── 30_DATASET/                   ← Dataset documentation
+│   │   └── DS-0001-Index.md
+│   │
+│   ├── 40_FINETUNE/                  ← Fine-tuning documentation
+│   │   └── FT-0001-Strategy.md
+│   │
+│   ├── 90_TESTING/                   ← Test plans and test results
+│   │   └── TST-0001-Plan.md
+│   │
+│   └── 99_GOVERNANCE/               ← Standards and governance
 │       ├── AI-9001-Documentation-Standard.md
 │       ├── AI-9002-Benchmark-Standard.md
 │       ├── AI-9003-Prompt-Engineering-Standard.md
 │       ├── AI-9004-Versioning-Policy.md
 │       ├── AI-9005-Release-Process.md
-│       ├── AI-9006-Repository-Structure.md
+│       ├── AI-9006-Repository-Structure.md  ← THIS FILE
 │       ├── AI-9007-Architecture-Principles.md
 │       └── AI-9008-Engineering-Decision-Record-Standard.md
+│
+├── benchmark/
+│   └── tests/
+│       ├── discussion/
+│       │   ├── TC-0001.md
+│       │   ├── TC-0002.md
+│       │   └── TC-0003.md
+│       ├── reasoning/
+│       ├── planning/
+│       ├── architecture/
+│       ├── coding/
+│       ├── debugging/
+│       ├── hospitality/
+│       ├── business/
+│       ├── docker/
+│       ├── openwebui/
+│       ├── nim/
+│       ├── memory/
+│       └── rag/
+│
 ├── configs/
 │   └── openwebui/
-│       ├── parameters.json            # Validated inference parameters
-│       └── prompts/                   # Versioned system prompts
-├── benchmark/
-│   ├── README.md                  # Benchmark suite overview
-│   ├── tests/
-│   │   ├── discussion/
-│   │   ├── reasoning/
-│   │   ├── planning/
-│   │   ├── architecture/
-│   │   ├── coding/
-│   │   ├── debugging/
-│   │   ├── hospitality/
-│   │   ├── business/
-│   │   ├── docker/
-│   │   ├── openwebui/
-│   │   ├── nim/
-│   │   ├── memory/
-│   │   └── rag/
-│   └── results/                   # Timestamped benchmark run outputs
-└── pipeline/                      # Open WebUI pipeline code
+│       ├── parameters.json           ← Active inference parameters
+│       └── capabilities.json         ← Active feature flags
+│
+├── prompts/
+│   ├── system/                       ← System prompts
+│   ├── tasks/                        ← Task-specific prompts
+│   ├── chains/                       ← Chain-of-thought scaffolds
+│   ├── rag/                          ← RAG-augmented prompts
+│   ├── tools/                        ← Tool-calling prompts
+│   └── eval/                         ← Evaluation/critic prompts
+│
+├── dataset/                          ← Training and evaluation datasets
+├── scripts/                          ← Automation and utility scripts
+└── .github/
+    └── workflows/                    ← CI/CD workflows
 ```
 
 ---
@@ -96,26 +128,22 @@ ai-os/
 ## 3. Naming Conventions
 
 | Artifact | Convention | Example |
-|----------|-----------|--------|
-| Engineering spec | `AI-XXXX-Kebab-Title.md` | `AI-0001-Nemotron-Engineering-Spec.md` |
-| Experiment | `EXP-XXXX-Kebab-Title.md` | `EXP-0001-Temperature.md` |
-| Governance | `AI-9XXX-Kebab-Title.md` | `AI-9001-Documentation-Standard.md` |
-| Benchmark TC | `TC-XXXX.md` | `TC-0001.md` |
-| Config | `kebab-case.json` | `parameters.json` |
-| Benchmark results | `YYYY-MM-DD-category-summary.md` | `2026-07-20-reasoning-summary.md` |
+|----------|------------|--------|
+| Engineering docs | `AI-NNNN-Short-Title.md` | `AI-0001-Nemotron-Engineering-Spec.md` |
+| Experiment docs | `EXP-NNNN-Topic.md` | `EXP-0001-Temperature.md` |
+| Benchmark TCs | `TC-NNNN.md` | `TC-0001.md` |
+| Config files | `kebab-case.json` | `parameters.json` |
+| Prompt files | `SP-NNNN-title.md` | `SP-0001-general-assistant.md` |
+| Scripts | `snake_case.py/.sh` | `run_benchmark.py` |
 
 ---
 
-## 4. File Ownership
+## 4. Prohibited Structure Changes
 
-| Path | Owner | Access |
-|------|-------|--------|
-| `docs/00_ENGINEERING/` | Aldhie | Write: Owner only |
-| `docs/05_EXPERIMENTS/` | Aldhie | Write: Owner |
-| `docs/99_GOVERNANCE/` | Aldhie | Write: Owner |
-| `configs/` | Aldhie | Write: Owner after benchmark validation |
-| `benchmark/tests/` | Aldhie | Write: Owner |
-| `benchmark/results/` | Aldhie | Write: Append-only |
+1. Do not move `docs/00_ENGINEERING/` — all cross-references depend on this path
+2. Do not rename files without updating ALL cross-references
+3. Do not create `docs/01_*` through `docs/04_*` — reserved for future expansion
+4. Do not store binary files in `docs/` — use `assets/` subdirectory
 
 ---
 
@@ -123,4 +151,4 @@ ai-os/
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial repository structure |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial release |

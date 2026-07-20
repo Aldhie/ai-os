@@ -1,4 +1,4 @@
-# EXP-0003: Thinking Mode Comparison
+# EXP-0003: Thinking Mode — Token Cost vs Quality Tradeoff
 
 ---
 
@@ -6,138 +6,127 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0003 |
-| **Title** | Thinking Mode Comparison: OFF vs ON vs medium_effort vs reasoning_budget |
+| **EXP ID** | EXP-0003 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | Critical |
+| **REQ** | REQ-AI-0004, REQ-AI-0011 |
+| **BM** | BM-11, BM-12 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0004](../00_ENGINEERING/REQ-INDEX.md#req-ai-0004)
+- ↑ [REQ-AI-0011](../00_ENGINEERING/REQ-INDEX.md#req-ai-0011)
+- ↑ [AI-0005 Free Tier Strategy](../00_ENGINEERING/AI-0005-FreeTier-Strategy.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [AI-0001 — Nemotron Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0003-Audit — Critical Findings](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md) — R-03 Revised, NEW-01
-- [AI-9003 — Prompt Engineering Standard](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md)
-- [EXP-0001 — Temperature](EXP-0001-Temperature.md)
+Measure the actual token cost of thinking modes (OFF, medium_effort, ON) and quantify the quality improvement per token spent. Establish data-driven thresholds for when thinking mode is worth the token cost.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Quantify the quality-cost tradeoff across four thinking modes for Nemotron Ultra 550B:
-1. **OFF** — `/nothink` (no reasoning trace)
-2. **ON** — `/think` (full reasoning trace)
-3. **medium_effort** — `enable_thinking: true, medium_effort: true`
-4. **reasoning_budget** — `reasoning_budget: 512` (hard cap)
+**H1:** Thinking ON produces statistically significant quality improvement on reasoning tasks (math, logic, multi-step planning) vs Thinking OFF.
 
----
+**H2:** Thinking ON does NOT significantly improve quality on simple Q&A, factual recall, or creative tasks.
 
-## 2. Hypothesis
+**H3:** medium_effort produces 70–85% of Thinking ON quality at 30–40% of the token cost.
 
-> `[HYPOTHESIS]` For simple factual questions, `thinking: OFF` produces equivalent accuracy to `thinking: ON` at ~60% of the token cost. For multi-step reasoning problems, `thinking: ON` produces measurably higher accuracy. `medium_effort` achieves 80–90% of the accuracy of full thinking at ~50% of reasoning token cost.
+**H4:** Thinking trace token count scales with problem complexity, not prompt length.
 
 ---
 
-## 3. Variables
+## Variables
 
-### Independent Variable
-
-| Mode | Implementation | Via OW |
-|------|---------------|--------|
-| OFF | System prompt: `/nothink` | Yes — native |
-| ON | System prompt: `/think` | Yes — native |
-| medium_effort | `extra_body.chat_template_kwargs.medium_effort: true` | No — Pipeline required |
-| budget_512 | `reasoning_budget: 512` | No — Pipeline required |
-
-### Controlled Variables
-
-| Parameter | Value |
-|-----------|-------|
-| `temperature` | `1.0` |
-| `top_p` | `0.95` |
-| `max_tokens` | `4096` |
-| `seed` | Not fixed (stochastic by design) |
-
-### Dependent Variables
-
-- Answer accuracy (correct/incorrect for factual tasks)
-- Reasoning quality score (1–5 rubric for analysis tasks)
-- Reasoning trace token count
-- Total tokens (prompt + completion)
-- Time to first token (TTFT)
-- Cost per correct answer (token count proxy)
+| Variable | Type | Values |
+|----------|------|--------|
+| Thinking mode | Independent | OFF (/nothink), medium_effort, ON (/think) |
+| Task difficulty | Independent | Easy, Medium, Hard |
+| Task type | Independent | Math, Logic, Coding, Discussion |
+| temperature | Controlled | 1.0 |
+| top_p | Controlled | 0.95 |
 
 ---
 
-## 4. Environment
+## Environment
 
 | Component | Value |
 |-----------|-------|
-| API Endpoint | `https://integrate.api.nvidia.com/v1/chat/completions` |
-| Model | `nvidia/nemotron-3-ultra-550b-a55b` |
-| Pipeline | Custom OW Pipeline for `extra_body` injection (medium_effort, budget modes) |
-| Date | `[PENDING]` |
+| Model | nvidia/nemotron-3-ultra-550b-a55b |
+| Backend | NVIDIA Cloud NIM |
+| Interface | Open WebUI |
+| Metric | OW token usage display + manual counting |
 
 ---
 
-## 5. Procedure
+## Procedure
 
-**Task set — three difficulty levels:**
-
-**Simple (factual):** `"What is the capital of Indonesia?"`
-
-**Medium (multi-step):** `"A train travels at 80 km/h for 2 hours, then 120 km/h for 1.5 hours. What is the average speed for the entire journey?"`
-
-**Hard (analytical):** `"Analyze the systemic risks of a monorepo architecture for a 50-person engineering team. Include version management, CI/CD complexity, and blast radius of a bad commit."`
-
-For each task:
-1. Run with all 4 modes
-2. 5 runs per mode per task (n=5 for statistical stability)
-3. Record: accuracy, reasoning token count, TTFT, total tokens
-4. Calculate: cost-accuracy tradeoff curve
+1. Create test matrix:
+   - 4 task types × 3 difficulties = 12 prompts
+2. For each prompt, run all 3 thinking modes.
+3. Record: (a) thinking trace token count, (b) response token count, (c) total tokens, (d) response quality score 0–5.
+4. Calculate:
+   - Quality gain per 1,000 tokens spent on thinking
+   - Break-even point: minimum difficulty where thinking is worth cost
+5. Note medium_effort results specifically — Pipeline injection required.
 
 ---
 
-## 6. Expected Result
+## Expected Result
 
-| Task | Best Mode | Expected Accuracy | Reasoning Tokens |
-|------|-----------|-------------------|------------------|
-| Simple | OFF | 100% | ~0 |
-| Medium | medium_effort | ~95% | ~200–500 |
-| Hard | ON (full) | ~85% | ~1000–3000 |
-
----
-
-## 7. Actual Result
-
-> `[PENDING]`
+| Thinking Mode | Avg Token Cost | Quality Gain (Easy) | Quality Gain (Hard) |
+|--------------|----------------|---------------------|---------------------|
+| OFF | ~800 | Baseline | Baseline |
+| medium_effort | ~3,000 | Minimal | +1.0–1.5 pts |
+| ON | ~12,000 | Minimal | +1.5–2.0 pts |
 
 ---
 
-## 8. Analysis
+## Actual Result
 
-> `[PENDING]`
+*Status: Not yet executed.*
 
----
-
-## 9. Conclusion
-
-> `[PENDING]`
-
----
-
-## 10. Decision
-
-> `[PENDING]` Define thinking mode selection policy in `parameters.json` profiles based on task classification.
+| Mode | Easy Math | Medium Math | Hard Math | Coding | Logic |
+|------|-----------|-------------|-----------|--------|-------|
+| OFF | TBD | TBD | TBD | TBD | TBD |
+| medium_effort | TBD | TBD | TBD | TBD | TBD |
+| ON | TBD | TBD | TBD | TBD | TBD |
 
 ---
 
-## Changelog
+## Analysis
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design — created from AI-0003-Audit R-03 revised and NEW-01 |
+*Pending execution. Will produce: Thinking Break-Even Chart (task complexity vs thinking ROI).*
+
+---
+
+## Conclusion
+
+*Pending execution.*
+
+---
+
+## Decision
+
+**Current (provisional):** Use thinking OFF for general tasks, thinking ON for hard reasoning. This is conservative — EXP-0003 will validate or refine.
+
+---
+
+## Future Work
+
+- Automate thinking mode selection via Pipeline based on task classification.
+- Extend to reasoning_budget parameter (granular thinking depth control).
+
+---
+
+## Benchmark Result
+
+*BM-11 and BM-12 pending.*
+
+---
+
+*EXP-0003 v1.0.0 — Created 2026-07-20*

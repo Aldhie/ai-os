@@ -1,4 +1,4 @@
-# EXP-0010: End-to-End Agentic Workflow
+# EXP-0010: Agentic Capability — Tool Calling and Multi-Turn Agent Loops
 
 ---
 
@@ -6,82 +6,127 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0010 |
-| **Title** | End-to-End Agentic Workflow: Planner + RAG + Tool Calls + Reflection |
+| **EXP ID** | EXP-0010 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | Critical |
+| **REQ** | REQ-AI-0005 |
+| **BM** | BM-01, BM-02, BM-03, BM-09 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0005](../00_ENGINEERING/REQ-INDEX.md#req-ai-0005)
+- ↑ [AI-0003 Compatibility Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
+- → [EXP-0007 Planner](./EXP-0007-Planner.md)
+- → [EXP-0009 Critic](./EXP-0009-Critic.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [EXP-0007 — Planner](EXP-0007-Planner.md)
-- [EXP-0006 — RAG](EXP-0006-RAG.md)
-- [EXP-0008 — Reflection](EXP-0008-Reflection.md)
-- [EXP-0009 — Critic](EXP-0009-Critic.md)
-- [AI-0003 — Compatibility, Section 4](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [AI-0003-Audit — NEW-01, NEW-02, NEW-03](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md)
+Validate the full agentic capability of Nemotron Ultra 550B through Open WebUI: tool discovery, tool call generation in correct format, result consumption, and multi-turn agent loops. Identify any format incompatibilities between qwen3_coder tool format and OW expectations.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Validate a complete agentic workflow using Nemotron Ultra 550B via Open WebUI:
-1. User provides a complex multi-step task
-2. Planner decomposes into subtasks
-3. Each subtask may require: RAG retrieval, tool calls (web search, calculator), or model reasoning
-4. Reflection step reviews the assembled answer
-5. Final output delivered to user
+**H1:** The model generates syntactically correct tool call JSON compatible with OW's tool calling pipeline in a standard single-tool scenario.
 
-This is the integration test of EXP-0003 through EXP-0009.
+**H2:** Parallel tool calls (multiple tools in one response) work correctly with OW's tool calling pipeline.
+
+**H3:** If Cloud NIM uses SGLang backend, tool calls + thinking ON simultaneously requires extra Pipeline configuration (chat_template_kwargs injection).
 
 ---
 
-## 2. Hypothesis
+## Variables
 
-> `[HYPOTHESIS]` The end-to-end pipeline with `/think` enabled and proper `chat_template_kwargs` injection (NEW-01) will complete complex agentic tasks with >75% quality score. The most common failure mode will be tool call parsing (NEW-03, BM-09).
-
----
-
-## 3. Task Scenarios
-
-| Scenario | Components Required |
-|----------|--------------------|
-| Hotel guest complaint resolution | RAG (policy docs) + reasoning + structured output |
-| Docker deployment plan generation | Planning + code generation + reflection |
-| Competitive analysis with web search | Web search tool + reasoning + synthesis |
-| Multi-document summarization | RAG (multiple docs) + long-context synthesis |
+| Variable | Type | Values |
+|----------|------|--------|
+| Tool count | Independent | 1 tool, 2 tools (parallel) |
+| Thinking mode | Independent | OFF, ON |
+| Backend | Observed | vLLM, SGLang (whichever Cloud NIM uses) |
+| Tool type | Independent | Simple function, RAG retrieval, Web search |
 
 ---
 
-## 4. Pre-conditions
+## Procedure
 
-This experiment requires:
-- [ ] EXP-0003 complete (thinking mode policy set)
-- [ ] EXP-0006 complete (RAG pipeline validated)
-- [ ] BM-09 complete (tool call format verified)
-- [ ] Pipeline for `extra_body` injection deployed
+1. **BM-09 (Format test):**
+   - Define 1 simple tool (get_weather with location parameter).
+   - Send request that requires the tool.
+   - Observe tool_call JSON format in OW response.
+   - Verify OW correctly parses and routes to tool executor.
+
+2. **BM-01 (Parallel tool calls):**
+   - Define 2 tools simultaneously.
+   - Ask question requiring both tools.
+   - Verify both tool_calls present in single response.
+
+3. **Multi-turn loop:**
+   - Tool call → provide result → model continues → observe next action.
+   - Verify model correctly uses tool result in continued reasoning.
+
+4. **BM-02 (Agentic RAG):**
+   - Enable RAG collection.
+   - Ask question requiring both knowledge retrieval and tool call.
+   - Verify both work in single conversation turn.
 
 ---
 
-## 5. Actual Result
+## Expected Result
 
-> `[PENDING — blocked on pre-conditions]`
+| Test | Expected |
+|------|----------|
+| BM-09 | Tool call in qwen3_coder format, OW parses correctly |
+| BM-01 | Two parallel tool_calls in response |
+| Multi-turn | Model uses tool result, produces final answer |
+| BM-02 | RAG context + tool call both work |
 
 ---
 
-## 6. Decision
+## Actual Result
 
-> `[PENDING]` Gate production deployment on this experiment achieving >75% quality score.
+*Status: Not yet executed.*
+
+| Test | Result | Format OK | OW Compatible |
+|------|--------|-----------|---------------|
+| BM-09 | TBD | TBD | TBD |
+| BM-01 | TBD | TBD | TBD |
+| BM-02 | TBD | TBD | TBD |
 
 ---
 
-## Changelog
+## Analysis
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design — integration test of EXP-0003 through EXP-0009 |
+*Pending execution. Key risk: SGLang backend incompatibility requiring Pipeline workaround.*
+
+---
+
+## Conclusion
+
+*Pending execution.*
+
+---
+
+## Decision
+
+*Current: function_calling enabled per capabilities.json. BM-09 will determine if Pipeline workaround needed.*
+
+---
+
+## Future Work
+
+- If BM-09 fails: implement OW Pipeline for tool call format normalization.
+- Extend to MCP tool server (BM-03) after basic tool calling validated.
+- Design autonomous agent loop: plan → tool → reflect → plan → ...
+
+---
+
+## Benchmark Result
+
+*Pending BM-01, BM-02, BM-03, BM-09 execution.*
+
+---
+
+*EXP-0010 v1.0.0 — Created 2026-07-20*

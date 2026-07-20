@@ -1,4 +1,4 @@
-# EXP-0007: Agentic Planner Quality
+# EXP-0007: Planner Capability — Multi-Step Task Planning Quality
 
 ---
 
@@ -6,81 +6,77 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0007 |
-| **Title** | Agentic Planner: Task Decomposition and Plan Execution Quality |
+| **EXP ID** | EXP-0007 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | High |
+| **REQ** | REQ-AI-0004, REQ-AI-0005 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0004](../00_ENGINEERING/REQ-INDEX.md#req-ai-0004)
+- → [EXP-0008 Reflection](./EXP-0008-Reflection.md)
+- → [EXP-0010 Agent](./EXP-0010-Agent.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [AI-0001 — Nemotron Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0003 — Compatibility, Section 4](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [EXP-0003 — Thinking Mode](EXP-0003-Thinking.md)
-- [TC-PLAN-0001](../../benchmark/tests/planning/TC-PLAN-0001.md)
+Evaluate Nemotron Ultra 550B's ability to decompose complex goals into executable multi-step plans. Measure plan completeness, feasibility, and step sequencing correctness.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Measure Nemotron Ultra 550B performance as a planner agent: ability to decompose complex tasks into executable subtasks, sequence them correctly, and produce a structured plan.
+**H1:** Thinking ON (/think) produces more complete and feasible plans than Thinking OFF for tasks requiring >5 steps.
 
----
+**H2:** The model correctly identifies dependencies between plan steps and sequences them accordingly.
 
-## 2. Hypothesis
-
-> `[HYPOTHESIS]` With `/think` enabled, Nemotron Ultra 550B produces higher-quality plans (more comprehensive, correctly sequenced) than with `/nothink`. Full thinking mode is necessary for plans with >5 steps.
+**H3:** Plans produced without role/context in system prompt are less specific than plans with domain context.
 
 ---
 
-## 3. Variables
+## Variables
 
-### Task Types
-
-| Task | Complexity |
-|------|------------|
-| Plan a hotel room inventory audit | Medium (5–8 steps) |
-| Plan deployment of Open WebUI to production Docker | High (10+ steps) |
-| Plan a multi-agent RAG system architecture | Expert (>15 steps) |
-
-### Thinking Modes Tested
-
-- OFF (`/nothink`)
-- ON (`/think`)
-- medium_effort
+| Variable | Type | Values |
+|----------|------|--------|
+| Thinking mode | Independent | OFF, ON |
+| System prompt context | Independent | Generic, Domain-specific |
+| Task complexity | Independent | 3-step, 5-step, 10-step |
+| Domain | Controlled | Software engineering, Business |
 
 ---
 
-## 4. Evaluation Criteria
+## Procedure
 
-| Criterion | Weight |
-|-----------|--------|
-| All necessary steps present | 40% |
-| Steps in correct order | 30% |
-| Steps are actionable (not vague) | 20% |
-| Edge cases and failure modes addressed | 10% |
+1. Create 6 planning prompts across complexity levels.
+2. For each: run with thinking OFF and ON, generic and domain-specific prompts.
+3. Evaluate: (a) completeness (all required steps present), (b) feasibility (steps are executable), (c) sequencing (dependencies respected), (d) specificity (actionable vs vague).
+4. Score 0–5 per criterion.
 
 ---
 
-## 5. Actual Result
+## Expected Result
 
-> `[PENDING]`
-
----
-
-## 6. Decision
-
-> `[PENDING]` Define planner agent system prompt and thinking mode based on results.
+| Condition | Completeness | Feasibility | Sequencing |
+|-----------|-------------|-------------|------------|
+| Think OFF, Generic | 3/5 | 3/5 | 3/5 |
+| Think ON, Generic | 4/5 | 4/5 | 4/5 |
+| Think ON, Domain | 5/5 | 5/5 | 5/5 |
 
 ---
 
-## Changelog
+## Actual Result
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+*Status: Not yet executed.*
+
+---
+
+## Benchmark Result
+
+*Pending PLAN-TC-* execution.*
+
+---
+
+*EXP-0007 v1.0.0 — Created 2026-07-20*

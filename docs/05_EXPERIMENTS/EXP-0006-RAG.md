@@ -1,4 +1,4 @@
-# EXP-0006: RAG Pipeline Quality
+# EXP-0006: RAG Pipeline — Retrieval Quality and Grounding Accuracy
 
 ---
 
@@ -6,82 +6,91 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0006 |
-| **Title** | RAG Pipeline: Retrieval Quality, Chunk Strategy, and Embedding Provider |
+| **EXP ID** | EXP-0006 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | Critical |
+| **REQ** | REQ-AI-0006, REQ-AI-0010 |
+| **BM** | BM-02, MEM-TC-0003 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0006](../00_ENGINEERING/REQ-INDEX.md#req-ai-0006)
+- ↑ [REQ-AI-0010](../00_ENGINEERING/REQ-INDEX.md#req-ai-0010)
+- → [EXP-0005 Memory](./EXP-0005-Memory.md)
+- → [EXP-0010 Agent](./EXP-0010-Agent.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [AI-0003 — Compatibility Matrix, Section 3](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [AI-0003-Audit — R-04 (Embeddings)](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md)
-- [TC-RAG-0001 — RAG Retrieval Accuracy](../../benchmark/tests/rag/TC-RAG-0001.md)
+Validate that the RAG pipeline (separate embedding provider + NIM) produces accurate, grounded responses. Measure retrieval precision and the model's ability to cite and use retrieved context correctly.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Validate the RAG pipeline for Nemotron Ultra 550B: (1) which embedding provider is most accurate, (2) optimal chunk size and overlap, (3) hybrid vs vector-only search quality.
+**H1:** Hybrid search (keyword + semantic) produces higher precision retrieval than pure semantic search for technical documents.
 
----
+**H2:** chunk_size=512 with chunk_overlap=50 optimally balances context completeness vs injection token cost.
 
-## 2. Hypothesis
-
-> `[HYPOTHESIS]` Since Cloud NIM does not expose `/v1/embeddings` (AI-0003-Audit R-04), a separate embedding provider is mandatory. We hypothesize that `nomic-embed-text` via Ollama provides 85%+ retrieval recall for domain-specific hospitality documents with chunk_size=512, overlap=64.
+**H3:** The model correctly identifies when retrieved context does not answer the question and avoids hallucination.
 
 ---
 
-## 3. Variables
+## Variables
 
-### Independent Variables
-
-| Variable | Test Values |
-|----------|-------------|
-| Embedding provider | `nomic-embed-text`, `mxbai-embed-large`, `text-embedding-3-small` |
-| Chunk size | `256`, `512`, `1024`, `2048` tokens |
-| Search mode | Vector-only, BM25-only, Hybrid |
-| Top-K retrieved chunks | `3`, `5`, `10` |
-
----
-
-## 4. Test Documents
-
-Use Ezy Stay hospitality domain documents:
-- Hotel SOP manual
-- Room service menu
-- Guest complaint handling policy
-- Loyalty program terms
+| Variable | Type | Values |
+|----------|------|--------|
+| Embedding model | Independent | nomic-embed-text, mxbai-embed-large |
+| chunk_size | Independent | 256, 512, 1024 |
+| top_k retrieval | Independent | 3, 5, 10 |
+| Search mode | Independent | Semantic only, Hybrid |
+| Document type | Controlled | Technical doc, FAQ, narrative |
 
 ---
 
-## 5. Expected Result
+## Procedure
 
-- `nomic-embed-text` + chunk_size=512 + hybrid search + top_k=5 is the optimal combination
-- Retrieval recall >80% on domain-specific queries
-- Hybrid search outperforms vector-only by >10%
-
----
-
-## 6. Actual Result
-
-> `[PENDING]`
+1. **Baseline:** Ingest 3 technical documents. Ask 10 questions (5 answerable, 5 not in document).
+2. Measure: (a) Retrieval hit rate (answerable questions), (b) Hallucination rate (unanswerable questions), (c) Citation accuracy.
+3. Vary embedding model, chunk_size, top_k and repeat.
+4. Compare hybrid vs semantic search on same document set.
 
 ---
 
-## 7. Decision
+## Expected Result
 
-> `[PENDING]` Update `capabilities.json` RAG section with validated configuration.
+| Config | Hit Rate | Hallucination Rate | Citation Accuracy |
+|--------|----------|-------------------|-------------------|
+| nomic, 512, k=5, hybrid | >90% | <10% | >85% |
+| nomic, 256, k=3, semantic | ~75% | ~15% | ~70% |
 
 ---
 
-## Changelog
+## Actual Result
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design — R-04 embedding gap |
+*Status: Not yet executed.*
+
+---
+
+## Conclusion
+
+*Pending execution.*
+
+---
+
+## Decision
+
+*Current: chunk_size=512, chunk_overlap=50, top_k=5, hybrid=true per capabilities.json.*
+
+---
+
+## Benchmark Result
+
+*Pending BM-02 execution.*
+
+---
+
+*EXP-0006 v1.0.0 — Created 2026-07-20*

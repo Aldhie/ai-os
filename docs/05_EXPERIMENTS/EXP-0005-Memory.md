@@ -1,4 +1,4 @@
-# EXP-0005: Open WebUI Memory System
+# EXP-0005: Memory Policy — Recall Accuracy and Context Impact
 
 ---
 
@@ -6,86 +6,87 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0005 |
-| **Title** | Open WebUI Memory: Retention Accuracy and Recall Precision |
+| **EXP ID** | EXP-0005 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | High |
+| **REQ** | REQ-AI-0009 |
+| **BM** | MEM-TC-0001, MEM-TC-0002 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0009](../00_ENGINEERING/REQ-INDEX.md#req-ai-0009)
+- → [EXP-0006 RAG](./EXP-0006-RAG.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [AI-0003 — Open WebUI Compatibility, Section 6](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [TC-MEMO-0001 — Memory Retention](../../benchmark/tests/memory/TC-MEMO-0001.md)
-- [TC-MEMO-0002 — Memory Recall](../../benchmark/tests/memory/TC-MEMO-0002.md)
+Measure the accuracy of Open WebUI memory recall, the impact of memory injection on context budget, and identify conditions where memory helps vs hurts response quality.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Measure Open WebUI memory system accuracy: (1) what facts are saved to long-term memory, (2) how accurately they are recalled in future sessions, (3) whether incorrect memories can pollute future responses.
+**H1:** Auto-recall of relevant memories improves response personalization without the user needing to re-state preferences.
 
----
+**H2:** Stale memories (>14 days old, no longer accurate) injected into context decrease response quality by introducing contradictory information.
 
-## 2. Hypothesis
-
-> `[HYPOTHESIS]` Open WebUI memory auto-save correctly captures user-stated facts 85%+ of the time. Recall precision (relevant memories retrieved vs irrelevant) is 70%+. Contradictory memory entries cause measurable response degradation.
+**H3:** Memory injection > 2,048 tokens begins to degrade quality by consuming tokens that would otherwise be used for task context.
 
 ---
 
-## 3. Variables
+## Variables
 
-### Test Scenarios
-
-| Scenario | Description |
-|----------|-------------|
-| S-1 | State explicit fact; verify it appears in next session |
-| S-2 | State preference; verify it influences recommendation |
-| S-3 | State contradictory facts across sessions; measure resolution |
-| S-4 | State 10 facts in one session; test recall of all 10 |
-| S-5 | Test memory isolation between users (security) |
+| Variable | Type | Values |
+|----------|------|--------|
+| Memory relevance | Independent | Relevant, Partially relevant, Irrelevant |
+| Memory age | Independent | Fresh (0–7 days), Stale (30+ days) |
+| Memory injection size | Independent | 512, 1024, 2048, 4096 tokens |
+| Task type | Controlled | Personalization, General Q&A |
 
 ---
 
-## 4. Environment
+## Procedure
 
-| Component | Value |
-|-----------|-------|
-| Open WebUI | Latest stable |
-| Memory: auto_save | `true` |
-| Memory: auto_recall | `true` |
-| Memory: retention | 7-day short-term, unlimited long-term |
-| Model | `nvidia/nemotron-3-ultra-550b-a55b` |
-
----
-
-## 5. Expected Result
-
-- S-1, S-2: >85% save accuracy
-- S-3: Model surfaces conflict; requests clarification
-- S-4: >70% recall across 10 facts
-- S-5: Zero cross-user leakage
+1. **Setup:** Create 5 memory entries with varying relevance and age.
+2. **Test cases:**
+   a. Relevant memory — ask question directly addressed by memory
+   b. Irrelevant memory — ask question unrelated to any memory
+   c. Stale memory — ask about topic where memory is outdated
+   d. Large injection — create 4,096-token memory block, measure quality impact
+3. Evaluate: (a) Was memory used correctly? (b) Did memory improve/hurt response? (c) Token overhead?
 
 ---
 
-## 6. Actual Result
+## Expected Result
 
-> `[PENDING]`
+| Condition | Expected Outcome |
+|-----------|------------------|
+| Relevant memory | Improves personalization |
+| Irrelevant memory | Neutral (memory ignored) |
+| Stale memory | Degrades quality (contradictions) |
+| Large injection (4096+) | Reduces output quality |
 
 ---
 
-## 7. Decision
+## Actual Result
 
-> `[PENDING]` Update memory configuration based on accuracy results.
+*Status: Not yet executed.*
 
 ---
 
-## Changelog
+## Decision
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+*Current: Memory injection cap 2,048 tokens. Short-term retention 7 days.*
+
+---
+
+## Benchmark Result
+
+*Pending MEM-TC-0001, MEM-TC-0002 execution.*
+
+---
+
+*EXP-0005 v1.0.0 — Created 2026-07-20*

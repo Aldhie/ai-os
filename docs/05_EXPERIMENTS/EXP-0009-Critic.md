@@ -1,4 +1,4 @@
-# EXP-0009: Critic Agent Quality
+# EXP-0009: Critic Role — External Evaluation and Quality Judgment
 
 ---
 
@@ -6,74 +6,77 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0009 |
-| **Title** | Critic Agent: External Critique Accuracy and Calibration |
+| **EXP ID** | EXP-0009 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | High |
+| **REQ** | REQ-AI-0004, REQ-AI-0008 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0004](../00_ENGINEERING/REQ-INDEX.md#req-ai-0004)
+- → [EXP-0008 Reflection](./EXP-0008-Reflection.md)
+- → [EXP-0010 Agent](./EXP-0010-Agent.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [EXP-0008 — Reflection](EXP-0008-Reflection.md)
-- [EXP-0007 — Planner](EXP-0007-Planner.md)
-- [AI-0001 — Nemotron Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
+Evaluate the model's ability to act as an external critic — judging the quality of text, code, or plans produced by itself or another agent. Determine if system-prompt role assignment as "Critic" produces reliably critical (rather than sycophantic) evaluation.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Measure the quality of Nemotron Ultra 550B acting as an external critic for another model's output: accuracy of critique, calibration (does it criticize bad outputs more than good ones?), and actionability of feedback.
+**H1:** Without explicit critic role in system prompt, the model defaults to sycophantic evaluation ("Great work! Minor suggestion...").
 
----
+**H2:** With critic role in system prompt, the model produces substantively critical evaluations identifying real weaknesses.
 
-## 2. Hypothesis
-
-> `[HYPOTHESIS]` With `/think` enabled, Nemotron Ultra 550B in critic role correctly identifies >80% of logical errors in provided text. Calibration is good (criticizes bad texts more than good texts). Critique is actionable (provides specific corrections).
+**H3:** Thinking ON reduces sycophancy by allowing the model to reason through quality criteria before responding.
 
 ---
 
-## 3. Test Cases
+## Variables
 
-| Input Type | Description |
-|------------|-------------|
-| Good output | High-quality, correct response (expect minimal critique) |
-| Logically flawed | Contains a valid-sounding but incorrect argument |
-| Factually flawed | Contains specific false claims |
-| Code with bug | Python function with an off-by-one error |
-| Ambiguous | Partially correct; critic should identify what is missing |
-
----
-
-## 4. Evaluation Criteria
-
-| Criterion | Weight |
-|-----------|--------|
-| Correctly identifies flaws in flawed inputs | 40% |
-| Does not hallucinate flaws in good inputs | 30% |
-| Critique is specific and actionable | 20% |
-| Critique is concise (not verbose) | 10% |
+| Variable | Type | Values |
+|----------|------|--------|
+| System prompt role | Independent | No role, Evaluator, Strict critic |
+| Thinking mode | Independent | OFF, ON |
+| Input quality | Independent | Poor, Average, Excellent |
+| Domain | Controlled | Code review, Essay evaluation |
 
 ---
 
-## 5. Actual Result
+## Procedure
 
-> `[PENDING]`
-
----
-
-## 6. Decision
-
-> `[PENDING]` Decide on critic agent integration in agentic workflow.
+1. Create 6 inputs: 2 poor, 2 average, 2 excellent (code and text).
+2. Ask model to evaluate each under 3 system prompt conditions.
+3. Measure: (a) sycophancy rate (positive tone on poor inputs), (b) false negative rate (calling poor input excellent), (c) specific feedback quality (actionable vs generic), (d) score calibration.
+4. Compare thinking ON vs OFF.
 
 ---
 
-## Changelog
+## Expected Result
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+| System Prompt | Sycophancy (poor input) | False Negative | Feedback Quality |
+|---------------|------------------------|----------------|------------------|
+| No role | High | High | Generic |
+| Evaluator | Medium | Medium | Moderate |
+| Strict critic + think ON | Low | Low | Specific |
+
+---
+
+## Actual Result
+
+*Status: Not yet executed.*
+
+---
+
+## Benchmark Result
+
+*Pending execution.*
+
+---
+
+*EXP-0009 v1.0.0 — Created 2026-07-20*

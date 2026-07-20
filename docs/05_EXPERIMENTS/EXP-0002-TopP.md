@@ -1,4 +1,4 @@
-# EXP-0002: Top-P (Nucleus Sampling) Sensitivity
+# EXP-0002: Top-P (Nucleus Sampling) Effect on Output Quality
 
 ---
 
@@ -6,102 +6,101 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0002 |
-| **Title** | Top-P Nucleus Sampling Sensitivity for Nemotron Ultra 550B |
+| **EXP ID** | EXP-0002 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | High |
+| **REQ** | REQ-AI-0002, REQ-AI-0003 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0002](../00_ENGINEERING/REQ-INDEX.md#req-ai-0002)
+- → [EXP-0001 Temperature](./EXP-0001-Temperature.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [AI-0002 — NVIDIA NIM API Reference](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md)
-- [EXP-0001 — Temperature](EXP-0001-Temperature.md) — `top_p` must be co-analyzed with temperature
-- [AI-9002 — Benchmark Standard](../99_GOVERNANCE/AI-9002-Benchmark-Standard.md)
-- [configs/openwebui/parameters.json](../../configs/openwebui/parameters.json)
+Determine the optimal top_p value for NVIDIA Nemotron Ultra 550B. Evaluate whether the NVIDIA-recommended top_p=0.95 is optimal, or if lower values (0.7, 0.85) improve coherence on structured tasks.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Measure the sensitivity of Nemotron Ultra 550B output quality to `top_p` values. Determine whether `0.95` (NVIDIA official recommendation) is genuinely optimal or whether task-specific tuning yields meaningful improvement.
+**H1:** top_p=0.95 produces higher diversity without quality loss vs top_p=0.7 for reasoning tasks.
 
----
+**H2:** For deterministic tasks (code generation), top_p=0.85 may outperform top_p=0.95 by reducing irrelevant token candidates.
 
-## 2. Hypothesis
-
-> `[HYPOTHESIS]` NVIDIA recommends `top_p: 0.95` across all tasks. We hypothesize that `top_p` has lower sensitivity than `temperature` for this model, and that values in range `0.85–0.99` produce negligible quality differences. Lower values (`<0.8`) may cause repetitive output.
+**Note:** top_p and temperature interact multiplicatively. This experiment must control temperature at 1.0 (per REQ-AI-0003) across all runs.
 
 ---
 
-## 3. Variables
+## Variables
 
-### Independent Variable
-
-| Parameter | Test Values |
-|-----------|-------------|
-| `top_p` | `0.7`, `0.8`, `0.85`, `0.9`, `0.95`, `0.99`, `1.0` |
-
-### Controlled Variables
-
-| Parameter | Value |
-|-----------|-------|
-| `temperature` | `1.0` (from EXP-0001 optimal, or `1.0` if EXP-0001 pending) |
-| `max_tokens` | `2048` |
-| `model` | `nvidia/nemotron-3-ultra-550b-a55b` |
-| `thinking` | OFF (`/nothink`) |
-| `seed` | `42` |
+| Variable | Type | Values |
+|----------|------|--------|
+| top_p | Independent | 0.7, 0.85, 0.95, 1.0 |
+| temperature | Controlled | 1.0 (per REQ-AI-0003) |
+| thinking mode | Controlled | /nothink |
+| max_tokens | Controlled | 2048 |
 
 ---
 
-## 4. Environment
+## Environment
 
 | Component | Value |
 |-----------|-------|
-| API Endpoint | `https://integrate.api.nvidia.com/v1/chat/completions` |
-| Model | `nvidia/nemotron-3-ultra-550b-a55b` |
-| Depends On | EXP-0001 completion (for temperature value) |
-| Date | `[PENDING]` |
+| Model | nvidia/nemotron-3-ultra-550b-a55b |
+| Backend | NVIDIA Cloud NIM |
+| Interface | Open WebUI |
+| Session | Fresh session per top_p value |
 
 ---
 
-## 5. Procedure
+## Procedure
 
-1. Fix `temperature` at EXP-0001 optimal value (or `1.0` if EXP-0001 pending)
-2. Sweep `top_p` across `[0.7, 0.8, 0.85, 0.9, 0.95, 0.99, 1.0]`
-3. Use same four task prompts as EXP-0001
-4. 3 runs per value
-5. Score per EXP-0001 Evaluation Criteria
-6. Additionally measure: repetition rate (lexical diversity metric)
-
----
-
-## 6. Expected Result
-
-- Scores relatively flat between `0.85–0.99`
-- Degradation below `0.8` (repetition, reduced diversity)
-- `1.0` may cause slight quality drop (sampling from full distribution)
+1. Select 3 test prompts: (a) coding problem, (b) reasoning problem, (c) creative writing.
+2. For each prompt, run at top_p = 0.7, 0.85, 0.95, 1.0.
+3. Repeat each configuration 3× to measure variance.
+4. Score on 0–5 scale per task type criteria.
+5. Calculate mean score and variance per top_p value.
 
 ---
 
-## 7. Actual Result
+## Expected Result
 
-> `[PENDING]`
+| top_p | Coding | Reasoning | Creative |
+|-------|--------|-----------|----------|
+| 0.70 | High coherence, low diversity | May miss reasoning paths | Repetitive |
+| 0.85 | Good balance | Good | Good |
+| 0.95 | Good balance | NVIDIA recommended | High diversity |
+| 1.00 | Slightly noisy | Max diversity | Maximum diversity |
 
 ---
 
-## 8. Decision
+## Actual Result
 
-> `[PENDING]` Update `parameters.json` with validated `top_p` per profile.
+*Status: Not yet executed.*
 
 ---
 
-## Changelog
+## Conclusion
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial experiment design |
+*Pending execution. Provisional: top_p=0.95 per NVIDIA recommendation.*
+
+---
+
+## Decision
+
+*Pending execution. Current: top_p=0.95 (all profiles).*
+
+---
+
+## Benchmark Result
+
+*Pending.*
+
+---
+
+*EXP-0002 v1.0.0 — Created 2026-07-20*

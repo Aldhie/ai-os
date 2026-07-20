@@ -1,4 +1,4 @@
-# EXP-0004: System Prompt Architecture
+# EXP-0004: System Prompt Engineering — Structure and Content Effect
 
 ---
 
@@ -6,91 +6,94 @@
 
 | Field | Value |
 |-------|-------|
-| **Experiment ID** | EXP-0004 |
-| **Title** | System Prompt Architecture: Length, Structure, and Behavioral Impact |
+| **EXP ID** | EXP-0004 |
 | **Version** | 1.0.0 |
-| **Status** | Pending |
+| **Status** | 📋 Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Last Updated** | 2026-07-20 |
-| **Priority** | High |
+| **REQ** | REQ-AI-0008 |
+
+## Related Documents
+
+- ↑ [REQ-AI-0008](../00_ENGINEERING/REQ-INDEX.md#req-ai-0008)
+- ↑ [AI-0001 Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
+- → [EXP-0003 Thinking](./EXP-0003-Thinking.md)
 
 ---
 
-## Cross References
+## Objective
 
-- [AI-9003 — Prompt Engineering Standard](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md)
-- [AI-0003 — Open WebUI Compatibility](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [EXP-0003 — Thinking Mode](EXP-0003-Thinking.md)
-- [prompts/system/](../../prompts/system/)
+Determine how system prompt structure, length, and content affect response quality, behaviour consistency, and context budget consumption. Find the optimal system prompt design for this repository's use cases.
 
 ---
 
-## 1. Objective
+## Hypothesis
 
-Determine optimal system prompt structure for Nemotron Ultra 550B: (1) minimal vs structured vs long-form prompts, (2) position of reasoning mode token (`/think`/`/nothink`), (3) impact of explicit output format instructions.
+**H1:** System prompts under 200 tokens produce equivalent behaviour to 500-token prompts when content is well-structured.
 
----
+**H2:** Including explicit behavioural rules ("always cite sources", "never assume") improves compliance vs implicit intent.
 
-## 2. Hypothesis
-
-> `[HYPOTHESIS]` Structured system prompts with explicit behavioral directives, output format specification, and reasoning mode token at the END of the system prompt produce better compliance than minimal prompts. Prompts >1000 tokens do not improve behavior and waste token budget.
+**H3:** Placing the /think or /nothink directive on the first line is required for reliable activation — placement elsewhere may fail.
 
 ---
 
-## 3. Variables
+## Variables
 
-### Independent Variable — Prompt Architecture
-
-| Variant | Structure |
-|---------|----------|
-| A: Minimal | `"You are a helpful assistant. /think"` |
-| B: Structured | Role + 3 directives + output format + reasoning token (200–400 tokens) |
-| C: Verbose | Role + detailed persona + 10 directives + examples + reasoning token (800–1200 tokens) |
-| D: Token Position | Same as B but `/think` token at START of prompt |
-
-### Controlled Variables
-
-| Parameter | Value |
-|-----------|-------|
-| `temperature` | `1.0` |
-| `top_p` | `0.95` |
-| `max_tokens` | `2048` |
+| Variable | Type | Values |
+|----------|------|--------|
+| Prompt length | Independent | 50 tokens, 200 tokens, 500 tokens |
+| Directive placement | Independent | First line, last line, middle |
+| Instruction explicitness | Independent | Implicit intent, explicit rules |
+| Task type | Controlled | Discussion, Coding, Reasoning |
 
 ---
 
-## 4. Procedure
+## Procedure
 
-1. Design prompts A, B, C, D
-2. Test against 5 task types (general, reasoning, code, creative, refusal)
-3. Score behavioral compliance (did model follow instructions?)
-4. Score output quality
-5. Compare token efficiency (output quality per token spent on system prompt)
-
----
-
-## 5. Expected Result
-
-- Variant B outperforms A on compliance without wasteful token use
-- Variant C shows no improvement over B (diminishing returns)
-- Reasoning token position at end is equivalent to start
+1. Write 3 system prompt variants:
+   - Minimal (50 tokens): directive + 1-line role
+   - Standard (200 tokens): directive + role + 5 rules
+   - Full (500 tokens): directive + role + 10 rules + domain context
+2. Test directive placement: first line vs last line.
+3. For each combination, run 5 test prompts.
+4. Evaluate: (a) directive compliance, (b) role adherence, (c) rule compliance, (d) response quality.
 
 ---
 
-## 6. Actual Result
+## Expected Result
 
-> `[PENDING]`
+| Prompt Length | Compliance | Quality | Token Cost |
+|---------------|-----------|---------|------------|
+| 50 tokens | Partial | Moderate | Minimal |
+| 200 tokens | High | High | Low |
+| 500 tokens | High | High | Medium |
+
+**Expected finding:** 200-token prompt is optimal — high compliance at low token cost.
 
 ---
 
-## 7. Decision
+## Actual Result
 
-> `[PENDING]` Establish canonical system prompt templates for each agent profile.
+*Status: Not yet executed.*
 
 ---
 
-## Changelog
+## Conclusion
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+*Pending execution.*
+
+---
+
+## Decision
+
+*Current: Standard 200-token prompt template in use.*
+
+---
+
+## Benchmark Result
+
+*Pending execution.*
+
+---
+
+*EXP-0004 v1.0.0 — Created 2026-07-20*

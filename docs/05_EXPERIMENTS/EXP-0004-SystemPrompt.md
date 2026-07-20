@@ -1,4 +1,4 @@
-# EXP-0004: System Prompt Engineering for Nemotron Ultra 550B
+# EXP-0004: System Prompt Engineering
 
 ---
 
@@ -7,112 +7,119 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0004 |
-| **Title** | System Prompt Engineering |
-| **Version** | 0.1.0 |
-| **Status** | Pending Execution |
+| **Title** | System Prompt Structure and Effectiveness |
+| **Version** | 1.0.0 |
+| **Status** | Designed |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Experiment — Prompt Engineering |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-9003](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md) | Prompt engineering standard |
-| [EXP-0003](EXP-0003-Thinking.md) | Thinking mode control |
-| [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) | System prompt compatibility |
-| [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md) | REQ-AI-0006 |
+- [AI-9003 Prompt Engineering Standard](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md)
+- [AI-0001 Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
+- [prompts/system/](../../prompts/system/)
+- [benchmark/tests/discussion/TC-0001.md](../../benchmark/tests/discussion/TC-0001.md)
 
 ---
 
 ## 1. Objective
 
-Determine the optimal system prompt structure for Nemotron Ultra 550B across five agent profiles: **general**, **reasoning**, **code**, **creative**, and **RAG/analyst**. Validate the 500-token budget hypothesis and identify anti-patterns.
+Determine the optimal system prompt structure for Nemotron Ultra 550B across different task types. Specifically: does prompt length, role framing, and constraint specification significantly affect output quality?
 
 ---
 
 ## 2. Background
 
-System prompts for Nemotron Ultra 550B have a unique constraint: the thinking mode directive (`/think` or `/nothink`) MUST be present. Without it, the model defaults to an unspecified mode. [FACT: Official Doc — system prompt directives are the primary Open WebUI control mechanism]
+**[FACT]** Open WebUI injects system prompts as `{role: "system"}` messages. NIM processes these correctly.
 
-The optimal structure and length of system prompts beyond the thinking directive is unknown. [ASSUMPTION]
+**[FACT]** System prompt `/think` or `/nothink` controls reasoning mode on Nemotron Ultra 550B.
+
+**[HYPOTHESIS]** Longer, more structured system prompts increase benchmark scores but also increase token cost.
+
+**[HYPOTHESIS]** Role-framing ("You are an expert X") improves domain-specific response quality.
 
 ---
 
-## 3. Hypothesis
+## 3. Hypotheses
 
-**H1:** System prompts over 500 tokens reduce effective reasoning budget, degrading output quality on complex tasks. [HYPOTHESIS]
-
-**H2:** Role + Thinking Directive + Constraints + Output Format is the optimal system prompt structure. [HYPOTHESIS]
-
-**H3:** Explicit output format instructions in the system prompt ("respond in JSON", "use markdown headers") improve formatting consistency by >80%. [HYPOTHESIS]
+| ID | Hypothesis |
+|----|----------|
+| H1 | Explicit role framing improves domain accuracy by >= 0.5 score points |
+| H2 | Constraint specification (what NOT to do) reduces harmful outputs and hallucinations |
+| H3 | System prompts over 300 tokens produce diminishing returns |
+| H4 | Output format specification in system prompt improves structured output adherence |
 
 ---
 
 ## 4. Variables
 
-### Independent Variables
-| Variable | Values |
-|----------|--------|
-| Prompt length | 50, 100, 200, 500, 1000 tokens |
-| Prompt structure | Role-only / Role+Directives / Role+Directives+Format / Full |
-| Output format instruction | None / Markdown / JSON / Plain |
+**Independent:** System prompt variants (A: minimal, B: role-framed, C: role+constraints, D: full structured)
+**Controlled:** user prompt fixed, temperature: 1.0, top_p: 0.95, thinking mode: per task
+**Dependent:** Benchmark score, format compliance, hallucination rate, token cost
 
 ---
 
-## 5. Profiles to Design
+## 5. Procedure
 
-### Profile: General
+**Variant A (Minimal):**
 ```
 /nothink
-You are a knowledgeable assistant. Answer clearly and directly.
-Use markdown formatting. Cite sources when available.
 ```
 
-### Profile: Reasoning
+**Variant B (Role-framed):**
 ```
-/think
-You are an expert analyst. Analyze problems methodically.
-Show your reasoning. Provide structured conclusions.
-Use markdown with headers.
+You are an expert AI assistant specializing in technical analysis. /nothink
 ```
 
-### Profile: Code
+**Variant C (Role + Constraints):**
 ```
-/think
-You are a senior software engineer.
-Write clean, documented, production-ready code.
-Always include error handling. Explain your approach.
-Output code blocks with language specification.
-```
-
-### Profile: Creative
-```
+You are an expert AI assistant specializing in technical analysis.
+Do not speculate beyond provided information.
+Always cite the specific document or data source when making claims.
 /nothink
-You are a creative writer. Generate original, engaging content.
-Prioritize quality and creativity over speed.
 ```
 
-### Profile: RAG/Analyst
+**Variant D (Full Structured):**
 ```
+# Role
+You are a Senior AI Engineer assistant for the ai-os project.
+
+# Behavioral Constraints
+- Do not speculate beyond provided context
+- Always acknowledge uncertainty explicitly
+- Prefer structured outputs (tables, lists) for technical information
+- For code: include comments and explain design decisions
+
+# Output Format
+- Use markdown headers for multi-section responses
+- Limit responses to task scope — do not add unsolicited information
+
 /nothink
-You are a precise analyst. Base all answers strictly on provided context.
-If context is insufficient, state explicitly what is missing.
-Never invent information. Cite the source document for each claim.
 ```
+
+Run each variant against TC-discussion-0001, TC-reasoning-0001, TC-coding-0001 × 5 reps each.
 
 ---
 
-## 6. Actual Results
+## 6. Expected Results
 
-> **Status: PENDING EXECUTION**
+| Variant | Expected Score | Token Cost |
+|---------|---------------|------------|
+| A (minimal) | 3.0 | 1x |
+| B (role) | 3.5 | 1.1x |
+| C (role+constraints) | 4.0 | 1.2x |
+| D (full) | 4.2 | 1.4x |
+
+H3 prediction: D vs C delta < 0.3, but D costs 15% more tokens.
 
 ---
 
-## 7. Conclusion
+## 7–13. Actual Result / Analysis / Conclusion / Decision / Future Work / Benchmark Results
 
-> **PENDING**
+> ⏳ **PENDING**
+
+**Decision will feed:** prompts/system/ canonical prompt files, AI-9003 standard update.
 
 ---
 
@@ -120,4 +127,4 @@ Never invent information. Cite the source document for each claim.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design including profile templates |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial design |

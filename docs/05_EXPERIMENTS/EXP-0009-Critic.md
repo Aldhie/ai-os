@@ -1,4 +1,4 @@
-# EXP-0009: Critic Role Capability
+# EXP-0009: Critic Agent Effectiveness
 
 ---
 
@@ -7,95 +7,95 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0009 |
-| **Title** | Critic Role Capability |
-| **Version** | 0.1.0 |
-| **Status** | Pending Execution |
+| **Title** | Critic Agent — External Evaluation Quality and Calibration |
+| **Version** | 1.0.0 |
+| **Status** | Designed |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Experiment — Agentic Capability |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [EXP-0008](EXP-0008-Reflection.md) | Reflection capability |
-| [EXP-0010](EXP-0010-Agent.md) | Full agent capability |
+- [EXP-0008 Reflection](EXP-0008-Reflection.md)
+- [EXP-0010 Agent](EXP-0010-Agent.md)
+- [AI-9003 Prompt Engineering Standard](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md)
+- [benchmark/tests/reasoning/](../../benchmark/tests/reasoning/)
 
 ---
 
 ## 1. Objective
 
-Measure Nemotron Ultra 550B's ability to act as a **critic**: evaluate another agent's output, identify weaknesses, assign structured scores, and provide actionable improvement recommendations.
+Evaluate whether using Nemotron Ultra 550B as its own critic (evaluating and scoring a second response) produces reliable quality assessments. Measure critic calibration against human scores.
 
 ---
 
 ## 2. Background
 
-In multi-agent LLM architectures (Planner → Executor → Critic pattern), the critic role is critical for quality control. [HYPOTHESIS: Nemotron Ultra 550B can effectively fill the critic role in a multi-agent pipeline — needs validation]
+**[HYPOTHESIS]** A separate critic instance (same model, different system prompt) can reliably score responses on a 1–5 scale with < 0.5 deviation from human ground truth.
 
-Key quality dimensions for a critic model:
-- **Accuracy:** Does it correctly identify errors?
-- **Calibration:** Is its confidence in its criticism appropriate?
-- **Actionability:** Are its suggestions implementable?
-- **Non-agreement bias:** Does it avoid sycophancy (agreeing with poor answers)?
+**[HYPOTHESIS]** Using thinking ON for the critic improves score calibration vs thinking OFF.
 
 ---
 
-## 3. Hypothesis
-
-**H1:** With thinking mode ON, the model correctly identifies ≥ 85% of deliberate errors injected into test documents. [HYPOTHESIS]
-
-**H2:** The model exhibits sycophancy (rates incorrect answers as correct) < 15% of the time. [HYPOTHESIS]
-
-**H3:** Using a structured critic system prompt (with explicit scoring rubric) improves criticism quality by >25% vs an unstructured prompt. [HYPOTHESIS]
-
----
-
-## 4. Critic System Prompt Template
+## 3. Critic System Prompt Design
 
 ```
+# Role
+You are a strict quality evaluator for AI-generated responses.
+
+# Task
+You will receive: (1) an original question, (2) an AI-generated response.
+Evaluate the response on a 1-5 scale per criterion:
+- Correctness: Is every factual claim accurate?
+- Completeness: Are all required elements present?
+- Clarity: Is the response easy to understand?
+- Actionability: Can the reader immediately act on this information?
+- Conciseness: Is the response appropriately brief (no padding)?
+
+# Output Format
+Return ONLY a JSON object:
+{"correctness": N, "completeness": N, "clarity": N, "actionability": N, "conciseness": N, "overall": N, "critical_issues": ["..."]}
+
 /think
-You are a rigorous technical critic. Your role is to evaluate the provided answer.
-
-Evaluation framework:
-1. Accuracy (0-10): Is the answer factually correct?
-2. Completeness (0-10): Does it address all aspects of the question?
-3. Clarity (0-10): Is the reasoning clear and well-structured?
-4. Actionability (0-10): Are recommendations specific and implementable?
-
-Process:
-- Score each dimension independently
-- Cite specific evidence for each score
-- Identify the top 3 improvements
-- Provide a final verdict: PASS (>28/40) or FAIL (≤28/40)
-
-Do NOT be lenient. An incorrect answer that sounds confident is worse than an honest "I don't know."
 ```
 
 ---
 
-## 5. Test Cases
+## 4. Hypotheses
 
-| Input | Deliberate Flaw | Expected Critic Response |
-|-------|----------------|-------------------------|
-| Code with bug | Runtime error | Identify bug, correct it |
-| Architecture doc with security hole | Missing auth | Flag auth gap |
-| Business plan with wrong math | ROI calculation error | Catch math error |
-| Correct, high-quality answer | None | High score, no major issues |
-| Vague, unhelpful answer | No specifics | Low actionability score |
-
----
-
-## 6. Actual Results
-
-> **Status: PENDING EXECUTION**
+| ID | Hypothesis |
+|----|----------|
+| H1 | Critic score correlates with human score (r > 0.8) on factual tasks |
+| H2 | Critic overestimates scores when evaluating same-model output (self-leniency bias) |
+| H3 | Thinking ON critic is more calibrated than thinking OFF |
+| H4 | Critic identifies factual errors with > 70% precision |
 
 ---
 
-## 7. Conclusion
+## 5. Procedure
 
-> **PENDING**
+1. Generate 30 responses to TC benchmark questions (varied quality intentionally)
+2. Human annotators score each response independently (ground truth)
+3. Run critic agent on same 30 responses
+4. Compute: Pearson correlation, mean absolute error, precision on error detection
+5. Compare: critic with thinking ON vs OFF
+
+---
+
+## 6. Expected Results
+
+| Metric | Expected Value |
+|--------|---------------|
+| Human-critic correlation | r > 0.75 |
+| Mean absolute error | < 0.6 points |
+| Error detection precision | > 65% |
+| Self-leniency bias | +0.3–0.5 score inflation |
+
+---
+
+## 7–13. Actual Result through Benchmark Results
+
+> ⏳ **PENDING**
 
 ---
 
@@ -103,4 +103,4 @@ Do NOT be lenient. An incorrect answer that sounds confident is worse than an ho
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial design |

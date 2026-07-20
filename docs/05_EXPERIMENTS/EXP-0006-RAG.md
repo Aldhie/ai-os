@@ -1,4 +1,4 @@
-# EXP-0006: RAG Pipeline Quality and Configuration
+# EXP-0006: Retrieval-Augmented Generation Optimization
 
 ---
 
@@ -7,83 +7,84 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0006 |
-| **Title** | RAG Pipeline Quality and Configuration |
-| **Version** | 0.1.0 |
-| **Status** | Pending Execution |
+| **Title** | RAG Pipeline Optimization — Chunk Size, Top-K, Embedding, Hybrid Search |
+| **Version** | 1.0.0 |
+| **Status** | Designed |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Experiment — RAG |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) | RAG compatibility matrix |
-| [AI-0003-Audit](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md) | Confirmed: no embeddings on Cloud NIM |
-| [benchmark/rag/](../../benchmark/tests/rag/) | RAG benchmark TCs |
-| [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md) | REQ-AI-0013 |
+- [AI-0003 §3 Knowledge & RAG Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
+- [AI-0003-Critical-Findings-Audit R-04](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md)
+- [benchmark/tests/rag/TC-0001.md](../../benchmark/tests/rag/TC-0001.md)
+- [EXP-0005 Memory](EXP-0005-Memory.md)
 
 ---
 
 ## 1. Objective
 
-Determine optimal RAG configuration for Open WebUI + Nemotron Ultra 550B: chunk size, retrieval top-k, embedding model selection, and hybrid search vs pure vector search quality.
-
-Critical pre-requisite: identify and validate a working embedding provider (Cloud NIM does not provide embeddings). [FACT: Official Doc — confirmed in AI-0003-Audit]
+Optimize the Open WebUI RAG pipeline for Nemotron Ultra 550B: determine optimal chunk size, top-k retrieval count, embedding model, and hybrid search configuration.
 
 ---
 
 ## 2. Background
 
-RAG in Open WebUI is entirely client-side. NIM only receives the augmented prompt. [FACT: OW docs]
+**[FACT]** Cloud NIM does not provide `/v1/embeddings` endpoint for Nemotron Ultra 550B. A separate embedding provider is required. (AI-0003-Critical-Findings-Audit R-04)
 
-Embedding provider options (since Cloud NIM has no `/v1/embeddings`):
-- `nomic-embed-text` via Ollama [HYPOTHESIS: available, good quality/cost ratio]
-- `mxbai-embed-large` via Ollama [HYPOTHESIS: higher quality but larger]
-- `nvidia/nv-embedqa-e5-v5` via NVIDIA Cloud NIM (separate model) [HYPOTHESIS: best NVIDIA-native integration]
+**[FACT]** Open WebUI supports ChromaDB (default), PGVector, and Qdrant as vector stores.
+
+**[FACT]** Open WebUI supports hybrid search (BM25 + vector) with configurable reranking.
+
+**[ASSUMPTION]** `chunk_size: 512` is a reasonable default, but domain-specific documents may benefit from larger chunks (1024) to preserve context.
 
 ---
 
-## 3. Hypothesis
+## 3. Hypotheses
 
-**H1:** `chunk_size=512, chunk_overlap=50, top_k=5` is optimal for standard document Q&A. [HYPOTHESIS]
-
-**H2:** Hybrid search (BM25 + vector) outperforms pure vector search by >15% on domain-specific terminology queries. [HYPOTHESIS]
-
-**H3:** `nomic-embed-text` provides sufficient quality for standard RAG while avoiding Cloud API dependency. [HYPOTHESIS]
+| ID | Hypothesis |
+|----|----------|
+| H1 | `chunk_size: 512` outperforms `1024` on short-answer factual queries |
+| H2 | `chunk_size: 1024` outperforms `512` on questions requiring multi-sentence context |
+| H3 | Hybrid search (BM25 + vector) outperforms vector-only by > 0.5 score on domain-specific queries |
+| H4 | `top_k: 5` is sufficient; `top_k: 10` does not improve quality and increases token cost |
 
 ---
 
 ## 4. Variables
 
-| Variable | Test Values |
-|----------|------------|
-| chunk_size | 256, 512, 1024, 2048 |
-| chunk_overlap | 0, 50, 100 |
-| retrieval top_k | 3, 5, 10 |
-| search mode | vector-only, BM25-only, hybrid |
-| embedding model | nomic-embed-text, mxbai-embed-large, nv-embedqa-e5-v5 |
+**Independent:** chunk_size `[256, 512, 1024]`, top_k `[3, 5, 10]`, search mode `[vector, hybrid]`
+**Controlled:** embedding model (nomic-embed-text via Ollama), Nemotron Ultra 550B, thinking OFF
+**Dependent:** Answer accuracy, hallucination rate, prompt_tokens
 
 ---
 
-## 5. Evaluation Dataset
+## 5. Procedure
 
-Use domain-specific documents from `dataset/` folder.
-Create 20 ground-truth Q&A pairs.
-Metric: Recall@K (does correct answer appear in retrieved chunks).
-
----
-
-## 6. Actual Results
-
-> **Status: PENDING EXECUTION**
+1. Prepare test document set (5 technical docs, total ~50 pages)
+2. For each chunk_size × top_k × search_mode combination (18 combinations):
+   - Index documents
+   - Run TC-rag-0001, TC-rag-0002, TC-rag-0003 × 3 reps
+   - Record accuracy score, hallucination instances, prompt_tokens
+3. Identify best combination via F1 score (accuracy vs token cost)
 
 ---
 
-## 7. Conclusion
+## 6. Expected Results
 
-> **PENDING**
+| Config | Expected Accuracy | Token Cost |
+|--------|------------------|------------|
+| chunk=512, k=5, hybrid | 4.2/5 | medium |
+| chunk=1024, k=5, hybrid | 4.0/5 | high |
+| chunk=512, k=10, hybrid | 4.0/5 | high |
+| chunk=256, k=5, vector | 3.5/5 | low |
+
+---
+
+## 7–13. Actual Result through Benchmark Results
+
+> ⏳ **PENDING** — Requires separate embedding provider setup first.
 
 ---
 
@@ -91,4 +92,4 @@ Metric: Recall@K (does correct answer appear in retrieved chunks).
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial design |

@@ -1,4 +1,4 @@
-# EXP-0008: Self-Reflection and Error Correction Capability
+# EXP-0008: Reflection Loop Effectiveness
 
 ---
 
@@ -7,78 +7,85 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0008 |
-| **Title** | Self-Reflection and Error Correction |
-| **Version** | 0.1.0 |
-| **Status** | Pending Execution |
+| **Title** | Reflection Loop — Self-Correction and Iterative Quality Improvement |
+| **Version** | 1.0.0 |
+| **Status** | Designed |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Experiment — Agentic Capability |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [EXP-0007](EXP-0007-Planner.md) | Planning capability |
-| [EXP-0009](EXP-0009-Critic.md) | Critic capability |
-| [benchmark/reasoning/](../../benchmark/tests/reasoning/) | Reasoning benchmark TCs |
+- [EXP-0009 Critic](EXP-0009-Critic.md)
+- [EXP-0007 Planner](EXP-0007-Planner.md)
+- [EXP-0010 Agent](EXP-0010-Agent.md)
+- [benchmark/tests/reasoning/TC-0003.md](../../benchmark/tests/reasoning/TC-0003.md)
 
 ---
 
 ## 1. Objective
 
-Measure whether Nemotron Ultra 550B can identify and correct its own errors when prompted to reflect on a previous response. This validates the model's suitability for multi-turn agentic workflows where self-correction is required.
+Measure whether a reflection loop (model reviews its own output and revises) improves output quality for Nemotron Ultra 550B. Determine optimal reflection depth (1, 2, or 3 iterations) and evaluate diminishing returns.
 
 ---
 
-## 2. Hypothesis
+## 2. Background
 
-**H1:** When shown its own incorrect answer and asked to reflect, the model corrects the error ≥ 80% of the time with thinking mode ON. [HYPOTHESIS]
+**[HYPOTHESIS]** Reflection (asking the model to critique its own response and revise) improves quality by 0.5–1.0 score points at the cost of 2–3x token usage.
 
-**H2:** Reflection quality correlates with thinking mode: thinking ON produces deeper corrections than thinking OFF. [HYPOTHESIS]
-
-**H3:** The model can identify the specific step in its reasoning where the error was introduced. [HYPOTHESIS]
+**[HYPOTHESIS]** Nemotron Ultra 550B's built-in reasoning (thinking ON) may already perform implicit self-reflection, reducing the marginal benefit of an explicit reflection loop.
 
 ---
 
-## 3. Test Procedure
+## 3. Hypotheses
 
-**Phase 1: Generate initial answer** (deliberately inject difficult questions with known correct answers)
+| ID | Hypothesis |
+|----|----------|
+| H1 | 1 reflection iteration improves score by >= 0.5 points |
+| H2 | 2+ iterations show diminishing returns (< 0.2 additional improvement) |
+| H3 | Reflection benefit is lower when thinking mode is ON (internal CoT already reflects) |
 
-**Phase 2: Inject reflection prompt**
+---
+
+## 4. Reflection Protocol
+
+**Iteration 0 (Baseline):** Generate initial response.
+
+**Iteration 1 (Reflect):**
 ```
-Please review your previous answer carefully. 
-Identify any errors or weaknesses. 
-Provide a corrected and improved response.
+User: Review your previous response. Identify: (1) any incorrect claims, (2) missing important points, (3) logical gaps. Then provide an improved response.
 ```
 
-**Phase 3: Evaluate**
-- Did the model identify the error?
-- Was the corrected answer better?
-- Was the reasoning trace in `<think>` deeper on the second attempt?
+**Iteration 2 (Deep Reflect):**
+```
+User: You have now reviewed your response once. Perform a final quality check: is this response complete, accurate, and actionable? Provide your final answer.
+```
 
 ---
 
-## 4. Task Set
+## 5. Procedure
 
-| Task | Type | Known Correct Answer |
-|------|------|---------------------|
-| Math logic puzzle | Reasoning | Verifiable |
-| Incorrect code review | Code | Known correct code |
-| Factual claim verification | Knowledge | Verifiable fact |
-| Architecture flaw identification | Design | Expert review |
+1. Run TC-reasoning-0001, TC-architecture-0001, TC-coding-0001 with 0, 1, and 2 reflection iterations
+2. Score each iteration independently (blind review)
+3. Record token count delta per iteration
+4. Compare: thinking ON + 0 reflections vs thinking OFF + 1 reflection
 
 ---
 
-## 5. Actual Results
+## 6. Expected Results
 
-> **Status: PENDING EXECUTION**
+| Config | Expected Score | Token Cost |
+|--------|---------------|------------|
+| No reflection, thinking OFF | 3.0/5 | 1x |
+| No reflection, thinking ON | 4.5/5 | 5x |
+| 1 reflection, thinking OFF | 3.8/5 | 3x |
+| 1 reflection, thinking ON | 4.7/5 | 10x |
 
 ---
 
-## 6. Conclusion
+## 7–13. Actual Result through Benchmark Results
 
-> **PENDING**
+> ⏳ **PENDING**
 
 ---
 
@@ -86,4 +93,4 @@ Provide a corrected and improved response.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial design |

@@ -1,4 +1,4 @@
-# EXP-0007: Multi-Step Planning Capability
+# EXP-0007: Planner Agent Effectiveness
 
 ---
 
@@ -7,76 +7,80 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0007 |
-| **Title** | Multi-Step Planning Capability |
-| **Version** | 0.1.0 |
-| **Status** | Pending Execution |
+| **Title** | Planner Agent — Task Decomposition Quality and Multi-Step Execution |
+| **Version** | 1.0.0 |
+| **Status** | Designed |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Experiment — Agentic Capability |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Model spec — agentic capability section |
-| [EXP-0003](EXP-0003-Thinking.md) | Thinking mode validation |
-| [benchmark/planning/](../../benchmark/tests/planning/) | Planning benchmark TCs |
+- [AI-0001 § Agentic Workflows](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
+- [AI-0003 §4 Tool Use Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
+- [EXP-0003 Thinking](EXP-0003-Thinking.md)
+- [EXP-0010 Agent](EXP-0010-Agent.md)
+- [benchmark/tests/planning/TC-0001.md](../../benchmark/tests/planning/TC-0001.md)
 
 ---
 
 ## 1. Objective
 
-Measure Nemotron Ultra 550B's ability to decompose complex goals into executable step-by-step plans. Validate whether thinking mode (`/think`) produces materially better plans than non-thinking mode.
+Evaluate Nemotron Ultra 550B's ability to decompose complex multi-step tasks into executable plans, and measure plan quality, completeness, and step ordering correctness.
 
 ---
 
-## 2. Hypothesis
+## 2. Background
 
-**H1:** With thinking mode ON, the model produces plans that are:
-- More complete (cover all subtasks)
-- More sequentially correct (right dependency order)
-- More specific (actionable steps vs vague directions)
-compared to thinking mode OFF. [HYPOTHESIS]
+**[FACT]** Nemotron Ultra 550B is described as "Best For: complex agentic workflows" in official NVIDIA model card.
 
-**H2:** Providing a planning template in the system prompt increases plan quality by >20% on completeness score. [HYPOTHESIS]
+**[HYPOTHESIS]** Thinking ON (`/think`) significantly improves plan quality vs OFF for tasks with >5 steps.
 
-**H3:** The model can correctly identify and flag task dependencies and blockers in a multi-agent scenario. [HYPOTHESIS]
+**[HYPOTHESIS]** Structured system prompts specifying output format (numbered steps, prerequisites) improve plan executability.
 
 ---
 
-## 3. Task Set
+## 3. Hypotheses
 
-| Task | Complexity | Domain |
-|------|-----------|--------|
-| Build a REST API with auth | Medium | Software Engineering |
-| Plan a hotel marketing campaign | Medium | Hospitality |
-| Design a RAG pipeline architecture | Hard | AI Engineering |
-| Debug a distributed system failure | Hard | Systems Engineering |
-| Create a 30-day business launch plan | Hard | Business |
+| ID | Hypothesis |
+|----|----------|
+| H1 | Thinking ON improves plan completeness score by >= 1.0 on 5-point scale for complex tasks |
+| H2 | Plans generated with tool definitions available are more actionable than without |
+| H3 | Explicit "think step by step" user instructions improve planning without thinking mode ON |
 
 ---
 
-## 4. Evaluation Criteria
+## 4. Procedure
 
-| Criterion | Weight | Measurement |
-|-----------|--------|-------------|
-| Completeness | 30% | All major steps present |
-| Sequential correctness | 25% | Steps in logical order |
-| Actionability | 25% | Steps are executable, not vague |
-| Dependency identification | 20% | Blockers and dependencies noted |
+**Task Set:**
+- TC-planning-0001: Plan a Docker-based deployment of Open WebUI with NIM integration
+- TC-planning-0002: Plan a RAG pipeline setup from scratch
+- TC-planning-0003: Plan a debugging workflow for a failing API integration
+
+**Variables:** thinking mode (ON vs OFF), tool definitions available (yes/no), system prompt structure
+
+**Scoring Criteria:**
+- Step completeness: are all necessary steps present?
+- Step ordering: are dependencies correctly sequenced?
+- Actionability: can a junior engineer execute each step without further research?
+- Tool accuracy: are correct tools called in the plan?
 
 ---
 
-## 5. Actual Results
+## 5. Expected Results
 
-> **Status: PENDING EXECUTION**
+| Config | Expected Plan Score |
+|--------|--------------------|
+| Thinking ON, tools available | 4.5/5 |
+| Thinking ON, no tools | 4.0/5 |
+| Thinking OFF, tools available | 3.5/5 |
+| Thinking OFF, no tools | 3.0/5 |
 
 ---
 
-## 6. Conclusion
+## 6–13. Actual Result through Benchmark Results
 
-> **PENDING**
+> ⏳ **PENDING**
 
 ---
 
@@ -84,4 +88,4 @@ compared to thinking mode OFF. [HYPOTHESIS]
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial design |

@@ -1,4 +1,4 @@
-# EXP-0003: Thinking Mode Behavior Validation
+# EXP-0003: Thinking Mode Optimization
 
 ---
 
@@ -7,175 +7,127 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0003 |
-| **Title** | Thinking Mode Behavior Validation |
-| **Version** | 0.1.0 |
-| **Status** | Pending Execution |
+| **Title** | Thinking Mode Optimization — ON vs OFF vs medium_effort vs reasoning_budget |
+| **Version** | 1.0.0 |
+| **Status** | Designed |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Category** | Experiment — Reasoning Control |
 
 ## Cross-References
 
-| Document | Relationship |
-|----------|--------------|
-| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Reasoning capability spec |
-| [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) | Thinking mode compatibility |
-| [AI-0003-Audit](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md) | Identified 4 reasoning control methods |
-| [AI-9003](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md) | Thinking mode control standard |
-| [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md) | REQ-AI-0005 |
+- [AI-0001 Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
+- [AI-0003-Critical-Findings-Audit](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md) — reasoning mode findings R-03, NEW-01
+- [EXP-0001 Temperature](EXP-0001-Temperature.md)
+- [AI-9003 Prompt Engineering Standard §6](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md)
+- [benchmark/tests/reasoning/](../../benchmark/tests/reasoning/)
 
 ---
 
 ## 1. Objective
 
-Validate all four thinking mode control methods available for Nemotron Ultra 550B:
-1. System prompt `/think`
-2. System prompt `/nothink`
-3. `extra_body.chat_template_kwargs.enable_thinking` via Pipeline
-4. `medium_effort` mode via Pipeline
-
-Measure: token cost, response quality, and behavioral consistency across each method.
+Quantify the quality vs token cost trade-off for Nemotron Ultra 550B across four thinking modes: **OFF**, **ON (full)**, **medium_effort**, and **reasoning_budget** (hard cap). Produce a decision table for Open WebUI model profile configuration.
 
 ---
 
 ## 2. Background
 
-Nemotron Ultra 550B supports selective reasoning. [FACT: Official Doc — NVIDIA NIM API Reference]
+**[FACT]** Nemotron Ultra 550B supports four thinking control methods per official NVIDIA docs:
+1. System prompt `/think` / `/nothink` (Open WebUI compatible)
+2. `extra_body.chat_template_kwargs.enable_thinking` (Pipeline required in OW)
+3. `extra_body.chat_template_kwargs.medium_effort: true` (Pipeline required)
+4. `reasoning_budget: N` (hard token cap, Pipeline required)
 
-Four methods are documented:
-- `/think` and `/nothink` in system prompt [FACT: Official Doc]
-- `extra_body.chat_template_kwargs.enable_thinking: true/false` [FACT: Official Doc]
-- `medium_effort: true` in `chat_template_kwargs` [FACT: Official Doc]
-- `reasoning_budget` hard token cap [FACT: Official Doc]
+Reference: [NVIDIA NIM API Docs](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b)
 
-Critical question: When called via Open WebUI with only system prompt method, does the model behave identically to when called with `extra_body` method? [HYPOTHESIS]
+**[HYPOTHESIS]** `medium_effort` reduces token cost by 30–60% vs full thinking ON, with <15% quality degradation on complex reasoning. Pending empirical validation.
+
+**[HYPOTHESIS]** For coding tasks, `reasoning_budget: 512` provides adequate reasoning at minimal token overhead.
 
 ---
 
-## 3. Hypothesis
+## 3. Hypotheses
 
-**H1:** `/think` system prompt produces a reasoning trace in `<think>` tags, identical in structure to `enable_thinking: true`. [HYPOTHESIS]
-
-**H2:** `medium_effort` mode produces reasoning traces that are 30-50% shorter than full thinking mode for equivalent task quality. [HYPOTHESIS — to validate]
-
-**H3:** `reasoning_budget=512` effectively truncates reasoning traces at ~512 tokens as documented. [HYPOTHESIS — to validate]
-
-**H4:** When reasoning is OFF via `/nothink`, token consumption is reduced by at least 40% compared to reasoning ON. [HYPOTHESIS]
+| ID | Hypothesis | Expected Outcome |
+|----|-----------|------------------|
+| H1 | Thinking ON significantly outperforms OFF on reasoning tasks | Score delta >= 1.0 on 5-point scale |
+| H2 | `medium_effort` achieves 85%+ of full thinking quality at 50% token cost | Token saving >= 40% |
+| H3 | Thinking mode has minimal impact on RAG synthesis (doc is ground truth) | Score delta <= 0.3 |
+| H4 | `reasoning_budget: 512` sufficient for simple coding; fails on architecture design | Pass rate >= 80% for simple, <= 40% for complex |
+| H5 | For customer service tasks, thinking OFF is better (speed > depth) | Latency 3× better, quality acceptable |
 
 ---
 
 ## 4. Variables
 
-### Independent Variable: Thinking Mode
-| Mode | Method | Parameters |
-|------|--------|------------|
-| Full ON (system) | System prompt `/think` | No extra_body |
-| Full ON (API) | Pipeline `enable_thinking: true` | extra_body |
-| Medium Effort | Pipeline `medium_effort: true` | extra_body |
-| OFF (system) | System prompt `/nothink` | No extra_body |
-| OFF (API) | Pipeline `enable_thinking: false` | extra_body |
-| Budget 512 | Pipeline `reasoning_budget: 512` | extra_body |
-
-### Metrics
-| Metric | Measurement |
-|--------|-------------|
-| Thinking tokens | Count tokens in `<think>...</think>` |
-| Answer tokens | Count tokens after `</think>` |
-| Answer quality | Score against benchmark ground truth |
-| Behavioral equivalence | System vs API method — compare outputs |
+**Independent:** Thinking mode: `[OFF, ON, medium_effort, budget_512, budget_1024, budget_2048]`
+**Controlled:** temperature: 1.0, top_p: 0.95, seed: 42
+**Dependent:** Benchmark score, `completion_tokens`, estimated time-to-first-token, reasoning token count
 
 ---
 
 ## 5. Environment
 
-| Component | Value |
-|-----------|-------|
-| Model | nvidia/nemotron-3-ultra-550b-a55b |
-| Temperature | 1.0 (NVIDIA default) |
-| Top-P | 0.95 |
-| Max Tokens | 16000 |
-| Test Tasks | reasoning/TC-0001, coding/TC-0001, nim/TC-0001 |
+```yaml
+model: nvidia/nemotron-3-ultra-550b-a55b
+endpoint: https://integrate.api.nvidia.com/v1
+temperature: 1.0  # NVIDIA default
+top_p: 0.95       # NVIDIA default
+method_for_medium_effort: Pipeline injection of extra_body
+method_for_budget: Pipeline injection of reasoning_budget
+method_for_on_off: system prompt /think and /nothink
+```
 
 ---
 
 ## 6. Procedure
 
-**Phase 1: System prompt method**
-1. Run reasoning/TC-0001 with system prompt `/think` — record output, count thinking tokens
-2. Run same TC with system prompt `/nothink` — record output, count output tokens
+### Phase 1 — Reasoning Benchmark
+Tasks: TC-reasoning-0001, TC-reasoning-0002, TC-reasoning-0003
+For each thinking mode: run × 5 reps, record score + completion_tokens
 
-**Phase 2: API method via Pipeline**
-1. Enable Pipeline that injects `chat_template_kwargs`
-2. Run same TC with `enable_thinking: true` — record output
-3. Compare Phase 1 and Phase 2 outputs for structural equivalence
+### Phase 2 — Coding Benchmark
+Tasks: TC-coding-0001, TC-coding-0002
+For each thinking mode: run × 3 reps, record unit test pass rate + completion_tokens
 
-**Phase 3: Medium effort**
-1. Run TC with `medium_effort: true` — count thinking tokens
-2. Compare answer quality vs Full ON
+### Phase 3 — RAG Synthesis Benchmark
+Tasks: TC-rag-0001, TC-rag-0002
+For each thinking mode: run × 5 reps, record factual accuracy + hallucination count
 
-**Phase 4: Reasoning budget**
-1. Run TC with `reasoning_budget: 512` — verify truncation behavior
-2. Observe: does it truncate at `~512 + 500` tokens as documented?
+### Phase 4 — Hospitality/Customer Service Benchmark
+Tasks: TC-hospitality-0001
+For each thinking mode: record score + latency
 
 ---
 
 ## 7. Expected Results
 
-| Mode | Thinking Tokens | Answer Quality | Use Case |
-|------|-----------------|----------------|----------|
-| Full ON | 500-3000 | Highest | Complex reasoning, code |
-| Medium Effort | 150-800 | High | Standard Q&A, analysis |
-| Budget 512 | ≤ 1012 | Medium-High | Token-constrained |
-| OFF | 0 | Medium | Simple Q&A, RAG |
+**Table 1 — Expected Thinking Mode Trade-offs**
+
+| Mode | Quality Score | Token Cost | Latency | Best For |
+|------|--------------|------------|---------|----------|
+| OFF | 3.0/5 | 1x | 1x | RAG, customer service, classification |
+| ON | 5.0/5 | 4–8x | 4–8x | Math, logic, complex architecture |
+| medium_effort | 4.2/5 | 2–3x | 2–3x | General reasoning, planning |
+| budget_512 | 3.8/5 | 1.5x | 1.5x | Simple code, debugging |
+| budget_1024 | 4.0/5 | 2x | 2x | Medium complexity tasks |
+| budget_2048 | 4.5/5 | 3x | 3x | Complex tasks with budget constraint |
 
 ---
 
-## 8. Actual Results
+## 8. Actual Result
 
-> **Status: PENDING EXECUTION**
+> ⏳ **PENDING** — Requires Pipeline implementation for `medium_effort` and `reasoning_budget` injection.
 
-| Mode | Thinking Tokens | Answer Quality | Behavioral Match |
-|------|-----------------|----------------|-------------------|
-| Full ON (system) | PENDING | PENDING | PENDING |
-| Full ON (API) | PENDING | PENDING | PENDING |
-| Medium Effort | PENDING | PENDING | PENDING |
-| Budget 512 | PENDING | PENDING | PENDING |
-| OFF (system) | PENDING | PENDING | PENDING |
-| OFF (API) | PENDING | PENDING | PENDING |
+**Prerequisite:** Build Open WebUI Pipeline for `extra_body` injection before executing phases 1-4.
 
 ---
 
-## 9. Analysis
+## 9–13. Analysis / Conclusion / Decision / Future Work / Benchmark Results
 
-> **PENDING**
+> ⏳ **To be completed post-execution.**
 
-Analysis framework:
-1. Are system prompt and API methods behaviorally equivalent? (Critical: determines if Pipeline is required)
-2. What is the token cost ratio: Full ON vs Medium Effort vs OFF?
-3. Does reasoning_budget behave as documented (truncate at budget+500)?
-
----
-
-## 10. Conclusion
-
-> **PENDING**
-
----
-
-## 11. Decision
-
-> **PENDING** — Will determine:
-> - Whether Pipeline is required for basic use or only advanced use
-> - Recommended thinking mode per agent profile
-> - Token budget allocations per profile
-
----
-
-## 12. Future Work
-
-- EXP-0004: Use findings here to optimize system prompt design
-- BM-11: Add as benchmark TC for regression testing
+**Decision will feed:** parameters.json profiles, AI-9003 Thinking Mode Selection Guide, AI-0003 compatibility matrix update.
 
 ---
 
@@ -183,4 +135,4 @@ Analysis framework:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |
+| 1.0.0 | 2026-07-20 | Aldhie | Initial design — 4 hypotheses, 4-phase procedure |

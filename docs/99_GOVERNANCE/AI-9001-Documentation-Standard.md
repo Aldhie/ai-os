@@ -7,190 +7,152 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | AI-9001 |
-| **Title** | Documentation Standard |
+| **Title** | Documentation Engineering Standard |
 | **Version** | 1.0.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-| **Applies To** | All documents in `Aldhie/ai-os` |
-
-## Cross-References
-
-- [AI-9002 Benchmark Standard](AI-9002-Benchmark-Standard.md)
-- [AI-9003 Prompt Engineering Standard](AI-9003-Prompt-Engineering-Standard.md)
-- [AI-9004 Versioning Policy](AI-9004-Versioning-Policy.md)
-- [AI-9006 Repository Structure](AI-9006-Repository-Structure.md)
-- [AI-9008 EDR Standard](AI-9008-Engineering-Decision-Record-Standard.md)
+| **Scope** | All documents in `Aldhie/ai-os` |
+| **Cross-References** | [AI-9002](AI-9002-Benchmark-Standard.md) · [AI-9004](AI-9004-Versioning-Policy.md) · [AI-9006](AI-9006-Repository-Structure.md) · [AI-9008](AI-9008-Engineering-Decision-Record-Standard.md) |
 
 ---
 
 ## 1. Purpose
 
-This document defines mandatory structure, metadata, content quality, and maintenance standards for every document in the `Aldhie/ai-os` repository. Compliance is required before any document reaches `Active` status.
+This standard defines the required structure, metadata, content quality, and lifecycle management for all documents in the `Aldhie/ai-os` engineering repository. Every document that fails to meet this standard is classified as a documentation debt item and must be remediated before the next release.
 
 ---
 
-## 2. Document Classification
+## 2. Document Taxonomy
 
-| Class | Prefix | Location | Example |
-|-------|--------|----------|---------|
-| Engineering Spec | `AI-0xxx` | `docs/00_ENGINEERING/` | AI-0001 |
-| Experiment | `EXP-0xxx` | `docs/05_EXPERIMENTS/` | EXP-0001 |
-| Configuration | `CFG-0xxx` | `docs/10_CONFIGURATION/` | CFG-0001 |
-| Runtime | `RUN-0xxx` | `docs/20_RUNTIME/` | RUN-0001 |
-| Dataset | `DS-0xxx` | `docs/30_DATASET/` | DS-0001 |
-| Fine-Tune | `FT-0xxx` | `docs/40_FINETUNE/` | FT-0001 |
-| Testing | `TST-0xxx` | `docs/90_TESTING/` | TST-0001 |
-| Governance | `AI-9xxx` | `docs/99_GOVERNANCE/` | AI-9001 |
-| Requirement | `REQ-xxx` | `docs/00_ENGINEERING/REQ-INDEX.md` | REQ-AI-0001 |
-| Audit | `AUDIT-YYYY-MM-DD` | `docs/00_ENGINEERING/` | AUDIT-2026-07-20 |
+| Prefix | Category | Location | Example |
+|--------|----------|----------|---------|
+| `AI-0xxx` | Engineering Specification | `docs/00_ENGINEERING/` | `AI-0001-Nemotron-Engineering-Spec.md` |
+| `AI-9xxx` | Governance Standard | `docs/99_GOVERNANCE/` | `AI-9001-Documentation-Standard.md` |
+| `EXP-xxxx` | Experiment Record | `docs/05_EXPERIMENTS/` | `EXP-0001-Temperature.md` |
+| `REQ-AI-xxxx` | Requirement | `docs/00_ENGINEERING/REQ-INDEX.md` | `REQ-AI-0001` |
+| `TC-xxxx` | Test Case | `benchmark/tests/` | `TC-0001.md` |
+| `ADR-xxxx` | Architecture Decision Record | `docs/00_ENGINEERING/` | `AI-0006-Architecture-Decision-Record.md` |
+| `AUDIT-yyyy-mm-dd` | Repository Audit | `docs/00_ENGINEERING/` | `AUDIT-2026-07-20.md` |
 
 ---
 
-## 3. Mandatory Document Structure
+## 3. Required Document Header
 
-Every document MUST contain these sections in this order:
-
-### 3.1 Metadata Block
+Every document MUST begin with:
 
 ```markdown
+# <DOCUMENT-ID>: <Title>
+
+---
+
 ## Metadata
 
 | Field | Value |
 |-------|-------|
-| Document ID | |
-| Title | |
-| Version | |
-| Status | Draft / Review / Active / Deprecated |
-| Owner | |
-| Created | YYYY-MM-DD |
-| Updated | YYYY-MM-DD |
-| Scope | |
-```
-
-### 3.2 Cross-References Block
-
-Immediately after Metadata. Must list all directly related documents with relative links.
-
-```markdown
-## Cross-References
-- [AI-0001 Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [REQ-AI-0001](../00_ENGINEERING/REQ-INDEX.md#req-ai-0001)
-```
-
-### 3.3 Purpose / Scope
-
-What this document covers. What it does NOT cover. Who should read it.
-
-### 3.4 Body Sections
-
-Domain-specific content per document class.
-
-### 3.5 Changelog
-
-Every document MUST have a changelog at the bottom:
-
-```markdown
-## Changelog
-
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | YYYY-MM-DD | name | Initial release |
+| **Document ID** | <ID> |
+| **Title** | <Full title> |
+| **Version** | <semver x.y.z> |
+| **Status** | Draft | Review | Active | Deprecated |
+| **Owner** | <GitHub username> |
+| **Created** | <YYYY-MM-DD> |
+| **Updated** | <YYYY-MM-DD> |
+| **Scope** | <What this document covers> |
+| **Cross-References** | <Links to related documents> |
 ```
 
 ---
 
 ## 4. Content Quality Rules
 
-### 4.1 Fact vs Assumption
+### 4.1 Fact vs Assumption Separation
 
-Every engineering claim MUST be tagged:
+| Classification | Marker | Requirement |
+|---------------|--------|-------------|
+| **Confirmed Fact** | ✅ | Must cite source (official docs, benchmark, experiment) |
+| **Engineering Assumption** | ⚠️ `[ASSUMPTION]` | Must state basis and how to verify |
+| **Hypothesis** | 🔬 `[HYPOTHESIS]` | Must describe test to confirm |
+| **Unknown** | ❓ `[UNKNOWN]` | Must be linked to a benchmark item |
 
-| Tag | Meaning | Example |
-|-----|---------|------|
-| `[FACT]` | Verified from official docs or experiment | `[FACT] temperature range is 0.0–2.0 per NVIDIA API ref` |
-| `[HYPOTHESIS]` | Engineering inference, not yet tested | `[HYPOTHESIS] medium_effort reduces tokens by ~40%` |
-| `[BENCHMARK-REQUIRED]` | Needs empirical test | `[BENCHMARK-REQUIRED] parallel tool call success rate` |
-| `[ASSUMPTION]` | Temporary placeholder pending verification | `[ASSUMPTION] Cloud NIM uses vLLM backend` |
+**STRICT RULE:** Facts and assumptions must NEVER be mixed in the same sentence without explicit labeling.
 
-**Rule:** No assumption may exist in an `Active` document for more than 14 days without either promotion to `[FACT]` or escalation to a benchmark item.
+### 4.2 Claims Requiring Citations
 
-### 4.2 Reference Requirements
+All of the following require a citation:
+- Performance numbers (tokens/sec, latency, quality scores)
+- Parameter recommendations (temperature values, max_tokens ranges)
+- Model capability claims (context length, supported features)
+- Compatibility assertions (supported / unsupported)
+- Security recommendations
 
-Every `[FACT]` must cite one of:
-- Official vendor documentation URL
-- Experiment document (EXP-xxxx) with result
-- Benchmark test case (TC-xxxx) with score
-- Peer-reviewed source
+### 4.3 Prohibited Patterns
 
-### 4.3 Tables
+```
+❌ "The model performs well on reasoning tasks." (vague, uncited)
+❌ "This should work." (assumption presented as fact)
+❌ "TODO: fill in later" (placeholder in Active document)
+❌ "See above" (broken reference)
+❌ "As mentioned before" (forward/backward reference without link)
+```
 
-- Every comparison MUST be in a table, not prose.
-- Tables must have a caption above them: `**Table N — Description**`.
-- Maximum 8 columns per table. Split wider tables.
+### 4.4 Required Patterns
 
-### 4.4 Code Blocks
-
-- Every code block must specify language: ` ```python `, ` ```json `, ` ```bash `
-- Every code block must have a comment or caption explaining what it does.
-- No code block may contain placeholder values like `YOUR_KEY_HERE` without a comment explaining the substitution.
-
-### 4.5 Prohibited Content
-
-- No placeholder sections with only `TODO` text.
-- No `coming soon` or `to be determined` without a linked issue or benchmark.
-- No statements like "may work" or "might support" without tagging as `[HYPOTHESIS]`.
+```
+✅ "temperature=1.0 per official NVIDIA NIM docs [Source: docs.api.nvidia.com/nim]"
+✅ "[ASSUMPTION] top_p=0.95 produces good output diversity — verify via EXP-0002"
+✅ "[HYPOTHESIS] medium_effort reduces token cost by ~40% — pending BM-11"
+```
 
 ---
 
-## 5. Status Lifecycle
+## 5. Document Lifecycle
 
 ```
 Draft → Review → Active → Deprecated
-           ↓
-        Rejected
+  ↑         ↓
+  └─────────┘ (rejected → revise)
 ```
 
-| Status | Meaning | Who Can Set |
-|--------|---------|-------------|
-| Draft | Work in progress | Author |
-| Review | Ready for review | Author |
-| Active | Approved and correct | Owner |
-| Deprecated | Superseded or obsolete | Owner |
-| Rejected | Failed review | Reviewer |
-
-**Rule:** Only `Active` documents are authoritative. `Draft` documents may contain unverified claims tagged `[ASSUMPTION]`.
+| Status | Meaning | Action Required |
+|--------|---------|----------------|
+| **Draft** | Work in progress; may have incomplete sections | No blocking requirement |
+| **Review** | Complete; awaiting engineering validation | All facts must be cited |
+| **Active** | Validated and production-approved | Zero placeholders; all benchmarks resolved |
+| **Deprecated** | Superseded by a newer document | Must link to successor document |
 
 ---
 
-## 6. Versioning
+## 6. Section Requirements by Document Type
 
-See [AI-9004 Versioning Policy](AI-9004-Versioning-Policy.md) for full semver rules.
+### Engineering Spec (AI-0xxx)
+Required sections:
+1. Metadata
+2. Purpose
+3. Scope
+4. Requirements (with REQ-IDs)
+5. Technical Detail
+6. Configuration
+7. Risk
+8. Cross-References
+9. Changelog
 
-Brief summary:
-- `MAJOR` — breaking change to documented interface or incompatible change to engineering decision
-- `MINOR` — additive content, new sections, new evidence
-- `PATCH` — typo, formatting, link fix
+### Experiment (EXP-xxxx)
+Required sections: see [AI-9002](AI-9002-Benchmark-Standard.md)
+
+### Governance (AI-9xxx)
+Required sections:
+1. Metadata
+2. Purpose
+3. Rules/Standards
+4. Enforcement
+5. Exceptions
+6. Changelog
 
 ---
 
-## 7. Prohibited Actions
-
-The following actions are **explicitly prohibited** on any document:
-
-1. Replacing detailed tables with prose summaries
-2. Removing changelog entries
-3. Removing cross-references without updating all pointing documents
-4. Shortening benchmark evidence sections
-5. Promoting `[ASSUMPTION]` to `[FACT]` without citation
-6. Merging two documents without creating a redirect entry in both originals
-7. Deleting requirements without a deprecation notice in REQ-INDEX.md
-
----
-
-## Changelog
+## 7. Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial release — full documentation standard |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial release — production architecture refactor |

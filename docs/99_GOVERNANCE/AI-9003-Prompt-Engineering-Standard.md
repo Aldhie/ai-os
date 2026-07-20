@@ -7,150 +7,150 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | AI-9003 |
-| **Title** | Prompt Engineering Standard |
+| **Title** | Prompt Engineering Standard for Nemotron Ultra 550B |
 | **Version** | 1.0.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-0001 Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0003 Compatibility Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [EXP-0004 System Prompt Experiment](../05_EXPERIMENTS/EXP-0004-SystemPrompt.md)
-- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
+| **Scope** | All system prompts and prompt templates in `Aldhie/ai-os` |
+| **Cross-References** | [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) · [AI-0002](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md) · [EXP-0004](../05_EXPERIMENTS/EXP-0004-SystemPrompt.md) · [AI-9002](AI-9002-Benchmark-Standard.md) |
 
 ---
 
 ## 1. Purpose
 
-Defines standards for writing, versioning, testing, and evaluating system prompts and user-facing prompts in this repository. Every prompt used in production must conform to this standard.
+Prompts are engineering artifacts, not natural language text. Every system prompt deployed in production must be version-controlled, tested, and documented with the same rigor as code. This standard defines the rules for authoring, versioning, and validating prompts for NVIDIA Nemotron Ultra 550B.
 
 ---
 
-## 2. Prompt Classification
+## 2. Nemotron Ultra 550B Prompt Architecture
 
-| Type | Description | File Location |
-|------|-------------|---------------|
-| System Prompt | Role-level instruction for model persona and behavior | `prompts/system/` |
-| Task Prompt | Specific task instruction (e.g., summarize, classify) | `prompts/tasks/` |
-| Chain Prompt | Multi-step chain-of-thought scaffolding | `prompts/chains/` |
-| RAG Prompt | Template for RAG-augmented retrieval queries | `prompts/rag/` |
-| Tool Prompt | System prompt optimized for tool-calling agents | `prompts/tools/` |
-| Evaluation Prompt | Used by critic/evaluator agents | `prompts/eval/` |
+### 2.1 Reasoning Mode Control (Source: Official NVIDIA Docs)
+
+| Method | Syntax | Scope | Via OW UI |
+|--------|--------|-------|-----------|
+| System prompt ON | `/think` in system prompt | Session-wide | ✅ |
+| System prompt OFF | `/nothink` in system prompt | Session-wide | ✅ |
+| `extra_body` ON | `chat_template_kwargs.enable_thinking: true` | Per-request | ❌ (Pipeline needed) |
+| `extra_body` OFF | `chat_template_kwargs.enable_thinking: false` | Per-request | ❌ (Pipeline needed) |
+| `medium_effort` | `chat_template_kwargs.medium_effort: true` | Per-request | ❌ (Pipeline needed) |
+| `reasoning_budget` | `reasoning_budget: N` | Per-request | ❌ (Pipeline needed) |
+
+**[CONFIRMED]** Source: `docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b`
+
+### 2.2 Thinking Tag Behavior (Confirmed)
+
+When reasoning is ON, the model wraps its reasoning trace in:
+```
+<think>
+...reasoning trace...
+</think>
+<actual response>
+```
+
+Open WebUI filters `<think>` tags by default (configurable). Engineers must verify OW version behavior.
 
 ---
 
-## 3. Mandatory Prompt Metadata
+## 3. System Prompt Templates
 
-Every prompt file MUST contain a YAML frontmatter block:
+### 3.1 General Assistant
+```
+/nothink
+You are a knowledgeable, helpful assistant.
+Respond clearly, concisely, and accurately.
+Cite sources when making factual claims.
+```
 
-```yaml
----
-prompt_id: SP-0001
-title: Nemotron Ultra General Assistant
-type: system
-version: 1.0.0
-status: active
-model: nvidia/nemotron-3-ultra-550b-a55b
-thinking_mode: OFF  # ON | OFF | medium_effort
-temperature: 1.0
-top_p: 0.95
-max_tokens: 4096
-tested_in: [EXP-0004]
-benchmark_score: null  # fill after benchmark
-created: 2026-07-20
-updated: 2026-07-20
-owner: Aldhie
----
+### 3.2 Deep Reasoning Agent
+```
+/think
+You are an expert analytical reasoner.
+For every problem: decompose, reason step by step, verify your logic.
+Present your final answer clearly after thinking.
+```
+
+### 3.3 Code Agent
+```
+/think
+You are a senior software engineer and principal architect.
+Approach every coding task with:
+1. Requirements analysis
+2. Design before implementation
+3. Clean, production-ready code
+4. Test coverage consideration
+5. Security and performance review
+```
+
+### 3.4 Medium Effort (via Pipeline — requires `extra_body`)
+```
+/think
+You are a balanced analytical assistant.
+Think efficiently — use reasoning when needed, but avoid over-elaborating simple topics.
+```
+Note: This profile requires Pipeline injection of `medium_effort: true`. System prompt alone does not activate medium_effort mode.
+
+### 3.5 RAG / Knowledge Base Agent
+```
+/nothink
+You are a precise knowledge retrieval assistant.
+Answer ONLY from provided context.
+If the answer is not in the context, state: "This information is not in the provided documents."
+Do not infer or speculate beyond the context.
+Cite the document source for every claim.
 ```
 
 ---
 
 ## 4. Prompt Quality Rules
 
-### 4.1 Thinking Mode Declaration
+### 4.1 Required Elements
+- Reasoning mode declaration (`/think` or `/nothink`) as FIRST line
+- Role definition in second line
+- Behavioral constraints
+- Output format specification (if structured output needed)
 
-Every system prompt for Nemotron Ultra 550B MUST include an explicit thinking mode directive.
-
-**[FACT]** NVIDIA official docs confirm two valid methods:
-
+### 4.2 Prohibited Patterns
 ```
-# Method 1 — System prompt directive (use in Open WebUI)
-/think        → enables reasoning trace
-/nothink      → disables reasoning trace
-
-# Method 2 — API extra_body (use in Pipelines)
-extra_body={"chat_template_kwargs": {"enable_thinking": True}}
-extra_body={"chat_template_kwargs": {"enable_thinking": False}}
+❌ Missing /think or /nothink (reasoning mode undefined → unpredictable behavior)
+❌ Contradictory instructions ("Be brief" + "Provide comprehensive analysis")
+❌ Undefined terms ("good response", "appropriate answer")
+❌ No output format for structured tasks (JSON, tables, code)
+❌ Prompts longer than 500 tokens for system prompt (wastes context budget)
 ```
 
-Reference: [NVIDIA NIM API Docs](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b)
+### 4.3 Token Budget Guidelines
 
-### 4.2 Role Clarity
-
-System prompts MUST establish:
-1. Model persona (who the model is)
-2. Behavioral constraints (what it must not do)
-3. Output format (how responses should be structured)
-4. Scope (what topics are in/out of scope)
-
-### 4.3 Token Budget Awareness
-
-System prompts MUST stay within the configured `system_prompt_budget_tokens` (default: 500 tokens).
-Prompts exceeding this budget must be approved with a documented justification in the prompt metadata.
-
-### 4.4 No Hallucination Anchors
-
-System prompts MUST NOT contain factual claims that could be confused with model knowledge:
-- No dates that could be misinterpreted
-- No specific numbers without context
-- No references to external systems without explicit framing
+| Budget Component | Recommended Tokens | Source |
+|-----------------|-------------------|--------|
+| System prompt | ≤ 500 | [ASSUMPTION — pending EXP-0004] |
+| Conversation history | ≤ 8,192 | configs/openwebui/parameters.json |
+| RAG context | ≤ 4,096 | configs/openwebui/parameters.json |
+| Output reservation | ≤ 4,096 | configs/openwebui/parameters.json |
+| **Total** | **≤ 16,884** | Well within 256K default context |
 
 ---
 
 ## 5. Prompt Versioning
 
-Every prompt change requires:
-1. Version bump in frontmatter
-2. Changelog entry
-3. Re-run of linked benchmark test cases
-4. Update of `tested_in` references if new experiment created
+Every system prompt file in `prompts/` must include a version header:
+```markdown
+---
+prompt_id: PROMPT-xxxx
+version: x.y.z
+agent_profile: general | reasoning | code | rag | medium_effort
+thinking_mode: on | off | medium_effort
+max_tokens_system: <number>
+tested_with: nvidia/nemotron-3-ultra-550b-a55b
+test_reference: EXP-xxxx
+---
+```
 
 ---
 
-## 6. Thinking Mode Selection Guide
-
-**[FACT]** Based on NVIDIA documentation and model architecture:
-
-| Use Case | Thinking Mode | Rationale |
-|----------|--------------|----------|
-| Complex reasoning, math, logic | ON (`/think`) | Full CoT trace improves accuracy |
-| RAG answer synthesis | OFF (`/nothink`) | Less token waste; doc is the authority |
-| Code generation (simple) | OFF | Speed; simple code doesn't need reasoning |
-| Code generation (complex) | ON | Architecture decisions benefit from CoT |
-| Customer service | OFF | Conversational; speed matters |
-| Strategic planning | ON with `medium_effort` | Balance quality vs cost |
-| Debugging | ON | Root cause analysis requires chain-of-thought |
-| Classification | OFF | Deterministic; CoT not needed |
-
-**[HYPOTHESIS]** `medium_effort` may reduce token cost by 30–60% vs full thinking ON, at 5–15% quality loss on complex reasoning. Pending EXP-0003 validation.
-
----
-
-## 7. Prompt Testing Protocol
-
-Before marking any prompt `Active`:
-1. Run linked benchmark test cases (minimum 3 TCs per prompt)
-2. Achieve minimum average score of 3.5/5.0
-3. Document result in linked EXP-xxxx document
-4. Peer review by at least one other engineer
-
----
-
-## Changelog
+## 6. Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
+|---------|------|--------|--------|
 | 1.0.0 | 2026-07-20 | Aldhie | Initial release |

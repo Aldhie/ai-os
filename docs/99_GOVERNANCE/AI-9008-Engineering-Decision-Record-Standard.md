@@ -7,128 +7,99 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | AI-9008 |
-| **Title** | Engineering Decision Record Standard |
+| **Title** | Engineering Decision Record (EDR) Standard |
 | **Version** | 1.0.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-9007 Architecture Principles](AI-9007-Architecture-Principles.md)
-- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
-- [AI-0006 Architecture Decision Record](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md)
+| **Scope** | All engineering decisions in `Aldhie/ai-os` |
+| **Cross-References** | [AI-9007](AI-9007-Architecture-Principles.md) · [AI-0006](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md) · [AI-9001](AI-9001-Documentation-Standard.md) |
 
 ---
 
 ## 1. Purpose
 
-Defines the mandatory structure for Engineering Decision Records (EDRs) in this repository. Every significant engineering decision — parameter choice, architecture pattern, integration approach, tool selection — requires an EDR.
+An Engineering Decision Record (EDR) documents WHY a decision was made, not just WHAT was decided. This repository distinguishes between Architecture Decision Records (ADRs — system-level) and Engineering Decision Records (EDRs — implementation-level).
 
 ---
 
 ## 2. When to Write an EDR
 
-An EDR is required when:
+Write an EDR when:
+- A configuration value is chosen over alternatives
+- A feature is explicitly disabled (and why)
+- A workaround is used instead of the ideal solution
+- A standard is adopted or rejected
+- A benchmark result changes a previous decision
 
-1. A configuration parameter is changed from default
-2. A new external service or API is integrated
-3. A previously used approach is abandoned
-4. An architecture principle (AI-9007) is deviated from
-5. A benchmark result contradicts previous assumptions
-6. A security-relevant decision is made
-7. A performance trade-off is accepted
-
-An EDR is NOT required for:
+Do NOT write an EDR for:
+- Routine document updates
 - Typo fixes
-- Formatting changes
-- Adding documentation without changing behavior
-- Running a benchmark (use EXP-xxxx instead)
+- Adding benchmarks (those go in EXP documents)
 
 ---
 
 ## 3. EDR Template
 
-EDRs are stored in `AI-0006-Architecture-Decision-Record.md` as numbered sections. Each EDR follows:
-
 ```markdown
-### EDR-NNNN: [Decision Title]
+## EDR-xxxx: <Title>
 
-**Date:** YYYY-MM-DD
-**Status:** Proposed / Accepted / Superseded / Deprecated
-**Decider:** [name]
-**Supersedes:** [EDR-NNNN or None]
+| Field | Value |
+|-------|-------|
+| **EDR ID** | EDR-xxxx |
+| **Status** | Proposed / Accepted / Superseded / Rejected |
+| **Date** | YYYY-MM-DD |
+| **Deciders** | <GitHub usernames> |
+| **Supersedes** | EDR-xxxx (if applicable) |
+| **Superseded by** | EDR-xxxx (if applicable) |
 
-#### Context
+### Context
+<What situation prompted this decision? What constraints exist?>
 
-[What situation or problem required a decision? What constraints existed?]
+### Decision
+<What was decided, stated precisely>
 
-#### Decision
+### Rationale
+<Why this option over alternatives — cite evidence>
 
-[What was decided? Be specific. Include exact parameter values, API choices, etc.]
+### Alternatives Considered
+| Option | Reason Rejected |
+|--------|-----------------|
+| Option A | ... |
+| Option B | ... |
 
-#### Alternatives Considered
+### Consequences
+- Positive: ...
+- Negative: ...
+- Risk: ...
 
-| Alternative | Reason Rejected |
-|-------------|----------------|
-| [Option A] | [Why not] |
-| [Option B] | [Why not] |
+### Verification
+<How will we know this decision is correct? Link to EXP or BM.>
 
-#### Rationale
-
-[Why was this decision made? What evidence supports it? Reference [FACT] tags.]
-
-#### Consequences
-
-**Positive:**
-- [What improves]
-
-**Negative:**
-- [What gets worse or is lost]
-
-**Risks:**
-- [Known risks]
-
-#### Verification
-
-[How do we know this decision is correct? Which benchmark or experiment validates it?]
-
-#### References
-
-- [Official doc URL or experiment reference]
+### References
+<Official docs, experiments, benchmarks>
 ```
 
 ---
 
-## 4. EDR Index Format
+## 4. Existing Engineering Decisions (Registered)
 
-`AI-0006` must maintain an index table at the top:
-
-```markdown
-## EDR Index
-
-| ID | Title | Status | Date | Decider |
-|----|-------|--------|------|---------|
-| EDR-0001 | Use temperature=1.0 not 0.6 | Accepted | 2026-07-20 | Aldhie |
-| EDR-0002 | Remove top_k from parameters.json | Accepted | 2026-07-20 | Aldhie |
-```
-
----
-
-## 5. EDR Lifecycle
-
-```
-Proposed → Accepted → [Superseded]
-         → Rejected
-```
-
-Superseded EDRs are NOT deleted. The superseding EDR references the old one.
+| EDR ID | Title | Status | Date |
+|--------|-------|--------|------|
+| EDR-0001 | Remove `top_k` from parameters.json | Accepted | 2026-07-20 |
+| EDR-0002 | Remove `repetition_penalty` from parameters.json | Accepted | 2026-07-20 |
+| EDR-0003 | Use `/think` system prompt instead of `extra_body` for basic reasoning toggle | Accepted | 2026-07-20 |
+| EDR-0004 | Set `temperature: 1.0` per official NVIDIA docs | Accepted | 2026-07-20 |
+| EDR-0005 | Configure separate embedding provider for RAG | Accepted | 2026-07-20 |
+| EDR-0006 | Defer function calling enablement pending BM-09 | Proposed | 2026-07-20 |
+| EDR-0007 | Use Open WebUI Pipeline for `extra_body` injection | Accepted | 2026-07-20 |
+| EDR-0008 | Set default context budget to 256K tokens | Accepted | 2026-07-20 |
 
 ---
 
-## Changelog
+## 5. Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial release |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial release — 8 founding EDRs registered |

@@ -7,95 +7,72 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | AI-9005 |
-| **Title** | Release Process |
+| **Title** | Engineering Repository Release Process |
 | **Version** | 1.0.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-9004 Versioning Policy](AI-9004-Versioning-Policy.md)
-- [AI-9006 Repository Structure](AI-9006-Repository-Structure.md)
-- [AI-9002 Benchmark Standard](AI-9002-Benchmark-Standard.md)
+| **Scope** | Release lifecycle for `Aldhie/ai-os` |
+| **Cross-References** | [AI-9004](AI-9004-Versioning-Policy.md) · [AI-9006](AI-9006-Repository-Structure.md) |
 
 ---
 
 ## 1. Purpose
 
-Defines the process for releasing new versions of engineering configurations, prompts, and benchmark frameworks into the `main` branch.
+Defines what constitutes a release, what quality gates must pass before a release, and how releases are named and tagged.
 
 ---
 
-## 2. Release Checklist
+## 2. Release Types
 
-Before any commit to `main` that changes `Active` engineering documents or config files:
-
-### 2.1 Pre-Release
-
-- [ ] All changed documents have updated version numbers
-- [ ] All changed documents have updated changelog entries
-- [ ] All `[ASSUMPTION]` tags are still valid or escalated to benchmark items
-- [ ] No `TODO` without linked benchmark or experiment
-- [ ] All new facts cite official documentation or experiment ID
-- [ ] Cross-references verified — no broken links
-- [ ] Config files pass JSON validation
-- [ ] Any removed config keys are in `_deprecated` block
-
-### 2.2 Benchmark Gate
-
-For any change affecting model parameters or system prompts:
-
-- [ ] Minimum 1 benchmark test case re-run with new config
-- [ ] Result documented in relevant EXP-xxxx document
-- [ ] Score >= 3.0/5.0 or explicit exception documented
-
-### 2.3 Commit Message Format
-
-```
-<type>(<scope>): <summary>
-
-[optional body]
-
-[optional footer]
-```
-
-Types:
-- `feat` — new capability or document
-- `fix` — correction of error or broken reference
-- `refactor` — restructuring without behavior change
-- `docs` — documentation update
-- `benchmark` — benchmark result recorded
-- `experiment` — experiment result recorded
-- `config` — configuration change
-- `governance` — governance document update
-
-Examples:
-```
-docs(AI-0001): add reasoning_budget section — validated against NIM docs
-config(parameters): remove top_k and repetition_penalty — not supported by NIM [AI-0003-Audit]
-benchmark(TC-0001): record initial temperature experiment result — score 4/5
-```
+| Type | Trigger | Tag Format | Example |
+|------|---------|------------|---------|
+| **Major** | Architecture change, new model, schema change | `v{MAJOR}.0.0` | `v2.0.0` |
+| **Minor** | New document, new config, new experiment | `v{MAJOR}.{MINOR}.0` | `v1.3.0` |
+| **Patch** | Bug fix, broken link, typo correction | `v{MAJOR}.{MINOR}.{PATCH}` | `v1.2.1` |
+| **Milestone** | Major phase completion | `milestone/{name}` | `milestone/production-arch` |
 
 ---
 
-## 3. Repository Release Tags
+## 3. Quality Gates (pre-release checklist)
 
-Repository-level releases are tagged when:
-- A complete audit cycle is completed
-- A major configuration version is deployed
-- A full experiment cycle (EXP-0001 through EXP-0010) is completed
+### Gate 1 — Documentation
+- [ ] All `Active` documents have zero `TODO:` placeholders
+- [ ] All `Active` documents have complete Changelog
+- [ ] All cross-references resolve (no broken links)
+- [ ] All facts are cited; all assumptions are labeled `[ASSUMPTION]`
+
+### Gate 2 — Configuration
+- [ ] `parameters.json` version incremented if changed
+- [ ] `capabilities.json` version incremented if changed
+- [ ] No unsupported parameters present (R-01, R-02 resolved)
+- [ ] All environment variables documented in `configs/README.md`
+
+### Gate 3 — Benchmarks
+- [ ] All `[UNKNOWN]` items have a linked `BM-xx` or `TC-xxxx`
+- [ ] All completed benchmarks have actual results (not pending)
+- [ ] No `Need Benchmark` items in Critical priority without mitigation
+
+### Gate 4 — Security
+- [ ] No API keys in any committed file
+- [ ] Secret scanning run on all staged files
+- [ ] API keys stored in env vars, not hardcoded
+
+---
+
+## 4. Release Tagging
 
 ```bash
-git tag -a v1.0.0 -m "Production architecture — complete engineering docs, governance, benchmarks"
+# Create annotated tag
+git tag -a v1.0.0 -m "Release v1.0.0 — Production Architecture"
 git push origin v1.0.0
 ```
 
 ---
 
-## Changelog
+## 5. Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
+|---------|------|--------|--------|
 | 1.0.0 | 2026-07-20 | Aldhie | Initial release |

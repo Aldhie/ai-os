@@ -7,194 +7,138 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | AI-9002 |
-| **Title** | Benchmark Standard |
+| **Title** | Benchmark and Experiment Engineering Standard |
 | **Version** | 1.0.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-0004 Benchmark Framework](../00_ENGINEERING/AI-0004-Benchmark.md)
-- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
-- [AI-9003 Prompt Engineering Standard](AI-9003-Prompt-Engineering-Standard.md)
-- [benchmark/tests/](../../benchmark/tests/)
+| **Scope** | All experiments and benchmarks in `Aldhie/ai-os` |
+| **Cross-References** | [AI-9001](AI-9001-Documentation-Standard.md) · [AI-9003](AI-9003-Prompt-Engineering-Standard.md) · [AI-0004](../00_ENGINEERING/AI-0004-Benchmark.md) |
 
 ---
 
 ## 1. Purpose
 
-Defines the mandatory structure, scoring methodology, environment specification, and reporting format for every benchmark test case in this repository. All benchmark evidence cited in engineering documents MUST conform to this standard.
+This standard defines the required structure, methodology, and reporting format for all benchmarks and experiments in this repository. A benchmark without a reproducible procedure has no engineering value. A result without an expected baseline cannot be interpreted.
 
 ---
 
-## 2. Benchmark Test Case Structure
+## 2. Benchmark ID System
 
-Every benchmark file (`TC-xxxx.md`) MUST contain all of the following sections:
+| Prefix | Type | Example |
+|--------|------|---------|
+| `BM-xx` | API/Integration Benchmark | `BM-09: qwen3_coder tool call format` |
+| `TC-xxxx` | Functional Test Case | `TC-0001: Basic reasoning response` |
+| `EXP-xxxx` | Experiment Document | `EXP-0001-Temperature.md` |
 
-### 2.1 Header
+---
+
+## 3. Required Experiment Structure
+
+Every `EXP-xxxx` document MUST contain all of the following sections:
+
+### 3.1 Header
+```markdown
+| Field | Value |
+|-------|-------|
+| Experiment ID | EXP-xxxx |
+| Title | ... |
+| Status | Planned / In Progress / Complete / Cancelled |
+| Hypothesis | One sentence |
+| Owner | Aldhie |
+| Date | YYYY-MM-DD |
+| Related BM | BM-xx (if applicable) |
+```
+
+### 3.2 Required Sections
+
+1. **Objective** — What engineering question does this answer?
+2. **Hypothesis** — Specific, falsifiable prediction with expected direction
+3. **Variables**
+ - Independent: what you change
+ - Dependent: what you measure
+ - Controlled: what you hold constant
+4. **Environment** — Model, API version, Open WebUI version, date, hardware
+5. **Procedure** — Step-by-step, reproducible instructions
+6. **Expected Result** — Quantified baseline prediction
+7. **Actual Result** — Raw data, not interpreted
+8. **Analysis** — Statistical or qualitative interpretation
+9. **Conclusion** — Was hypothesis confirmed, refuted, or inconclusive?
+10. **Engineering Decision** — What config change does this result mandate?
+11. **Future Work** — What follow-up experiments does this open?
+12. **Benchmark Result Table** — Required for all completed experiments
+
+---
+
+## 4. Benchmark Result Table Format
 
 ```markdown
-## TC-[NNNN]: [Title]
+| Run | Variable Value | Metric | Result | Pass/Fail | Notes |
+|-----|---------------|--------|--------|-----------|-------|
+| 1 | temperature=0.0 | coherence_score | 7.2/10 | Pass | ... |
+| 2 | temperature=0.6 | coherence_score | 8.1/10 | Pass | ... |
+| 3 | temperature=1.0 | coherence_score | 8.4/10 | Pass | ... |
+```
+
+---
+
+## 5. Test Case Structure (TC-xxxx)
+
+Every `TC-xxxx.md` MUST contain:
+
+```markdown
+## TC-xxxx: <Title>
 
 | Field | Value |
 |-------|-------|
-| ID | TC-NNNN |
-| Category | discussion / reasoning / planning / architecture / coding / debugging / hospitality / business / docker / openwebui / nim / memory / rag |
+| ID | TC-xxxx |
+| Category | reasoning / coding / discussion / planning / ... |
 | Difficulty | Easy / Medium / Hard / Expert |
-| Model | nvidia/nemotron-3-ultra-550b-a55b |
-| Required Capability | [list of capabilities] |
-| Evidence Basis | [FACT / HYPOTHESIS / BENCHMARK-REQUIRED] |
-| References | [AI-0001], [AI-0003], [EXP-0001], etc. |
-```
+| Required Capability | tool_calling / RAG / reasoning / ... |
 
-### 2.2 Question / Prompt
+### Question
+<Exact prompt to send>
 
-Exact prompt text sent to the model. No paraphrase — exact string.
+### Expected Behaviour
+<What a correct response looks like>
 
-```markdown
-## Question
+### Evaluation Criteria
+- Criterion 1: weight xx%
+- Criterion 2: weight xx%
 
-**System Prompt:**
-```
-[exact system prompt]
-```
-
-**User Message:**
-```
-[exact user message]
-```
-
-**Parameters:**
-- temperature: X
-- top_p: X
-- max_tokens: X
-- thinking: ON/OFF
-```
-
-### 2.3 Expected Behaviour
-
-What a correct response looks like. Must be specific and measurable, not vague.
-
-### 2.4 Evaluation Criteria
-
-| Criterion | Weight | Measurement Method |
-|-----------|--------|--------------------|
-| Correctness | 40% | Manual or automated check |
-| Completeness | 20% | Checklist of required elements |
-| Format compliance | 15% | Structural comparison |
-| Reasoning quality | 15% | Reasoning chain audit |
-| Efficiency | 10% | Token count vs expected |
-
-### 2.5 Scoring
-
+### Scoring
 | Score | Meaning |
 |-------|---------|
-| 5 | Perfect — all criteria met |
-| 4 | Good — minor gaps |
-| 3 | Acceptable — functional but incomplete |
-| 2 | Marginal — significant gaps |
-| 1 | Fail — wrong or harmful output |
-| 0 | Hard fail — error, refusal, or crash |
+| 5 | Perfect |
+| 4 | Good with minor gaps |
+| 3 | Acceptable |
+| 2 | Partial |
+| 1 | Fail |
 
-### 2.6 Failure Conditions
+### Failure Condition
+<What constitutes a test failure>
 
-Explicit conditions that constitute automatic failure (score = 0):
-- Model returns HTTP error
-- Model refuses the request
-- Model hallucinates a fact that contradicts `[FACT]`-tagged content
-- Response truncated due to token limit
+### Success Condition
+<Minimum acceptable score and behavior>
 
-### 2.7 Success Conditions
-
-Minimum score and criteria for a test to be counted as PASS.
-
-### 2.8 Actual Result
-
-Filled in post-execution. Never left empty in Active status.
-
-```markdown
-## Actual Result
-
-**Date:** YYYY-MM-DD
-**Score:** N/5
-**PASS/FAIL:** PASS
-**Response Excerpt:**
-> [first 200 chars of model response]
-
-**Notes:**
-[observations]
-```
-
-### 2.9 Analysis
-
-Why the model scored what it did. Connects to experiment documents.
-
-### 2.10 Benchmark Reference
-
-Links to EXP-xxxx documents that interpret these results.
-
----
-
-## 3. Benchmark Categories
-
-| Category | Focus Area | Key Capability |
-|----------|-----------|----------------|
-| `discussion` | Open-ended reasoning and conversation quality | Coherence, depth, multi-turn |
-| `reasoning` | Logical deduction, math, structured thinking | Chain-of-thought, accuracy |
-| `planning` | Multi-step task decomposition | Plan quality, step validation |
-| `architecture` | System design and technical recommendation | Engineering accuracy |
-| `coding` | Code generation, debugging, refactoring | Correctness, style, tests |
-| `debugging` | Finding and fixing bugs | Root cause accuracy |
-| `hospitality` | Customer service and empathy scenarios | Tone, resolution quality |
-| `business` | Business analysis, reporting, strategy | Domain accuracy, format |
-| `docker` | Docker/container operations and Dockerfiles | Command accuracy, best practice |
-| `openwebui` | Open WebUI configuration and troubleshooting | Config accuracy, OW-specific knowledge |
-| `nim` | NVIDIA NIM API usage and integration | API correctness, parameter handling |
-| `memory` | Long-term memory recall and context management | Recall accuracy, injection quality |
-| `rag` | Retrieval-augmented generation | Retrieval precision, answer grounding |
-
----
-
-## 4. Environment Specification
-
-Every benchmark result MUST record:
-
-```yaml
-environment:
-  model: nvidia/nemotron-3-ultra-550b-a55b
-  endpoint: https://integrate.api.nvidia.com/v1
-  openwebui_version: [version]
-  date: YYYY-MM-DD
-  temperature: 1.0
-  top_p: 0.95
-  max_tokens: [value used]
-  thinking_mode: ON / OFF / medium_effort
-  system_prompt: [exact prompt or reference]
-  notes: [any deviations from standard config]
+### References
+<Links to related docs>
 ```
 
 ---
 
-## 5. Benchmark Lifecycle
+## 6. Statistical Requirements
 
-```
-Designed → Pending → Running → Completed → Archived
-```
-
-| Status | Meaning |
-|--------|---------|
-| Designed | TC written, not yet run |
-| Pending | Queued for execution |
-| Running | Currently being executed |
-| Completed | Result filled in, analysis done |
-| Archived | Superseded by newer test |
+- Minimum 3 runs per variable value for quantitative benchmarks
+- Report mean ± standard deviation when n ≥ 3
+- State confidence level for any threshold claims
+- Never report single-run results as representative without explicit caveat
 
 ---
 
-## Changelog
+## 7. Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
+|---------|------|--------|--------|
 | 1.0.0 | 2026-07-20 | Aldhie | Initial release |

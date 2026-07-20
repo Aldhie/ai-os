@@ -7,107 +7,100 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | AI-9004 |
-| **Title** | Versioning Policy |
+| **Title** | Repository Versioning and Changelog Policy |
 | **Version** | 1.0.0 |
 | **Status** | Active |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
 | **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-9001 Documentation Standard](AI-9001-Documentation-Standard.md)
-- [AI-9005 Release Process](AI-9005-Release-Process.md)
-- [AI-9006 Repository Structure](AI-9006-Repository-Structure.md)
+| **Scope** | All versioned artifacts in `Aldhie/ai-os` |
+| **Cross-References** | [AI-9001](AI-9001-Documentation-Standard.md) · [AI-9005](AI-9005-Release-Process.md) · [AI-9006](AI-9006-Repository-Structure.md) |
 
 ---
 
 ## 1. Purpose
 
-Defines semantic versioning rules for all documents, configurations, prompts, and benchmarks in this repository. Consistent versioning enables engineering traceability and safe rollback.
+All engineering artifacts — documents, configurations, prompts, benchmark results — must follow a consistent versioning scheme to enable traceability, rollback, and release management.
 
 ---
 
-## 2. Semantic Versioning Schema
+## 2. Semantic Versioning
 
-All versioned artifacts follow `MAJOR.MINOR.PATCH`:
+All artifacts use `MAJOR.MINOR.PATCH` versioning:
 
-| Component | Increment When |
-|-----------|---------------|
-| `MAJOR` | Engineering decision changes; interface changes; incompatible structural change |
-| `MINOR` | New sections, new evidence, new requirements added |
-| `PATCH` | Typo fix, formatting, broken link repair, metadata update |
-
-### 2.1 Examples
-
-| Change | Before | After |
-|--------|--------|-------|
-| Discovered `top_k` is unsupported (breaking config change) | 0.1.0 | 1.0.0 |
-| Added `medium_effort` profile section | 1.0.0 | 1.1.0 |
-| Fixed typo in table | 1.1.0 | 1.1.1 |
-| Changed recommended temperature from 0.6 to 1.0 | 1.1.1 | 2.0.0 |
+| Increment | When to Use | Example |
+|-----------|-------------|---------|
+| **MAJOR** | Breaking change to document scope, config schema, or API contract | `1.0.0 → 2.0.0` |
+| **MINOR** | New section, new requirement, new benchmark, new finding | `1.0.0 → 1.1.0` |
+| **PATCH** | Typo fix, wording improvement, cross-reference correction | `1.0.0 → 1.0.1` |
 
 ---
 
-## 3. Config File Versioning
+## 3. Git Commit Convention
 
-All config files (`parameters.json`, `capabilities.json`, etc.) additionally carry:
+All commits MUST follow [Conventional Commits](https://www.conventionalcommits.org/):
 
+```
+<type>(<scope>): <short description>
+
+[optional body]
+
+[optional footer]
+```
+
+| Type | When to Use |
+|------|-------------|
+| `feat` | New document, new config, new experiment |
+| `fix` | Correcting an error in existing document |
+| `refactor` | Restructuring without content loss |
+| `docs` | Documentation improvement |
+| `test` | Adding benchmark or test case |
+| `chore` | Maintenance, dependency updates |
+| `audit` | Repository audit result |
+
+Examples:
+```
+feat(AI-0003): add compatibility matrix for Open WebUI × NIM
+fix(parameters): remove unsupported top_k and repetition_penalty
+refactor: upgrade AI Engineering Repository to production architecture
+audit: 2026-07-20 full repository quality audit
+```
+
+---
+
+## 4. Document Changelog Format
+
+Every document MUST end with a Changelog table:
+
+```markdown
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|--------|
+| 1.0.0 | YYYY-MM-DD | username | Description of changes |
+```
+
+---
+
+## 5. Configuration File Versioning
+
+All JSON/YAML config files must include:
 ```json
 {
   "_metadata": {
     "version": "1.1.0",
-    "status": "active",
-    "previous_version": "1.0.0",
-    "breaking_changes": ["removed top_k", "removed repetition_penalty"],
-    "audit_reference": "AI-0003-Critical-Findings-Audit.md"
+    "updated": "2026-07-20",
+    "changelog": [
+      {"version": "1.1.0", "date": "2026-07-20", "changes": "Remove top_k, repetition_penalty"}
+    ]
   }
 }
 ```
 
 ---
 
-## 4. Branch and Tag Strategy
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Production-equivalent. All documents are `Active` or `Review`. |
-| `draft/[topic]` | Work-in-progress documents. May contain `[ASSUMPTION]` tags. |
-| `experiment/[id]` | Active experiment branches. Merged when EXP document completed. |
-
-Tags:
-```
-v1.0.0          — Repository-level release
-doc/AI-0001-v2  — Document-specific version tag
-exp/EXP-0001    — Experiment execution snapshot
-```
-
----
-
-## 5. Deprecation Policy
-
-1. No document is deleted. Documents are marked `Deprecated`.
-2. Deprecated documents MUST contain a header pointing to the replacement:
-
-```markdown
-> ⚠️ DEPRECATED as of YYYY-MM-DD. Superseded by [AI-XXXX](link). This document is preserved for historical reference.
-```
-
-3. Config keys deprecated in config files MUST be moved to a `_deprecated` block, not deleted:
-
-```json
-{
-  "_deprecated": {
-    "top_k": { "removed_version": "1.1.0", "reason": "Not supported by NVIDIA NIM", "reference": "AI-0003-Critical-Findings-Audit.md" },
-    "repetition_penalty": { "removed_version": "1.1.0", "reason": "Not supported by NVIDIA NIM", "reference": "AI-0003-Critical-Findings-Audit.md" }
-  }
-}
-```
-
----
-
-## Changelog
+## 6. Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
+|---------|------|--------|--------|
 | 1.0.0 | 2026-07-20 | Aldhie | Initial release |

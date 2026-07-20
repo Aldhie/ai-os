@@ -1,4 +1,4 @@
-# EXP-0006: Retrieval-Augmented Generation Optimization
+# EXP-0006: RAG Pipeline Quality and Token Efficiency
 
 ---
 
@@ -7,89 +7,91 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0006 |
-| **Title** | RAG Pipeline Optimization — Chunk Size, Top-K, Embedding, Hybrid Search |
-| **Version** | 1.0.0 |
-| **Status** | Designed |
+| **Title** | RAG Pipeline Quality — Chunk Size, Top-K Retrieval, and Hybrid Search |
+| **Status** | Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-0003 §3 Knowledge & RAG Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [AI-0003-Critical-Findings-Audit R-04](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md)
-- [benchmark/tests/rag/TC-0001.md](../../benchmark/tests/rag/TC-0001.md)
-- [EXP-0005 Memory](EXP-0005-Memory.md)
+| **Related BM** | BM-02 (Agentic RAG) |
+| **Related REQ** | REQ-AI-0007 (RAG configuration) |
+| **Cross-References** | [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) · [AI-0003-Audit](../00_ENGINEERING/AI-0003-Critical-Findings-Audit.md) · [EXP-0005](EXP-0005-Memory.md) |
 
 ---
 
 ## 1. Objective
 
-Optimize the Open WebUI RAG pipeline for Nemotron Ultra 550B: determine optimal chunk size, top-k retrieval count, embedding model, and hybrid search configuration.
+Optimize the RAG pipeline configuration for Open WebUI × Nemotron Ultra 550B. Key questions:
+1. What chunk size produces best retrieval quality?
+2. How many retrieved chunks (top-k) is optimal?
+3. Does hybrid search (BM25 + vector) outperform pure vector search for this use case?
+4. What is the token overhead of RAG context injection?
+
+**Critical prerequisite:** Embeddings must be configured via a separate provider (NOT NIM) before this experiment can run. See EDR-0005.
 
 ---
 
-## 2. Background
+## 2. Hypothesis
 
-**[FACT]** Cloud NIM does not provide `/v1/embeddings` endpoint for Nemotron Ultra 550B. A separate embedding provider is required. (AI-0003-Critical-Findings-Audit R-04)
-
-**[FACT]** Open WebUI supports ChromaDB (default), PGVector, and Qdrant as vector stores.
-
-**[FACT]** Open WebUI supports hybrid search (BM25 + vector) with configurable reranking.
-
-**[ASSUMPTION]** `chunk_size: 512` is a reasonable default, but domain-specific documents may benefit from larger chunks (1024) to preserve context.
+> **H1:** `chunk_size=512` with `top_k=5` (current config) is suboptimal; `chunk_size=256` with `top_k=8` will produce better recall for dense technical documents.
+>
+> **H2:** Hybrid search (BM25 + vector) will outperform pure vector search by ≥1 point on domain-specific terminology retrieval.
+>
+> **H3:** RAG context of 5 chunks consumes ~1500–2500 tokens, well within budget. Context overflow becomes risk at 20+ chunks.
 
 ---
 
-## 3. Hypotheses
+## 3. Variables
 
-| ID | Hypothesis |
-|----|----------|
-| H1 | `chunk_size: 512` outperforms `1024` on short-answer factual queries |
-| H2 | `chunk_size: 1024` outperforms `512` on questions requiring multi-sentence context |
-| H3 | Hybrid search (BM25 + vector) outperforms vector-only by > 0.5 score on domain-specific queries |
-| H4 | `top_k: 5` is sufficient; `top_k: 10` does not improve quality and increases token cost |
+| Type | Variable | Values |
+|------|----------|---------|
+| **Independent** | `chunk_size` | 128, 256, 512, 1024 tokens |
+| **Independent** | `top_k` (retrieved chunks) | 3, 5, 8, 12 |
+| **Independent** | Search type | Vector only, BM25 only, Hybrid |
+| **Dependent** | Retrieval recall@k | RAGAS metric |
+| **Dependent** | Answer faithfulness | RAGAS metric |
+| **Dependent** | Tokens per RAG context | Counted |
+| **Controlled** | Embedding model | nomic-embed-text (fixed) |
+| **Controlled** | Test documents | 3 fixed technical docs |
+| **Controlled** | Test questions | 10 fixed questions |
 
 ---
 
-## 4. Variables
+## 4. Prerequisite
 
-**Independent:** chunk_size `[256, 512, 1024]`, top_k `[3, 5, 10]`, search mode `[vector, hybrid]`
-**Controlled:** embedding model (nomic-embed-text via Ollama), Nemotron Ultra 550B, thinking OFF
-**Dependent:** Answer accuracy, hallucination rate, prompt_tokens
+- [ ] Configure `nomic-embed-text` (or equivalent) as embedding provider in Open WebUI
+- [ ] Verify embeddings endpoint working (EDR-0005 implemented)
+- [ ] ChromaDB instance running and accessible
 
 ---
 
 ## 5. Procedure
 
-1. Prepare test document set (5 technical docs, total ~50 pages)
-2. For each chunk_size × top_k × search_mode combination (18 combinations):
-   - Index documents
-   - Run TC-rag-0001, TC-rag-0002, TC-rag-0003 × 3 reps
-   - Record accuracy score, hallucination instances, prompt_tokens
-3. Identify best combination via F1 score (accuracy vs token cost)
+1. Ingest 3 technical documents with each chunk_size variant
+2. Run 10 test questions per configuration
+3. Evaluate using RAGAS (recall, precision, faithfulness, context relevance)
+4. Count tokens in injected RAG context per configuration
+5. Identify optimal chunk_size + top_k combination
+6. Compare hybrid vs. vector search on same questions
 
 ---
 
-## 6. Expected Results
+## 6. Expected Result
 
-| Config | Expected Accuracy | Token Cost |
-|--------|------------------|------------|
-| chunk=512, k=5, hybrid | 4.2/5 | medium |
-| chunk=1024, k=5, hybrid | 4.0/5 | high |
-| chunk=512, k=10, hybrid | 4.0/5 | high |
-| chunk=256, k=5, vector | 3.5/5 | low |
+| Config | Recall@k | Faithfulness | Tokens |
+|--------|---------|--------------|--------|
+| 512 / top5 / vector | 0.65 | 0.80 | ~1800 |
+| 256 / top8 / hybrid | 0.80 | 0.85 | ~2400 |
+| 1024 / top3 / vector | 0.55 | 0.75 | ~3200 |
 
 ---
 
-## 7–13. Actual Result through Benchmark Results
+## 7–12. Actual Result through Benchmark Table
 
-> ⏳ **PENDING** — Requires separate embedding provider setup first.
+> **STATUS: PENDING** — Blocked on embedding provider configuration (EDR-0005).
 
 ---
 
 ## Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial experiment design |

@@ -1,4 +1,4 @@
-# EXP-0007: Planner Agent Effectiveness
+# EXP-0007: Agentic Planning Quality
 
 ---
 
@@ -7,85 +7,81 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0007 |
-| **Title** | Planner Agent — Task Decomposition Quality and Multi-Step Execution |
-| **Version** | 1.0.0 |
-| **Status** | Designed |
+| **Title** | Agentic Planning — Multi-Step Task Decomposition Quality |
+| **Status** | Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-0001 § Agentic Workflows](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- [AI-0003 §4 Tool Use Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [EXP-0003 Thinking](EXP-0003-Thinking.md)
-- [EXP-0010 Agent](EXP-0010-Agent.md)
-- [benchmark/tests/planning/TC-0001.md](../../benchmark/tests/planning/TC-0001.md)
+| **Related BM** | BM-02, BM-03 |
+| **Related REQ** | REQ-AI-0008 (planning agent) |
+| **Cross-References** | [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) · [EXP-0003](EXP-0003-Thinking.md) · [EXP-0010](EXP-0010-Agent.md) |
 
 ---
 
 ## 1. Objective
 
-Evaluate Nemotron Ultra 550B's ability to decompose complex multi-step tasks into executable plans, and measure plan quality, completeness, and step ordering correctness.
+Evaluate Nemotron Ultra 550B's ability to decompose complex multi-step tasks into executable sub-tasks. Compare planning quality with reasoning ON vs. OFF. Evaluate plan correctness, completeness, and executability.
 
 ---
 
-## 2. Background
+## 2. Hypothesis
 
-**[FACT]** Nemotron Ultra 550B is described as "Best For: complex agentic workflows" in official NVIDIA model card.
-
-**[HYPOTHESIS]** Thinking ON (`/think`) significantly improves plan quality vs OFF for tasks with >5 steps.
-
-**[HYPOTHESIS]** Structured system prompts specifying output format (numbered steps, prerequisites) improve plan executability.
-
----
-
-## 3. Hypotheses
-
-| ID | Hypothesis |
-|----|----------|
-| H1 | Thinking ON improves plan completeness score by >= 1.0 on 5-point scale for complex tasks |
-| H2 | Plans generated with tool definitions available are more actionable than without |
-| H3 | Explicit "think step by step" user instructions improve planning without thinking mode ON |
+> **H1:** Reasoning ON (`/think`) will produce significantly more complete plans than OFF for tasks with >5 steps.
+>
+> **H2:** Plans generated with reasoning ON will have fewer logical dependencies missed (≥ 90% dependency completeness vs ~70% OFF).
+>
+> **H3:** Nemotron Ultra 550B will outperform Super 49B on planning tasks with 10+ steps due to larger reasoning capacity.
 
 ---
 
-## 4. Procedure
+## 3. Variables
 
-**Task Set:**
-- TC-planning-0001: Plan a Docker-based deployment of Open WebUI with NIM integration
-- TC-planning-0002: Plan a RAG pipeline setup from scratch
-- TC-planning-0003: Plan a debugging workflow for a failing API integration
-
-**Variables:** thinking mode (ON vs OFF), tool definitions available (yes/no), system prompt structure
-
-**Scoring Criteria:**
-- Step completeness: are all necessary steps present?
-- Step ordering: are dependencies correctly sequenced?
-- Actionability: can a junior engineer execute each step without further research?
-- Tool accuracy: are correct tools called in the plan?
+| Type | Variable | Values |
+|------|----------|---------|
+| **Independent** | Task complexity | 3-step, 7-step, 12-step tasks |
+| **Independent** | Reasoning mode | OFF, ON |
+| **Dependent** | Plan completeness (%) | Steps covered / steps required |
+| **Dependent** | Logical coherence | 1-10 rubric |
+| **Dependent** | Executability | Binary (can a human execute this?) |
+| **Dependent** | Thinking tokens | From API usage |
 
 ---
 
-## 5. Expected Results
+## 4. Test Tasks
 
-| Config | Expected Plan Score |
-|--------|--------------------|
-| Thinking ON, tools available | 4.5/5 |
-| Thinking ON, no tools | 4.0/5 |
-| Thinking OFF, tools available | 3.5/5 |
-| Thinking OFF, no tools | 3.0/5 |
+1. **3-step:** "Plan a deployment of a Python Flask app to a VPS"
+2. **7-step:** "Design and implement a REST API with authentication, validation, and logging"
+3. **12-step:** "Create a complete CI/CD pipeline from scratch with testing, staging, and production environments"
 
 ---
 
-## 6–13. Actual Result through Benchmark Results
+## 5. Procedure
 
-> ⏳ **PENDING**
+1. Run each task with reasoning OFF and ON
+2. Grade plan against reference solution (expert-written)
+3. Count missed dependencies and logical errors
+4. Assess whether each step is actionable/executable
+5. Compare token costs between modes
+
+---
+
+## 6. Expected Result
+
+| Task Complexity | Reasoning OFF | Reasoning ON | Delta |
+|-----------------|--------------|--------------|-------|
+| 3-step | 8.5/10 | 8.7/10 | +0.2 |
+| 7-step | 7.0/10 | 8.5/10 | +1.5 |
+| 12-step | 5.5/10 | 8.0/10 | +2.5 |
+
+---
+
+## 7–12. Actual Result through Benchmark Table
+
+> **STATUS: PENDING**
 
 ---
 
 ## Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial experiment design |

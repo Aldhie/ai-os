@@ -1,4 +1,4 @@
-# EXP-0005: Long-Term Memory Effectiveness
+# EXP-0005: Open WebUI Memory System Behavior
 
 ---
 
@@ -7,77 +7,88 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0005 |
-| **Title** | Long-Term Memory Recall Accuracy and Context Impact |
-| **Version** | 1.0.0 |
-| **Status** | Designed |
+| **Title** | Open WebUI Long-Term Memory — Injection Quality and Token Impact |
+| **Status** | Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-0003 §6 Memory Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- [benchmark/tests/memory/TC-0001.md](../../benchmark/tests/memory/TC-0001.md)
-- [EXP-0006 RAG](EXP-0006-RAG.md)
+| **Related REQ** | REQ-AI-0006 (memory policy) |
+| **Cross-References** | [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) · [EXP-0006](EXP-0006-RAG.md) |
 
 ---
 
 ## 1. Objective
 
-Measure Open WebUI long-term memory recall precision, false positive injection rate, and token cost per conversation. Determine optimal memory injection strategy for Nemotron Ultra 550B.
+Characterize how Open WebUI's memory system (long-term memory injection) affects:
+1. Context token consumption
+2. Response personalization quality
+3. Interference with reasoning (does memory injection confuse the model?)
+4. Behavior when memory conflicts with current user message
 
 ---
 
-## 2. Background
+## 2. Hypothesis
 
-**[FACT]** Open WebUI memory injection works client-side: relevant memories are retrieved from vector DB and prepended to the conversation context before the NIM API call. NIM sees memories as plain text context.
-
-**[HYPOTHESIS]** Memory injection from unrelated topics reduces response quality by introducing noise into the context.
-
-**[HYPOTHESIS]** `auto_recall: true` with a large memory store increases average prompt_tokens by 200–500 tokens per message.
-
----
-
-## 3. Hypotheses
-
-| ID | Hypothesis |
-|----|----------|
-| H1 | Memory recall precision > 80% for facts explicitly saved in current session |
-| H2 | Memory injection from >7-day-old entries increases off-topic responses |
-| H3 | Memory injection adds avg 150–400 tokens to prompt_tokens |
-| H4 | With `auto_recall: true`, user preference memories improve satisfaction score by 0.5 points |
+> **H1:** Memory injection adds 200–800 tokens per conversation depending on memory set size.
+>
+> **H2:** Relevant memory injection will improve response personalization score by ≥1 point vs. no-memory baseline.
+>
+> **H3:** Irrelevant memory injection (when no relevant memories exist) will not degrade response quality if memory is well-filtered by Open WebUI.
+>
+> **H4:** Memory-context conflicts (user says X, memory says not-X) will be handled differently in reasoning ON vs. OFF mode.
 
 ---
 
-## 4. Procedure
+## 3. Variables
 
-1. **Setup:** Seed memory store with 20 facts (10 relevant, 10 unrelated)
-2. **Phase 1:** Ask 10 questions referencing seeded relevant facts. Measure recall accuracy.
-3. **Phase 2:** Ask 5 questions unrelated to any memory. Count false memory injections.
-4. **Phase 3:** Measure prompt_tokens with memory ON vs OFF for 20 standard queries.
-5. **Phase 4:** Evaluate response quality (blind scoring) with and without memory injection.
-
----
-
-## 5. Expected Results
-
-| Metric | Expected Value |
-|--------|---------------|
-| Recall precision | > 80% |
-| False injection rate | < 15% |
-| Token overhead | 150–400 tokens |
-| Quality delta | +0.3–0.5 score |
+| Type | Variable | Values |
+|------|----------|---------|
+| **Independent** | Memory enabled | True, False |
+| **Independent** | Memory set size | 0, 5, 20, 50 memories |
+| **Independent** | Memory relevance | Relevant, Irrelevant, Conflicting |
+| **Dependent** | Tokens consumed by memory injection | Counted from API payload |
+| **Dependent** | Personalization score | 1-10 rubric |
+| **Dependent** | Response accuracy when memory conflicts | 1-10 rubric |
 
 ---
 
-## 6–13. Actual Result through Benchmark Results
+## 4. Environment
 
-> ⏳ **PENDING**
+| Component | Config |
+|-----------|--------|
+| Model | nvidia/nemotron-3-ultra-550b-a55b |
+| Open WebUI Memory | auto_save: true, auto_recall: true |
+| Memory backend | Open WebUI internal |
+| Runs | 5 per condition |
+
+---
+
+## 5. Procedure
+
+1. Create 3 memory test scenarios: empty, 20 relevant memories, 20 irrelevant memories
+2. Run identical prompts against each scenario
+3. Log exact `messages` payload sent to NIM to count memory tokens
+4. Score personalization quality
+5. Test conflict scenario: seed memory "User is a Python developer" then ask Java question
+
+---
+
+## 6. Expected Result
+
+- Memory tokens: ~150–500 tokens for 20-memory set
+- Personalization: +1 to +2 points with relevant memory
+- Irrelevant memory: ≤0.5 point degradation
+- Conflict: Reasoning ON expected to handle better than reasoning OFF
+
+---
+
+## 7–12. Actual Result through Benchmark Table
+
+> **STATUS: PENDING**
 
 ---
 
 ## Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial experiment design |

@@ -1,4 +1,4 @@
-# EXP-0002: Top-P (Nucleus Sampling) Optimization
+# EXP-0002: Top-P (Nucleus Sampling) Parameter Study
 
 ---
 
@@ -7,107 +7,92 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0002 |
-| **Title** | Top-P Nucleus Sampling Optimization for Nemotron Ultra 550B |
-| **Version** | 1.0.0 |
-| **Status** | Designed |
+| **Title** | Top-P Nucleus Sampling — Diversity vs. Quality Trade-off |
+| **Status** | Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [AI-0002 NIM API Reference](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md)
-- [EXP-0001 Temperature](EXP-0001-Temperature.md)
-- [benchmark/tests/reasoning/TC-0001.md](../../benchmark/tests/reasoning/TC-0001.md)
+| **Related BM** | BM-12 |
+| **Related REQ** | REQ-AI-0003 |
+| **Depends On** | EXP-0001 (optimal temperature must be known first) |
+| **Cross-References** | [AI-0002](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md) · [EXP-0001](EXP-0001-Temperature.md) · [AI-9003](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md) |
 
 ---
 
 ## 1. Objective
 
-Determine whether `top_p: 0.95` (NVIDIA default) is optimal for Nemotron Ultra 550B, or whether task-specific top_p values improve output quality. Investigate `top_p` × `temperature` interaction.
+Determine the optimal `top_p` value for NVIDIA Nemotron Ultra 550B. Validate or refute the official NVIDIA recommendation of `top_p=0.95`. Understand how `top_p` interacts with `temperature=1.0`.
+
+**Engineering Question:** Does `top_p=0.95` (NVIDIA recommendation) produce meaningfully different output from `top_p=0.9` or `top_p=1.0` for this model?
 
 ---
 
-## 2. Background
+## 2. Hypothesis
 
-**[FACT]** NVIDIA official documentation consistently uses `top_p: 0.95` for all examples. Range is `0.0–1.0`. Reference: [NVIDIA NIM API Docs](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b).
-
-**[HYPOTHESIS]** Lower `top_p` (0.7–0.85) combined with `temperature: 1.0` may produce focused outputs without the stochasticity risks of low temperature.
-
-**[HYPOTHESIS]** For RAG tasks, `top_p: 0.7` + `temperature: 0.6` may reduce hallucination by restricting the token probability mass.
-
----
-
-## 3. Hypotheses
-
-| ID | Hypothesis |
-|----|----------|
-| H1 | `top_p: 0.95` is optimal for general use (matches NVIDIA default) |
-| H2 | `top_p: 0.7` reduces hallucination in RAG synthesis vs `0.95` |
-| H3 | `top_p × temperature` interaction is significant on reasoning tasks |
+> **H1:** `top_p=0.95` will produce slightly better output diversity than `top_p=0.9` without sacrificing accuracy.
+>
+> **H2:** `top_p=1.0` (unconstrained) combined with `temperature=1.0` may produce less coherent output due to unrestricted token sampling.
+>
+> **H3:** For code generation, lower `top_p` (0.85–0.90) may improve precision by eliminating long-tail token noise.
 
 ---
 
-## 4. Variables
+## 3. Variables
 
-**Independent:** `top_p` values: `[0.7, 0.8, 0.9, 0.95, 0.98, 1.0]`
-**Controlled:** temperature fixed at 1.0 (per EXP-0001 result or NVIDIA default), max_tokens: 2048, seed: 42
-**Dependent:** Benchmark score, token count, hallucination rate on RAG tasks
-
-**Prerequisite:** EXP-0001 must be completed to set temperature baseline before running this experiment.
-
----
-
-## 5. Environment
-
-```yaml
-model: nvidia/nemotron-3-ultra-550b-a55b
-endpoint: https://integrate.api.nvidia.com/v1
-temperature: [best value from EXP-0001]
-seed: 42
-```
+| Type | Variable | Values |
+|------|----------|---------|
+| **Independent** | `top_p` | 0.70, 0.80, 0.85, 0.90, 0.95, 0.98, 1.00 |
+| **Dependent** | Output quality score | 1-10 rubric |
+| **Dependent** | Lexical diversity (unique bigrams / total) | Computed |
+| **Controlled** | `temperature` | Optimal from EXP-0001 |
+| **Controlled** | `max_tokens` | 2048 |
+| **Controlled** | Reasoning mode | `/nothink` |
 
 ---
 
-## 6. Procedure
+## 4. Environment
 
-1. For each `top_p` in `[0.7, 0.8, 0.9, 0.95, 0.98, 1.0]`:
-   - Run TC-reasoning-0001 × 5 reps
-   - Run TC-rag-0001 × 5 reps (score for hallucination)
-   - Run TC-coding-0001 × 3 reps
-2. Record scores, token counts, hallucination instances
-3. Plot top_p vs score per task category
-4. Test H3: run reasoning TC with `[top_p=0.7, temp=0.6]` vs `[top_p=0.95, temp=1.0]`
-
----
-
-## 7. Expected Results
-
-| top_p | Task | Expected Behavior |
-|-------|------|------------------|
-| 0.7 | reasoning | More focused but potentially repetitive |
-| 0.95 | reasoning | Best balance (per NVIDIA default) |
-| 0.7 | rag | Lower hallucination |
-| 1.0 | creative | Maximum diversity |
+| Component | Version/Config |
+|-----------|---------------|
+| Model | nvidia/nemotron-3-ultra-550b-a55b |
+| Endpoint | https://integrate.api.nvidia.com/v1 |
+| Prerequisite | EXP-0001 must be completed |
+| Runs per value | 5 minimum |
 
 ---
 
-## 8. Actual Result
+## 5. Procedure
 
-> ⏳ **PENDING** — Awaiting EXP-0001 completion for temperature baseline.
+1. Use optimal temperature from EXP-0001
+2. Sweep `top_p` values: [0.70, 0.80, 0.85, 0.90, 0.95, 0.98, 1.00]
+3. Use same test prompts as EXP-0001 for comparability
+4. Score quality and measure lexical diversity per response
+5. Compute mean ± std per value
+6. Identify optimal `top_p` per task type
 
 ---
 
-## 9–13. Analysis / Conclusion / Decision / Future Work / Benchmark Results
+## 6. Expected Result
 
-> ⏳ **To be completed post-execution.**
+- `top_p=0.95` expected to score ≥8.0/10 per NVIDIA recommendation
+- `top_p=1.00` expected to show higher diversity but lower consistency
+- Code tasks expected to prefer `top_p` ≤ 0.90
 
-**Future Work:** EXP-0003 (Thinking mode) will use temperature and top_p values determined by EXP-0001 and EXP-0002.
+---
+
+## 7. Actual Result
+
+> **STATUS: PENDING** — Blocked on EXP-0001 completion.
+
+---
+
+## 8–12. Analysis / Conclusion / Decision / Future Work / Benchmark Table
+
+> **PENDING** — Complete after EXP-0001 and this experiment are executed.
 
 ---
 
 ## Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial experiment design |

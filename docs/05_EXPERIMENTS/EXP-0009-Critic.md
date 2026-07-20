@@ -1,4 +1,4 @@
-# EXP-0009: Critic Agent Effectiveness
+# EXP-0009: Critic Agent Pattern
 
 ---
 
@@ -7,100 +7,84 @@
 | Field | Value |
 |-------|-------|
 | **Experiment ID** | EXP-0009 |
-| **Title** | Critic Agent — External Evaluation Quality and Calibration |
-| **Version** | 1.0.0 |
-| **Status** | Designed |
+| **Title** | Critic Agent — Quality of Self-Evaluation and Error Detection |
+| **Status** | Planned |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **Updated** | 2026-07-20 |
-
-## Cross-References
-
-- [EXP-0008 Reflection](EXP-0008-Reflection.md)
-- [EXP-0010 Agent](EXP-0010-Agent.md)
-- [AI-9003 Prompt Engineering Standard](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md)
-- [benchmark/tests/reasoning/](../../benchmark/tests/reasoning/)
+| **Related REQ** | REQ-AI-0010 (critic agent) |
+| **Cross-References** | [EXP-0008](EXP-0008-Reflection.md) · [EXP-0010](EXP-0010-Agent.md) · [AI-9003](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md) |
 
 ---
 
 ## 1. Objective
 
-Evaluate whether using Nemotron Ultra 550B as its own critic (evaluating and scoring a second response) produces reliable quality assessments. Measure critic calibration against human scores.
+Evaluate whether Nemotron Ultra 550B can act as a **critic agent** — evaluating the output of another agent (or itself in a separate role) and producing actionable, accurate critique.
+
+Critic agent pattern: Generator produces output → Critic evaluates → Generator revises.
 
 ---
 
-## 2. Background
+## 2. Hypothesis
 
-**[HYPOTHESIS]** A separate critic instance (same model, different system prompt) can reliably score responses on a 1–5 scale with < 0.5 deviation from human ground truth.
-
-**[HYPOTHESIS]** Using thinking ON for the critic improves score calibration vs thinking OFF.
-
----
-
-## 3. Critic System Prompt Design
-
-```
-# Role
-You are a strict quality evaluator for AI-generated responses.
-
-# Task
-You will receive: (1) an original question, (2) an AI-generated response.
-Evaluate the response on a 1-5 scale per criterion:
-- Correctness: Is every factual claim accurate?
-- Completeness: Are all required elements present?
-- Clarity: Is the response easy to understand?
-- Actionability: Can the reader immediately act on this information?
-- Conciseness: Is the response appropriately brief (no padding)?
-
-# Output Format
-Return ONLY a JSON object:
-{"correctness": N, "completeness": N, "clarity": N, "actionability": N, "conciseness": N, "overall": N, "critical_issues": ["..."]}
-
-/think
-```
+> **H1:** Critic agent with a separate system prompt ("You are a strict technical reviewer") will produce more accurate critiques than asking the generator to self-evaluate in the same turn.
+>
+> **H2:** Critic agent in reasoning ON mode will identify 20–40% more errors than reasoning OFF mode.
+>
+> **H3:** Critic-revision loop will converge to higher quality output in 2–3 iterations.
 
 ---
 
-## 4. Hypotheses
+## 3. Variables
 
-| ID | Hypothesis |
-|----|----------|
-| H1 | Critic score correlates with human score (r > 0.8) on factual tasks |
-| H2 | Critic overestimates scores when evaluating same-model output (self-leniency bias) |
-| H3 | Thinking ON critic is more calibrated than thinking OFF |
-| H4 | Critic identifies factual errors with > 70% precision |
+| Type | Variable | Values |
+|------|----------|---------|
+| **Independent** | Critic role | Same-turn self-eval, Separate-turn same model, Separate-turn different prompt |
+| **Independent** | Reasoning mode | OFF, ON |
+| **Dependent** | Error detection rate (%) | Errors found / total errors |
+| **Dependent** | Critique actionability | Binary |
+| **Dependent** | Quality after revision | 1-10 rubric |
+| **Dependent** | Iteration count to convergence | Integer |
+
+---
+
+## 4. Test Artifacts
+
+Create 5 deliberately flawed responses:
+1. Code with 3 intentional bugs
+2. Plan with 2 missing dependencies
+3. Analysis with 1 factual error
+4. Security design with 1 vulnerability
+5. API design with 2 RESTful violations
 
 ---
 
 ## 5. Procedure
 
-1. Generate 30 responses to TC benchmark questions (varied quality intentionally)
-2. Human annotators score each response independently (ground truth)
-3. Run critic agent on same 30 responses
-4. Compute: Pearson correlation, mean absolute error, precision on error detection
-5. Compare: critic with thinking ON vs OFF
+1. Present each flawed artifact to critic in each role configuration
+2. Score error detection rate against known-flaw list
+3. Rate critique actionability
+4. Feed critique back to generator; score revised output
+5. Repeat for up to 3 iterations
 
 ---
 
-## 6. Expected Results
+## 6. Expected Result
 
-| Metric | Expected Value |
-|--------|---------------|
-| Human-critic correlation | r > 0.75 |
-| Mean absolute error | < 0.6 points |
-| Error detection precision | > 65% |
-| Self-leniency bias | +0.3–0.5 score inflation |
+- Separate-turn critic: 80–90% error detection
+- Same-turn self-eval: 50–65% error detection
+- Reasoning ON delta: +20–25% detection rate
+- Convergence: 2 iterations for most artifacts
 
 ---
 
-## 7–13. Actual Result through Benchmark Results
+## 7–12. Actual Result through Benchmark Table
 
-> ⏳ **PENDING**
+> **STATUS: PENDING**
 
 ---
 
 ## Changelog
 
 | Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | 2026-07-20 | Aldhie | Initial design |
+|---------|------|--------|--------|
+| 1.0.0 | 2026-07-20 | Aldhie | Initial experiment design |

@@ -1,41 +1,87 @@
 {
   "_metadata": {
-    "version": "0.1.0",
-    "status": "draft",
-    "description": "Open WebUI capability flags for AI OS",
+    "version": "1.1.0",
+    "status": "active",
+    "description": "Open WebUI feature flags for Nemotron Ultra 550B via NVIDIA Cloud NIM",
     "last_updated": "2026-07-20",
-    "owner": "Aldhie"
+    "owner": "Aldhie",
+    "req_ids": ["REQ-AI-0005", "REQ-AI-0006"]
   },
-  "capabilities": {
-    "memory": {
-      "enabled": true,
-      "auto_save": true,
-      "auto_recall": true,
-      "max_entries": 100,
-      "retention_days": {
-        "short_term": 7,
-        "long_term": -1
-      }
-    },
-    "rag": {
-      "enabled": true,
-      "top_k": 5,
-      "similarity_threshold": 0.75,
-      "chunk_size": 512,
-      "chunk_overlap": 50
-    },
-    "tools": {
-      "web_search": true,
-      "code_execution": true,
-      "image_generation": false,
-      "file_upload": true
-    },
-    "streaming": {
-      "enabled": true
-    },
-    "function_calling": {
-      "enabled": false,
-      "note": "Verify NIM support before enabling"
-    }
+  "_corrections": {
+    "corrected_v010": [
+      "function_calling.enabled: false → true (NIM supports tool calling per official docs)"
+    ]
+  },
+  "function_calling": {
+    "enabled": true,
+    "_note": "NIM Ultra 550B supports tool calling. Tool call parser qwen3_coder configured server-side by NVIDIA.",
+    "_evidence": "Official docs show explicit tool calling examples. All backends use --tool-call-parser qwen3_coder.",
+    "_benchmark": "BM-09: verify qwen3_coder format is OW-compatible",
+    "_warning_sglang": "If Cloud NIM uses SGLang backend: MUST inject chat_template_kwargs via Pipeline for tool calls + reasoning",
+    "tool_choice_supported": ["auto", "required", "none", "specific_function"],
+    "parallel_tool_calls": "need_benchmark",
+    "_benchmark_parallel": "BM-01"
+  },
+  "reasoning_mode": {
+    "_description": "Reasoning/thinking mode control methods",
+    "primary_method": "system_prompt",
+    "system_prompt_on": "/think",
+    "system_prompt_off": "/nothink",
+    "advanced_methods_require_pipeline": [
+      "medium_effort: extra_body.chat_template_kwargs.medium_effort=true",
+      "reasoning_budget: extra_body.chat_template_kwargs.reasoning_budget=N",
+      "force_nonempty_content: extra_body.chat_template_kwargs.force_nonempty_content=true (coding agents)"
+    ],
+    "_evidence": "Official NVIDIA docs: /think and /nothink system prompt directives documented"
+  },
+  "rag": {
+    "enabled": true,
+    "embedding_provider": "MUST_CONFIGURE_SEPARATELY",
+    "_critical": "Cloud NIM does NOT expose /v1/embeddings. RAG will fail without separate embedding provider.",
+    "_req": "REQ-AI-0006",
+    "_recommended_providers": [
+      "nomic-embed-text (via Ollama — local, free)",
+      "mxbai-embed-large (via Ollama — local, free)",
+      "nvidia/nv-embedqa-e5-v5 (via NVIDIA Cloud NIM — separate endpoint)"
+    ],
+    "chunk_size": 512,
+    "chunk_overlap": 50,
+    "top_k_retrieval": 5,
+    "hybrid_search": true,
+    "_benchmark": "BM-02: Agentic RAG round-trip"
+  },
+  "memory": {
+    "enabled": true,
+    "auto_save": true,
+    "auto_recall": true,
+    "short_term_retention_days": 7,
+    "long_term_retention_days": -1,
+    "_note": "Memory is OW-side. Transparent to NIM. Memory injection counts against context budget (REQ-AI-0007)."
+  },
+  "image_upload": {
+    "enabled": false,
+    "_reason": "Nemotron Ultra 550B is text-only. Image uploads not supported.",
+    "file_text_extraction": true,
+    "_note": "Text file upload (PDF, docx) works via text extraction."
+  },
+  "image_generation": {
+    "enabled": false,
+    "_reason": "Requires separate image generation model. Not available from this NIM endpoint."
+  },
+  "web_search": {
+    "enabled": true,
+    "_note": "Search results injected as context. Transparent to NIM. Monitor context budget REQ-AI-0007."
+  },
+  "code_execution": {
+    "enabled": true,
+    "_note": "OW-side sandbox execution. Transparent to NIM."
+  },
+  "voice_stt": {
+    "enabled": true,
+    "_note": "STT processed before NIM call. Transparent to NIM."
+  },
+  "voice_tts": {
+    "enabled": true,
+    "_note": "TTS post-processing of NIM response. Transparent to NIM."
   }
 }

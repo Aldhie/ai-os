@@ -1,52 +1,143 @@
 {
   "_metadata": {
-    "version": "0.1.0",
-    "status": "draft",
-    "description": "Open WebUI model parameters for Nemotron 3 Ultra 550B via NVIDIA NIM",
+    "version": "1.2.0",
+    "status": "active",
+    "audit": "AI-0003-Audit v1.0 — validated against official NIM docs 2026-07-20",
+    "description": "Open WebUI model parameters for Nemotron Ultra 550B via NVIDIA Cloud NIM",
     "last_updated": "2026-07-20",
-    "owner": "Aldhie"
+    "owner": "Aldhie",
+    "req_ids": ["REQ-AI-0002", "REQ-AI-0003", "REQ-AI-0004", "REQ-AI-0007", "REQ-AI-0011"]
+  },
+  "_corrections": {
+    "removed_v010": [
+      "top_k: 40 (unsupported by NIM — silently ignored)",
+      "repetition_penalty: 1.1 (unsupported by NIM — use frequency_penalty instead)"
+    ],
+    "corrected_v010": [
+      "temperature: 0.6 → 1.0 (official NVIDIA docs use 1.0 in all examples)",
+      "system_prompt → added /think and /nothink directives (documented method)",
+      "max_tokens: 2048 → 4096 default (reasoning traces need more tokens)"
+    ],
+    "added_v120": [
+      "medium_effort profile",
+      "context length clarification: default 256K not 1M",
+      "req_ids traceability"
+    ]
   },
   "model": {
     "provider": "nvidia-nim",
-    "model_id": "nvidia/nemotron-3-ultra-550b",
+    "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
     "base_url": "https://integrate.api.nvidia.com/v1",
-    "api_key_env": "NVIDIA_API_KEY"
+    "api_key_env": "NVIDIA_API_KEY",
+    "_note_context": "Default context: 256K tokens. 1M requires VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 server-side (BM-10: verify Cloud NIM limit)",
+    "context_length_default_confirmed": 262144,
+    "context_length_max_unconfirmed": 1048576
   },
-  "inference": {
-    "temperature": 0.6,
+  "inference_defaults": {
+    "_note": "Base parameters sent for all requests. Profile overrides applied on top.",
+    "temperature": 1.0,
     "top_p": 0.95,
-    "top_k": 40,
-    "max_tokens": 2048,
-    "repetition_penalty": 1.1,
+    "max_tokens": 4096,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
     "stream": true,
-    "stop": []
+    "stop": [],
+    "_evidence_temperature": "All official NVIDIA NIM examples use temperature=1.0. Source: docs.api.nvidia.com",
+    "_evidence_top_p": "NVIDIA recommends top_p=0.95 with reasoning ON. Source: official API reference"
   },
   "profiles": {
     "general": {
-      "temperature": 0.7,
+      "_description": "Default profile for general queries. Thinking OFF to conserve tokens.",
+      "_req": "REQ-AI-0004, REQ-AI-0011",
+      "system_prompt_prefix": "/nothink",
+      "temperature": 1.0,
       "top_p": 0.95,
-      "max_tokens": 1024
+      "max_tokens": 2048
     },
     "reasoning": {
-      "temperature": 0.3,
-      "top_p": 0.9,
-      "max_tokens": 4096
+      "_description": "Full reasoning mode for complex problems. Thinking ON.",
+      "_req": "REQ-AI-0004",
+      "_warning": "3-10x token cost vs general. Monitor REQ-AI-0011.",
+      "system_prompt_prefix": "/think",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "max_tokens": 16000
+    },
+    "medium_effort": {
+      "_description": "Partial reasoning mode. Recommended as starting point for reasoning tasks.",
+      "_req": "REQ-AI-0004",
+      "_note": "Requires Pipeline to inject extra_body.chat_template_kwargs.medium_effort=true. System prompt alone not sufficient for medium_effort.",
+      "_benchmark": "BM-11: verify Pipeline injection works",
+      "system_prompt_prefix": "/think",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "max_tokens": 8192
     },
     "creative": {
+      "_description": "Creative writing and brainstorming. Higher diversity.",
+      "system_prompt_prefix": "/nothink",
       "temperature": 1.0,
       "top_p": 0.98,
       "max_tokens": 2048
     },
     "code": {
-      "temperature": 0.2,
-      "top_p": 0.85,
+      "_description": "Coding assistance. Thinking ON for accuracy.",
+      "_req": "REQ-AI-0004",
+      "_note": "Requires Pipeline to inject force_nonempty_content=true per NVIDIA docs for coding agents.",
+      "_evidence": "Official NVIDIA docs: 'For coding agents add force_nonempty_content: true'",
+      "system_prompt_prefix": "/think",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "max_tokens": 16000
+    },
+    "rag": {
+      "_description": "RAG-augmented retrieval. Thinking OFF for speed; context injection handles complexity.",
+      "_req": "REQ-AI-0006",
+      "system_prompt_prefix": "/nothink",
+      "temperature": 1.0,
+      "top_p": 0.95,
       "max_tokens": 4096
+    },
+    "agent": {
+      "_description": "Agentic workflow profile. Tool calling enabled. Thinking ON.",
+      "_req": "REQ-AI-0005",
+      "_note": "For tool calls + reasoning: Pipeline MUST inject chat_template_kwargs per SGLang requirement.",
+      "_benchmark": "BM-09: verify qwen3_coder format compatibility",
+      "system_prompt_prefix": "/think",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "max_tokens": 8192
     }
   },
-  "context": {
-    "system_prompt_budget_tokens": 500,
-    "history_budget_tokens": 4096,
-    "rag_budget_tokens": 2048,
-    "output_reserved_tokens": 2048
-  }
+  "context_budget": {
+    "_note": "Total context = system_prompt + history + rag + output. Must be < context_length_default_confirmed (262144). All values in tokens.",
+    "_req": "REQ-AI-0007",
+    "system_prompt_budget": 500,
+    "history_budget": 8192,
+    "rag_budget": 4096,
+    "thinking_trace_budget": 16000,
+    "output_reserved": 4096,
+    "total_safe_budget": 32884,
+    "_formula": "total_safe_budget = system_prompt_budget + history_budget + rag_budget + thinking_trace_budget + output_reserved"
+  },
+  "supported_parameters": [
+    "temperature",
+    "top_p",
+    "max_tokens",
+    "frequency_penalty",
+    "presence_penalty",
+    "stream",
+    "stop",
+    "seed",
+    "response_format",
+    "tools",
+    "tool_choice"
+  ],
+  "unsupported_parameters_do_not_use": [
+    "top_k (silently ignored by NIM)",
+    "repetition_penalty (silently ignored by NIM — use frequency_penalty)",
+    "n (NIM only supports n=1; n>1 returns 400)",
+    "best_of",
+    "logit_bias"
+  ]
 }

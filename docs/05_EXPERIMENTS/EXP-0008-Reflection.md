@@ -1,4 +1,4 @@
-# EXP-0008: Reflection Capability — Self-Correction and Error Detection
+# EXP-0008: Self-Reflection and Error Correction Capability
 
 ---
 
@@ -6,78 +6,84 @@
 
 | Field | Value |
 |-------|-------|
-| **EXP ID** | EXP-0008 |
-| **Version** | 1.0.0 |
-| **Status** | 📋 Planned |
+| **Experiment ID** | EXP-0008 |
+| **Title** | Self-Reflection and Error Correction |
+| **Version** | 0.1.0 |
+| **Status** | Pending Execution |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **REQ** | REQ-AI-0004 |
+| **Updated** | 2026-07-20 |
+| **Category** | Experiment — Agentic Capability |
 
-## Related Documents
+## Cross-References
 
-- ↑ [REQ-AI-0004](../00_ENGINEERING/REQ-INDEX.md#req-ai-0004)
-- → [EXP-0007 Planner](./EXP-0007-Planner.md)
-- → [EXP-0009 Critic](./EXP-0009-Critic.md)
-
----
-
-## Objective
-
-Evaluate the model's ability to reflect on its own outputs, detect errors, and self-correct when explicitly asked to review its previous response. Determine whether reflection prompts improve final output quality.
+| Document | Relationship |
+|----------|--------------|
+| [EXP-0007](EXP-0007-Planner.md) | Planning capability |
+| [EXP-0009](EXP-0009-Critic.md) | Critic capability |
+| [benchmark/reasoning/](../../benchmark/tests/reasoning/) | Reasoning benchmark TCs |
 
 ---
 
-## Hypothesis
+## 1. Objective
 
-**H1:** When asked to "review and improve your previous answer", the model identifies and corrects >70% of planted errors.
-
-**H2:** Reflection with thinking ON detects more subtle errors than reflection with thinking OFF.
-
-**H3:** Multiple reflection rounds (reflect-once vs reflect-twice) produce diminishing returns after the first reflection.
+Measure whether Nemotron Ultra 550B can identify and correct its own errors when prompted to reflect on a previous response. This validates the model's suitability for multi-turn agentic workflows where self-correction is required.
 
 ---
 
-## Variables
+## 2. Hypothesis
 
-| Variable | Type | Values |
-|----------|------|--------|
-| Reflection rounds | Independent | 0 (no reflection), 1, 2 |
-| Error type | Independent | Factual, Logical, Code bug, Missing step |
-| Thinking mode | Independent | OFF, ON |
-| Error visibility | Independent | Obvious, Subtle |
+**H1:** When shown its own incorrect answer and asked to reflect, the model corrects the error ≥ 80% of the time with thinking mode ON. [HYPOTHESIS]
 
----
+**H2:** Reflection quality correlates with thinking mode: thinking ON produces deeper corrections than thinking OFF. [HYPOTHESIS]
 
-## Procedure
-
-1. Create 5 initial responses with planted errors (factual, logical, code).
-2. Ask model to: "Review your previous response and identify any errors. Provide a corrected version."
-3. Measure: (a) error detection rate, (b) correction accuracy, (c) introduction of new errors during correction.
-4. Repeat with thinking ON vs OFF.
-5. For promising configurations: run second reflection round, measure improvement delta.
+**H3:** The model can identify the specific step in its reasoning where the error was introduced. [HYPOTHESIS]
 
 ---
 
-## Expected Result
+## 3. Test Procedure
 
-| Config | Detection Rate | Correction Rate | New Errors Introduced |
-|--------|---------------|-----------------|----------------------|
-| Think OFF | ~60% | ~50% | ~10% |
-| Think ON | ~80% | ~75% | ~5% |
-| Think ON, round 2 | ~82% | ~77% | ~5% |
+**Phase 1: Generate initial answer** (deliberately inject difficult questions with known correct answers)
 
----
+**Phase 2: Inject reflection prompt**
+```
+Please review your previous answer carefully. 
+Identify any errors or weaknesses. 
+Provide a corrected and improved response.
+```
 
-## Actual Result
-
-*Status: Not yet executed.*
-
----
-
-## Benchmark Result
-
-*Pending execution.*
+**Phase 3: Evaluate**
+- Did the model identify the error?
+- Was the corrected answer better?
+- Was the reasoning trace in `<think>` deeper on the second attempt?
 
 ---
 
-*EXP-0008 v1.0.0 — Created 2026-07-20*
+## 4. Task Set
+
+| Task | Type | Known Correct Answer |
+|------|------|---------------------|
+| Math logic puzzle | Reasoning | Verifiable |
+| Incorrect code review | Code | Known correct code |
+| Factual claim verification | Knowledge | Verifiable fact |
+| Architecture flaw identification | Design | Expert review |
+
+---
+
+## 5. Actual Results
+
+> **Status: PENDING EXECUTION**
+
+---
+
+## 6. Conclusion
+
+> **PENDING**
+
+---
+
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |

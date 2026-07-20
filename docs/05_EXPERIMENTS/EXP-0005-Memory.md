@@ -1,4 +1,4 @@
-# EXP-0005: Memory Policy — Recall Accuracy and Context Impact
+# EXP-0005: Long-Term Memory Behavior and Quality
 
 ---
 
@@ -6,87 +6,102 @@
 
 | Field | Value |
 |-------|-------|
-| **EXP ID** | EXP-0005 |
-| **Version** | 1.0.0 |
-| **Status** | 📋 Planned |
+| **Experiment ID** | EXP-0005 |
+| **Title** | Long-Term Memory Behavior and Quality |
+| **Version** | 0.1.0 |
+| **Status** | Pending Execution |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **REQ** | REQ-AI-0009 |
-| **BM** | MEM-TC-0001, MEM-TC-0002 |
+| **Updated** | 2026-07-20 |
+| **Category** | Experiment — Memory |
 
-## Related Documents
+## Cross-References
 
-- ↑ [REQ-AI-0009](../00_ENGINEERING/REQ-INDEX.md#req-ai-0009)
-- → [EXP-0006 RAG](./EXP-0006-RAG.md)
-
----
-
-## Objective
-
-Measure the accuracy of Open WebUI memory recall, the impact of memory injection on context budget, and identify conditions where memory helps vs hurts response quality.
+| Document | Relationship |
+|----------|--------------|
+| [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) | Memory compatibility matrix |
+| [benchmark/memory/](../../benchmark/tests/memory/) | Memory benchmark TCs |
+| [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md) | REQ-AI-0012 |
 
 ---
 
-## Hypothesis
+## 1. Objective
 
-**H1:** Auto-recall of relevant memories improves response personalization without the user needing to re-state preferences.
-
-**H2:** Stale memories (>14 days old, no longer accurate) injected into context decrease response quality by introducing contradictory information.
-
-**H3:** Memory injection > 2,048 tokens begins to degrade quality by consuming tokens that would otherwise be used for task context.
+Validate Open WebUI long-term memory behavior with Nemotron Ultra 550B: accuracy of memory recall, token overhead from memory injection, and quality degradation over time as memory set grows.
 
 ---
 
-## Variables
+## 2. Background
 
-| Variable | Type | Values |
-|----------|------|--------|
-| Memory relevance | Independent | Relevant, Partially relevant, Irrelevant |
-| Memory age | Independent | Fresh (0–7 days), Stale (30+ days) |
-| Memory injection size | Independent | 512, 1024, 2048, 4096 tokens |
-| Task type | Controlled | Personalization, General Q&A |
+Open WebUI memory is entirely client-side: stored facts are retrieved and injected as context before each NIM call. [FACT: Official Doc — OW memory docs]
+
+Key unknown: what is the quality of semantic retrieval? How many injected memory facts are irrelevant (noise)? How does memory injection interact with the model's own context window management? [ASSUMPTION]
 
 ---
 
-## Procedure
+## 3. Hypothesis
 
-1. **Setup:** Create 5 memory entries with varying relevance and age.
-2. **Test cases:**
-   a. Relevant memory — ask question directly addressed by memory
-   b. Irrelevant memory — ask question unrelated to any memory
-   c. Stale memory — ask about topic where memory is outdated
-   d. Large injection — create 4,096-token memory block, measure quality impact
-3. Evaluate: (a) Was memory used correctly? (b) Did memory improve/hurt response? (c) Token overhead?
+**H1:** Memory recall accuracy (correct facts retrieved / total relevant facts) exceeds 90% for a memory set of ≤ 50 entries. [HYPOTHESIS]
+
+**H2:** Memory injection of >10 facts per query causes >500 token overhead, noticeably reducing response quality on token-budget-sensitive tasks. [HYPOTHESIS]
+
+**H3:** Memory entries older than 30 days are retrieved with lower relevance scores (due to semantic drift), producing lower-quality injections. [HYPOTHESIS]
 
 ---
 
-## Expected Result
+## 4. Test Scenarios
 
-| Condition | Expected Outcome |
-|-----------|------------------|
-| Relevant memory | Improves personalization |
-| Irrelevant memory | Neutral (memory ignored) |
-| Stale memory | Degrades quality (contradictions) |
-| Large injection (4096+) | Reduces output quality |
+### Scenario A: Basic Recall
+1. Add 10 known facts to memory
+2. Ask questions that require those specific facts
+3. Measure: correct facts retrieved / questions asked
 
----
+### Scenario B: Noise Measurement
+1. Add 50 mixed facts (10 relevant, 40 irrelevant to test query)
+2. Run query
+3. Count: how many irrelevant facts were injected
 
-## Actual Result
+### Scenario C: Scale Test
+1. Memory set sizes: 10, 50, 100, 500 entries
+2. Measure recall accuracy and injection latency at each scale
 
-*Status: Not yet executed.*
-
----
-
-## Decision
-
-*Current: Memory injection cap 2,048 tokens. Short-term retention 7 days.*
-
----
-
-## Benchmark Result
-
-*Pending MEM-TC-0001, MEM-TC-0002 execution.*
+### Scenario D: Temporal Decay
+1. Add facts; wait 7 days
+2. Re-query; compare retrieval quality to day-0 baseline
 
 ---
 
-*EXP-0005 v1.0.0 — Created 2026-07-20*
+## 5. Environment
+
+| Component | Value |
+|-----------|-------|
+| Memory backend | Open WebUI default |
+| Embedding model | [to be determined based on available provider] |
+| Memory retention policy | 7-day short-term, unlimited long-term |
+| Model | nvidia/nemotron-3-ultra-550b-a55b |
+
+---
+
+## 6. Actual Results
+
+> **Status: PENDING EXECUTION**
+
+---
+
+## 7. Conclusion
+
+> **PENDING**
+
+---
+
+## 8. Decision
+
+> **PENDING** — Will determine optimal memory set size limits and retention policy.
+
+---
+
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |

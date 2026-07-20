@@ -1,4 +1,4 @@
-# EXP-0007: Planner Capability — Multi-Step Task Planning Quality
+# EXP-0007: Multi-Step Planning Capability
 
 ---
 
@@ -6,77 +6,82 @@
 
 | Field | Value |
 |-------|-------|
-| **EXP ID** | EXP-0007 |
-| **Version** | 1.0.0 |
-| **Status** | 📋 Planned |
+| **Experiment ID** | EXP-0007 |
+| **Title** | Multi-Step Planning Capability |
+| **Version** | 0.1.0 |
+| **Status** | Pending Execution |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **REQ** | REQ-AI-0004, REQ-AI-0005 |
+| **Updated** | 2026-07-20 |
+| **Category** | Experiment — Agentic Capability |
 
-## Related Documents
+## Cross-References
 
-- ↑ [REQ-AI-0004](../00_ENGINEERING/REQ-INDEX.md#req-ai-0004)
-- → [EXP-0008 Reflection](./EXP-0008-Reflection.md)
-- → [EXP-0010 Agent](./EXP-0010-Agent.md)
-
----
-
-## Objective
-
-Evaluate Nemotron Ultra 550B's ability to decompose complex goals into executable multi-step plans. Measure plan completeness, feasibility, and step sequencing correctness.
+| Document | Relationship |
+|----------|--------------|
+| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Model spec — agentic capability section |
+| [EXP-0003](EXP-0003-Thinking.md) | Thinking mode validation |
+| [benchmark/planning/](../../benchmark/tests/planning/) | Planning benchmark TCs |
 
 ---
 
-## Hypothesis
+## 1. Objective
 
-**H1:** Thinking ON (/think) produces more complete and feasible plans than Thinking OFF for tasks requiring >5 steps.
-
-**H2:** The model correctly identifies dependencies between plan steps and sequences them accordingly.
-
-**H3:** Plans produced without role/context in system prompt are less specific than plans with domain context.
+Measure Nemotron Ultra 550B's ability to decompose complex goals into executable step-by-step plans. Validate whether thinking mode (`/think`) produces materially better plans than non-thinking mode.
 
 ---
 
-## Variables
+## 2. Hypothesis
 
-| Variable | Type | Values |
-|----------|------|--------|
-| Thinking mode | Independent | OFF, ON |
-| System prompt context | Independent | Generic, Domain-specific |
-| Task complexity | Independent | 3-step, 5-step, 10-step |
-| Domain | Controlled | Software engineering, Business |
+**H1:** With thinking mode ON, the model produces plans that are:
+- More complete (cover all subtasks)
+- More sequentially correct (right dependency order)
+- More specific (actionable steps vs vague directions)
+compared to thinking mode OFF. [HYPOTHESIS]
 
----
+**H2:** Providing a planning template in the system prompt increases plan quality by >20% on completeness score. [HYPOTHESIS]
 
-## Procedure
-
-1. Create 6 planning prompts across complexity levels.
-2. For each: run with thinking OFF and ON, generic and domain-specific prompts.
-3. Evaluate: (a) completeness (all required steps present), (b) feasibility (steps are executable), (c) sequencing (dependencies respected), (d) specificity (actionable vs vague).
-4. Score 0–5 per criterion.
+**H3:** The model can correctly identify and flag task dependencies and blockers in a multi-agent scenario. [HYPOTHESIS]
 
 ---
 
-## Expected Result
+## 3. Task Set
 
-| Condition | Completeness | Feasibility | Sequencing |
-|-----------|-------------|-------------|------------|
-| Think OFF, Generic | 3/5 | 3/5 | 3/5 |
-| Think ON, Generic | 4/5 | 4/5 | 4/5 |
-| Think ON, Domain | 5/5 | 5/5 | 5/5 |
-
----
-
-## Actual Result
-
-*Status: Not yet executed.*
+| Task | Complexity | Domain |
+|------|-----------|--------|
+| Build a REST API with auth | Medium | Software Engineering |
+| Plan a hotel marketing campaign | Medium | Hospitality |
+| Design a RAG pipeline architecture | Hard | AI Engineering |
+| Debug a distributed system failure | Hard | Systems Engineering |
+| Create a 30-day business launch plan | Hard | Business |
 
 ---
 
-## Benchmark Result
+## 4. Evaluation Criteria
 
-*Pending PLAN-TC-* execution.*
+| Criterion | Weight | Measurement |
+|-----------|--------|-------------|
+| Completeness | 30% | All major steps present |
+| Sequential correctness | 25% | Steps in logical order |
+| Actionability | 25% | Steps are executable, not vague |
+| Dependency identification | 20% | Blockers and dependencies noted |
 
 ---
 
-*EXP-0007 v1.0.0 — Created 2026-07-20*
+## 5. Actual Results
+
+> **Status: PENDING EXECUTION**
+
+---
+
+## 6. Conclusion
+
+> **PENDING**
+
+---
+
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |

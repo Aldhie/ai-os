@@ -1,4 +1,4 @@
-# EXP-0004: System Prompt Engineering — Structure and Content Effect
+# EXP-0004: System Prompt Engineering for Nemotron Ultra 550B
 
 ---
 
@@ -6,94 +6,118 @@
 
 | Field | Value |
 |-------|-------|
-| **EXP ID** | EXP-0004 |
-| **Version** | 1.0.0 |
-| **Status** | 📋 Planned |
+| **Experiment ID** | EXP-0004 |
+| **Title** | System Prompt Engineering |
+| **Version** | 0.1.0 |
+| **Status** | Pending Execution |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **REQ** | REQ-AI-0008 |
+| **Updated** | 2026-07-20 |
+| **Category** | Experiment — Prompt Engineering |
 
-## Related Documents
+## Cross-References
 
-- ↑ [REQ-AI-0008](../00_ENGINEERING/REQ-INDEX.md#req-ai-0008)
-- ↑ [AI-0001 Engineering Spec](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md)
-- → [EXP-0003 Thinking](./EXP-0003-Thinking.md)
-
----
-
-## Objective
-
-Determine how system prompt structure, length, and content affect response quality, behaviour consistency, and context budget consumption. Find the optimal system prompt design for this repository's use cases.
+| Document | Relationship |
+|----------|--------------|
+| [AI-9003](../99_GOVERNANCE/AI-9003-Prompt-Engineering-Standard.md) | Prompt engineering standard |
+| [EXP-0003](EXP-0003-Thinking.md) | Thinking mode control |
+| [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) | System prompt compatibility |
+| [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md) | REQ-AI-0006 |
 
 ---
 
-## Hypothesis
+## 1. Objective
 
-**H1:** System prompts under 200 tokens produce equivalent behaviour to 500-token prompts when content is well-structured.
-
-**H2:** Including explicit behavioural rules ("always cite sources", "never assume") improves compliance vs implicit intent.
-
-**H3:** Placing the /think or /nothink directive on the first line is required for reliable activation — placement elsewhere may fail.
+Determine the optimal system prompt structure for Nemotron Ultra 550B across five agent profiles: **general**, **reasoning**, **code**, **creative**, and **RAG/analyst**. Validate the 500-token budget hypothesis and identify anti-patterns.
 
 ---
 
-## Variables
+## 2. Background
 
-| Variable | Type | Values |
-|----------|------|--------|
-| Prompt length | Independent | 50 tokens, 200 tokens, 500 tokens |
-| Directive placement | Independent | First line, last line, middle |
-| Instruction explicitness | Independent | Implicit intent, explicit rules |
-| Task type | Controlled | Discussion, Coding, Reasoning |
+System prompts for Nemotron Ultra 550B have a unique constraint: the thinking mode directive (`/think` or `/nothink`) MUST be present. Without it, the model defaults to an unspecified mode. [FACT: Official Doc — system prompt directives are the primary Open WebUI control mechanism]
+
+The optimal structure and length of system prompts beyond the thinking directive is unknown. [ASSUMPTION]
 
 ---
 
-## Procedure
+## 3. Hypothesis
 
-1. Write 3 system prompt variants:
-   - Minimal (50 tokens): directive + 1-line role
-   - Standard (200 tokens): directive + role + 5 rules
-   - Full (500 tokens): directive + role + 10 rules + domain context
-2. Test directive placement: first line vs last line.
-3. For each combination, run 5 test prompts.
-4. Evaluate: (a) directive compliance, (b) role adherence, (c) rule compliance, (d) response quality.
+**H1:** System prompts over 500 tokens reduce effective reasoning budget, degrading output quality on complex tasks. [HYPOTHESIS]
+
+**H2:** Role + Thinking Directive + Constraints + Output Format is the optimal system prompt structure. [HYPOTHESIS]
+
+**H3:** Explicit output format instructions in the system prompt ("respond in JSON", "use markdown headers") improve formatting consistency by >80%. [HYPOTHESIS]
 
 ---
 
-## Expected Result
+## 4. Variables
 
-| Prompt Length | Compliance | Quality | Token Cost |
-|---------------|-----------|---------|------------|
-| 50 tokens | Partial | Moderate | Minimal |
-| 200 tokens | High | High | Low |
-| 500 tokens | High | High | Medium |
-
-**Expected finding:** 200-token prompt is optimal — high compliance at low token cost.
-
----
-
-## Actual Result
-
-*Status: Not yet executed.*
+### Independent Variables
+| Variable | Values |
+|----------|--------|
+| Prompt length | 50, 100, 200, 500, 1000 tokens |
+| Prompt structure | Role-only / Role+Directives / Role+Directives+Format / Full |
+| Output format instruction | None / Markdown / JSON / Plain |
 
 ---
 
-## Conclusion
+## 5. Profiles to Design
 
-*Pending execution.*
+### Profile: General
+```
+/nothink
+You are a knowledgeable assistant. Answer clearly and directly.
+Use markdown formatting. Cite sources when available.
+```
+
+### Profile: Reasoning
+```
+/think
+You are an expert analyst. Analyze problems methodically.
+Show your reasoning. Provide structured conclusions.
+Use markdown with headers.
+```
+
+### Profile: Code
+```
+/think
+You are a senior software engineer.
+Write clean, documented, production-ready code.
+Always include error handling. Explain your approach.
+Output code blocks with language specification.
+```
+
+### Profile: Creative
+```
+/nothink
+You are a creative writer. Generate original, engaging content.
+Prioritize quality and creativity over speed.
+```
+
+### Profile: RAG/Analyst
+```
+/nothink
+You are a precise analyst. Base all answers strictly on provided context.
+If context is insufficient, state explicitly what is missing.
+Never invent information. Cite the source document for each claim.
+```
 
 ---
 
-## Decision
+## 6. Actual Results
 
-*Current: Standard 200-token prompt template in use.*
-
----
-
-## Benchmark Result
-
-*Pending execution.*
+> **Status: PENDING EXECUTION**
 
 ---
 
-*EXP-0004 v1.0.0 — Created 2026-07-20*
+## 7. Conclusion
+
+> **PENDING**
+
+---
+
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design including profile templates |

@@ -1,4 +1,4 @@
-# EXP-0002: Top-P (Nucleus Sampling) Effect on Output Quality
+# EXP-0002: Top-P (Nucleus Sampling) Calibration
 
 ---
 
@@ -6,101 +6,116 @@
 
 | Field | Value |
 |-------|-------|
-| **EXP ID** | EXP-0002 |
-| **Version** | 1.0.0 |
-| **Status** | 📋 Planned |
+| **Experiment ID** | EXP-0002 |
+| **Title** | Top-P Nucleus Sampling Calibration |
+| **Version** | 0.1.0 |
+| **Status** | Pending Execution |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **REQ** | REQ-AI-0002, REQ-AI-0003 |
+| **Updated** | 2026-07-20 |
+| **Category** | Experiment — Inference Parameters |
 
-## Related Documents
+## Cross-References
 
-- ↑ [REQ-AI-0002](../00_ENGINEERING/REQ-INDEX.md#req-ai-0002)
-- → [EXP-0001 Temperature](./EXP-0001-Temperature.md)
-
----
-
-## Objective
-
-Determine the optimal top_p value for NVIDIA Nemotron Ultra 550B. Evaluate whether the NVIDIA-recommended top_p=0.95 is optimal, or if lower values (0.7, 0.85) improve coherence on structured tasks.
+| Document | Relationship |
+|----------|--------------|
+| [AI-0002](../00_ENGINEERING/AI-0002-NVIDIA-NIM-API.md) | API parameter reference |
+| [EXP-0001](EXP-0001-Temperature.md) | Depends on — run after temperature calibration |
+| [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md) | REQ-AI-0004 |
 
 ---
 
-## Hypothesis
+## 1. Objective
 
-**H1:** top_p=0.95 produces higher diversity without quality loss vs top_p=0.7 for reasoning tasks.
-
-**H2:** For deterministic tasks (code generation), top_p=0.85 may outperform top_p=0.95 by reducing irrelevant token candidates.
-
-**Note:** top_p and temperature interact multiplicatively. This experiment must control temperature at 1.0 (per REQ-AI-0003) across all runs.
+Determine the optimal `top_p` value for Nemotron Ultra 550B at the temperature values established in EXP-0001. Validate that NVIDIA's recommended `top_p=0.95` is optimal or identify a better value.
 
 ---
 
-## Variables
+## 2. Background
 
-| Variable | Type | Values |
-|----------|------|--------|
-| top_p | Independent | 0.7, 0.85, 0.95, 1.0 |
-| temperature | Controlled | 1.0 (per REQ-AI-0003) |
-| thinking mode | Controlled | /nothink |
-| max_tokens | Controlled | 2048 |
+Top-P (nucleus sampling) controls diversity by restricting token selection to the top-P probability mass. [FACT: Official Doc — NVIDIA uses top_p=0.95 in all examples]
+
+Interaction with temperature: top_p and temperature are not independent. High temperature with low top_p creates a different distribution than low temperature with high top_p. [HYPOTHESIS — needs EXP-0001 results first]
 
 ---
 
-## Environment
+## 3. Hypothesis
+
+**H1:** `top_p=0.95` (NVIDIA default) is optimal for all task categories when combined with `temperature=1.0`. [HYPOTHESIS]
+
+**H2:** For coding tasks, `top_p=0.85` combined with `temperature=1.0` produces fewer syntax errors than `top_p=0.95`. [HYPOTHESIS]
+
+**H3:** For creative tasks, `top_p=0.98` combined with `temperature=1.0` increases output variety without losing coherence. [HYPOTHESIS]
+
+---
+
+## 4. Variables
+
+### Independent Variable
+| Variable | Values |
+|----------|--------|
+| `top_p` | 0.7, 0.8, 0.85, 0.9, 0.95, 0.98, 1.0 |
+
+### Controlled Variables
+| Variable | Value | Reason |
+|----------|-------|--------|
+| `temperature` | [Best value from EXP-0001] | Use calibrated temperature |
+| `max_tokens` | 4096 | Standard |
+| `model` | nvidia/nemotron-3-ultra-550b-a55b | Target |
+| `seed` | 42 | Reproducibility |
+
+---
+
+## 5. Environment
 
 | Component | Value |
 |-----------|-------|
 | Model | nvidia/nemotron-3-ultra-550b-a55b |
-| Backend | NVIDIA Cloud NIM |
-| Interface | Open WebUI |
-| Session | Fresh session per top_p value |
+| Endpoint | https://integrate.api.nvidia.com/v1 |
+| Temperature | [Value from EXP-0001 — PENDING] |
+| Pipeline | Disabled |
 
 ---
 
-## Procedure
+## 6. Procedure
 
-1. Select 3 test prompts: (a) coding problem, (b) reasoning problem, (c) creative writing.
-2. For each prompt, run at top_p = 0.7, 0.85, 0.95, 1.0.
-3. Repeat each configuration 3× to measure variance.
-4. Score on 0–5 scale per task type criteria.
-5. Calculate mean score and variance per top_p value.
+Identical task sets as EXP-0001 (reasoning, code, factual, creative).
+Run each task at each `top_p` value, holding temperature constant.
+Record: output quality, diversity (measured as avg edit distance between 3 runs).
 
 ---
 
-## Expected Result
+## 7. Expected Results
 
-| top_p | Coding | Reasoning | Creative |
-|-------|--------|-----------|----------|
-| 0.70 | High coherence, low diversity | May miss reasoning paths | Repetitive |
-| 0.85 | Good balance | Good | Good |
-| 0.95 | Good balance | NVIDIA recommended | High diversity |
-| 1.00 | Slightly noisy | Max diversity | Maximum diversity |
-
----
-
-## Actual Result
-
-*Status: Not yet executed.*
+| top_p | Effect |
+|-------|--------|
+| 0.7 | Conservative, repetitive but coherent |
+| 0.85 | Balanced, good for code |
+| 0.95 | NVIDIA recommendation — expected to be near-optimal |
+| 1.0 | Full distribution — possibly incoherent |
 
 ---
 
-## Conclusion
+## 8. Actual Results
 
-*Pending execution. Provisional: top_p=0.95 per NVIDIA recommendation.*
-
----
-
-## Decision
-
-*Pending execution. Current: top_p=0.95 (all profiles).*
+> **Status: PENDING EXECUTION (depends on EXP-0001)**
 
 ---
 
-## Benchmark Result
+## 9. Conclusion
 
-*Pending.*
+> **PENDING**
 
 ---
 
-*EXP-0002 v1.0.0 — Created 2026-07-20*
+## 10. Decision
+
+> **PENDING** — Will update per-profile `top_p` values in `parameters.json`.
+
+---
+
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | 2026-07-20 | Aldhie | Initial design |

@@ -1,4 +1,4 @@
-# EXP-0010: Agentic Capability — Tool Calling and Multi-Turn Agent Loops
+# EXP-0010: Full Agentic Workflow End-to-End
 
 ---
 
@@ -6,127 +6,143 @@
 
 | Field | Value |
 |-------|-------|
-| **EXP ID** | EXP-0010 |
-| **Version** | 1.0.0 |
-| **Status** | 📋 Planned |
+| **Experiment ID** | EXP-0010 |
+| **Title** | Full Agentic Workflow End-to-End |
+| **Version** | 0.1.0 |
+| **Status** | Pending Execution |
 | **Owner** | Aldhie |
 | **Created** | 2026-07-20 |
-| **REQ** | REQ-AI-0005 |
-| **BM** | BM-01, BM-02, BM-03, BM-09 |
+| **Updated** | 2026-07-20 |
+| **Category** | Experiment — Agentic Capability |
 
-## Related Documents
+## Cross-References
 
-- ↑ [REQ-AI-0005](../00_ENGINEERING/REQ-INDEX.md#req-ai-0005)
-- ↑ [AI-0003 Compatibility Matrix](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md)
-- → [EXP-0007 Planner](./EXP-0007-Planner.md)
-- → [EXP-0009 Critic](./EXP-0009-Critic.md)
-
----
-
-## Objective
-
-Validate the full agentic capability of Nemotron Ultra 550B through Open WebUI: tool discovery, tool call generation in correct format, result consumption, and multi-turn agent loops. Identify any format incompatibilities between qwen3_coder tool format and OW expectations.
+| Document | Relationship |
+|----------|--------------|
+| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Model spec — agentic capability |
+| [AI-0003](../00_ENGINEERING/AI-0003-OpenWebUI-Compatibility.md) | Tool use compatibility |
+| [EXP-0007](EXP-0007-Planner.md) | Planner component |
+| [EXP-0008](EXP-0008-Reflection.md) | Reflection component |
+| [EXP-0009](EXP-0009-Critic.md) | Critic component |
+| [benchmark/openwebui/](../../benchmark/tests/openwebui/) | Integration benchmark TCs |
 
 ---
 
-## Hypothesis
+## 1. Objective
 
-**H1:** The model generates syntactically correct tool call JSON compatible with OW's tool calling pipeline in a standard single-tool scenario.
+Validate that Nemotron Ultra 550B can complete a full agentic workflow within Open WebUI:
+1. **Plan** a multi-step task using tool calling
+2. **Execute** tools (web search, code execution, document retrieval)
+3. **Reflect** on results and adjust
+4. **Produce** a final synthesized answer
 
-**H2:** Parallel tool calls (multiple tools in one response) work correctly with OW's tool calling pipeline.
-
-**H3:** If Cloud NIM uses SGLang backend, tool calls + thinking ON simultaneously requires extra Pipeline configuration (chat_template_kwargs injection).
-
----
-
-## Variables
-
-| Variable | Type | Values |
-|----------|------|--------|
-| Tool count | Independent | 1 tool, 2 tools (parallel) |
-| Thinking mode | Independent | OFF, ON |
-| Backend | Observed | vLLM, SGLang (whichever Cloud NIM uses) |
-| Tool type | Independent | Simple function, RAG retrieval, Web search |
+This is the highest-complexity integration test in the benchmark suite.
 
 ---
 
-## Procedure
+## 2. Background
 
-1. **BM-09 (Format test):**
-   - Define 1 simple tool (get_weather with location parameter).
-   - Send request that requires the tool.
-   - Observe tool_call JSON format in OW response.
-   - Verify OW correctly parses and routes to tool executor.
+Nemotron Ultra 550B is described as suitable for "complex agentic workflows". [FACT: Official Doc — NVIDIA Build page]
 
-2. **BM-01 (Parallel tool calls):**
-   - Define 2 tools simultaneously.
-   - Ask question requiring both tools.
-   - Verify both tool_calls present in single response.
-
-3. **Multi-turn loop:**
-   - Tool call → provide result → model continues → observe next action.
-   - Verify model correctly uses tool result in continued reasoning.
-
-4. **BM-02 (Agentic RAG):**
-   - Enable RAG collection.
-   - Ask question requiring both knowledge retrieval and tool call.
-   - Verify both work in single conversation turn.
+The Open WebUI + NIM integration has the following known constraints for agentic use:
+- Tool calling requires `function_calling.enabled: true` [CONFIRMED: needs to be set]
+- `chat_template_kwargs` may be required for tools + reasoning (SGLang backend) [HYPOTHESIS: NEW-01 from AI-0003-Audit]
+- Tool call parser is `qwen3_coder` — format compatibility with OW needs validation [HYPOTHESIS: NEW-03]
 
 ---
 
-## Expected Result
+## 3. Hypothesis
 
-| Test | Expected |
-|------|----------|
-| BM-09 | Tool call in qwen3_coder format, OW parses correctly |
-| BM-01 | Two parallel tool_calls in response |
-| Multi-turn | Model uses tool result, produces final answer |
-| BM-02 | RAG context + tool call both work |
+**H1:** A full Plan-Execute-Reflect-Synthesize cycle can be completed in ≤ 5 tool calls on a medium-complexity task. [HYPOTHESIS]
 
----
+**H2:** Tool call format from Cloud NIM is compatible with Open WebUI's tool result injection mechanism. [HYPOTHESIS]
 
-## Actual Result
+**H3:** Thinking mode ON (`/think`) during planning produces materially better task decomposition than OFF. [HYPOTHESIS]
 
-*Status: Not yet executed.*
-
-| Test | Result | Format OK | OW Compatible |
-|------|--------|-----------|---------------|
-| BM-09 | TBD | TBD | TBD |
-| BM-01 | TBD | TBD | TBD |
-| BM-02 | TBD | TBD | TBD |
+**H4:** Memory injection during agentic tasks does not cause context overflow for tasks < 30 messages. [HYPOTHESIS]
 
 ---
 
-## Analysis
+## 4. Test Scenario: Hotel Competitor Analysis
 
-*Pending execution. Key risk: SGLang backend incompatibility requiring Pipeline workaround.*
+**Goal:** Research and summarize competitor pricing strategy for a boutique hotel.
 
----
+**Available Tools:**
+- Web search (Tavily/DuckDuckGo)
+- Document retrieval (RAG from hotel knowledge base)
+- Python calculator (for pricing math)
 
-## Conclusion
+**Expected Agent Flow:**
+```
+1. Plan: Identify what data is needed
+2. Tool call: web_search("boutique hotel pricing strategy 2026")
+3. Tool call: knowledge_search("our hotel room rates")
+4. Tool call: calculate(competitor_avg - our_rate / our_rate * 100)
+5. Synthesize: Produce pricing recommendation
+```
 
-*Pending execution.*
-
----
-
-## Decision
-
-*Current: function_calling enabled per capabilities.json. BM-09 will determine if Pipeline workaround needed.*
-
----
-
-## Future Work
-
-- If BM-09 fails: implement OW Pipeline for tool call format normalization.
-- Extend to MCP tool server (BM-03) after basic tool calling validated.
-- Design autonomous agent loop: plan → tool → reflect → plan → ...
-
----
-
-## Benchmark Result
-
-*Pending BM-01, BM-02, BM-03, BM-09 execution.*
+**Success Criteria:**
+- All 5 steps complete without error
+- Tool results correctly incorporated into final answer
+- Final answer is actionable and specific
+- Total tokens ≤ 16,000
 
 ---
 
-*EXP-0010 v1.0.0 — Created 2026-07-20*
+## 5. Test Scenario: Code Review + Fix
+
+**Goal:** Review a Python function, identify bugs, fix them, and run tests.
+
+**Available Tools:**
+- Code execution sandbox
+- Web search for documentation
+
+**Expected Agent Flow:**
+```
+1. Analyze code with /think
+2. Identify bugs
+3. Write fixed code
+4. Execute code to verify
+5. Return passing test result
+```
+
+---
+
+## 6. Environment
+
+| Component | Value |
+|-----------|-------|
+| Model | nvidia/nemotron-3-ultra-550b-a55b |
+| Tools enabled | web_search, code_execution, knowledge_search |
+| function_calling.enabled | true |
+| Pipeline | Deployed with extra_body injection |
+| Max agent iterations | 10 |
+
+---
+
+## 7. Actual Results
+
+> **Status: PENDING EXECUTION**
+>
+> Pre-conditions: EXP-0003 complete + BM-09 benchmark complete (tool call format verified)
+
+---
+
+## 8. Conclusion
+
+> **PENDING**
+
+---
+
+## 9. Decision
+
+> **PENDING** — If agent workflow validates, promote agentic use case to production.
+> Will define maximum recommended agent complexity (tool calls, iterations, token budget).
+
+---
+
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1.0 | 2026-07-20 | Aldhie | Initial experiment design |

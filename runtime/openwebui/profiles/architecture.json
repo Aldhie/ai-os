@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "profile_id": "architecture",
+    "version": "1.0.0",
+    "description": "System design, architectural review, technical research. Maximum depth and thinking budget.",
+    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md, AI-0006-Architecture-Decision-Record.md",
+    "last_updated": "2026-07-20"
+  },
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": null,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
+    "max_tokens": 8192,
+    "stream": true,
+    "seed": null,
+    "stop": null
+  },
+  "thinking": {
+    "enabled": true,
+    "budget_tokens": 32000,
+    "mode": "always_on",
+    "note": "Maximum thinking budget. Architecture tasks require deep deliberation."
+  },
+  "context": {
+    "recommended_context_tokens": 96000,
+    "max_context_tokens": 128000
+  },
+  "tools": {
+    "recommended_tool_usage": "high",
+    "allowed_tools": ["web_search", "code_interpreter", "file_reader", "diagram_generator"],
+    "auto_invoke": true
+  },
+  "memory": {
+    "load_on_session_start": true,
+    "max_memory_tokens": 800,
+    "priority": ["project_architecture", "adr_decisions", "technology_preferences", "recent_decisions"]
+  },
+  "knowledge": {
+    "rag_enabled": true,
+    "auto_retrieve": true,
+    "sources": ["engineering_specs", "adrs", "project_docs"],
+    "note": "All knowledge sources active for architecture work"
+  },
+  "cognitive": {
+    "reflection": true,
+    "planner": true,
+    "critic": true,
+    "multi_pass": true,
+    "note": "Full cognitive stack with multi-pass validation for critical architecture decisions"
+  },
+  "budget": {
+    "expected_token_budget_per_turn": {
+      "system_prompt": 800,
+      "memory": 800,
+      "knowledge_chunks": 4000,
+      "user_message": 3000,
+      "thinking": 32000,
+      "response": 6000,
+      "total_estimate": 46600
+    },
+    "expected_latency_seconds": "60-120",
+    "rpm_cost": 1,
+    "daily_budget_impact": "very_high",
+    "recommended_daily_limit": "max 20 turns in architecture profile"
+  }
+}

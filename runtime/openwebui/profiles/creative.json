@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "profile_id": "creative",
+    "version": "1.0.0",
+    "description": "Creative writing, ideation, brainstorming. Higher temperature for variety and originality.",
+    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md £3.3",
+    "last_updated": "2026-07-20"
+  },
+  "parameters": {
+    "temperature": 1.1,
+    "top_p": 0.97,
+    "top_k": null,
+    "frequency_penalty": 0.3,
+    "presence_penalty": 0.2,
+    "max_tokens": 4096,
+    "stream": true,
+    "seed": null,
+    "stop": null
+  },
+  "thinking": {
+    "enabled": true,
+    "budget_tokens": 5000,
+    "mode": "auto",
+    "note": "Light thinking for planning and structure; not deep reasoning"
+  },
+  "context": {
+    "recommended_context_tokens": 16000,
+    "max_context_tokens": 128000
+  },
+  "tools": {
+    "recommended_tool_usage": "minimal",
+    "allowed_tools": ["web_search"],
+    "auto_invoke": false
+  },
+  "memory": {
+    "load_on_session_start": true,
+    "max_memory_tokens": 300,
+    "priority": ["style_preferences", "tone_preferences"]
+  },
+  "knowledge": {
+    "rag_enabled": false,
+    "auto_retrieve": false
+  },
+  "cognitive": {
+    "reflection": false,
+    "planner": false,
+    "critic": true,
+    "note": "Only critic active — check for coherence and quality"
+  },
+  "budget": {
+    "expected_token_budget_per_turn": {
+      "system_prompt": 800,
+      "memory": 300,
+      "user_message": 300,
+      "thinking": 5000,
+      "response": 3000,
+      "total_estimate": 9400
+    },
+    "expected_latency_seconds": "10-20",
+    "rpm_cost": 1,
+    "daily_budget_impact": "low"
+  }
+}

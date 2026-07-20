@@ -1,0 +1,67 @@
+{
+  "_meta": {
+    "profile_id": "analysis",
+    "version": "1.0.0",
+    "description": "Business analysis, research synthesis, data interpretation. Maximum accuracy and structured output.",
+    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md, benchmark/tests/business/",
+    "last_updated": "2026-07-20"
+  },
+  "parameters": {
+    "temperature": 0.9,
+    "top_p": 0.9,
+    "top_k": null,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
+    "max_tokens": 6144,
+    "stream": true,
+    "seed": null,
+    "stop": null
+  },
+  "thinking": {
+    "enabled": true,
+    "budget_tokens": 12000,
+    "mode": "auto",
+    "note": "Strong thinking for structured analysis; less than architecture"
+  },
+  "context": {
+    "recommended_context_tokens": 48000,
+    "max_context_tokens": 128000
+  },
+  "tools": {
+    "recommended_tool_usage": "moderate",
+    "allowed_tools": ["web_search", "calculator", "file_reader"],
+    "auto_invoke": false,
+    "note": "User-initiated tool invocation preferred for analysis"
+  },
+  "memory": {
+    "load_on_session_start": true,
+    "max_memory_tokens": 600,
+    "priority": ["domain_expertise", "project_context", "previous_analyses"]
+  },
+  "knowledge": {
+    "rag_enabled": true,
+    "auto_retrieve": true,
+    "sources": ["project_docs", "research_papers", "market_data"],
+    "max_chunks": 5,
+    "note": "RAG active for document-grounded analysis"
+  },
+  "cognitive": {
+    "reflection": true,
+    "planner": true,
+    "critic": true
+  },
+  "budget": {
+    "expected_token_budget_per_turn": {
+      "system_prompt": 800,
+      "memory": 600,
+      "knowledge_chunks": 3000,
+      "user_message": 1500,
+      "thinking": 12000,
+      "response": 4000,
+      "total_estimate": 21900
+    },
+    "expected_latency_seconds": "25-45",
+    "rpm_cost": 1,
+    "daily_budget_impact": "moderate"
+  }
+}

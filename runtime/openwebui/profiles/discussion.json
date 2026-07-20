@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "profile_id": "discussion",
+    "version": "1.0.0",
+    "description": "General discussion, analysis, and conversational depth. Balanced creativity and precision.",
+    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md §3.2",
+    "last_updated": "2026-07-20"
+  },
+  "parameters": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": null,
+    "frequency_penalty": 0.1,
+    "presence_penalty": 0.1,
+    "max_tokens": 4096,
+    "stream": true,
+    "seed": null,
+    "stop": null
+  },
+  "thinking": {
+    "enabled": true,
+    "budget_tokens": 8000,
+    "mode": "auto",
+    "note": "Inject via extra_body only. See thinking_policy.md."
+  },
+  "context": {
+    "recommended_context_tokens": 32000,
+    "max_context_tokens": 128000
+  },
+  "tools": {
+    "recommended_tool_usage": "minimal",
+    "allowed_tools": ["web_search", "calculator"],
+    "auto_invoke": false
+  },
+  "memory": {
+    "load_on_session_start": true,
+    "max_memory_tokens": 500,
+    "priority": ["preferences", "recent_context", "project_state"]
+  },
+  "knowledge": {
+    "rag_enabled": false,
+    "auto_retrieve": false,
+    "note": "RAG disabled by default for discussion; enable only if user references a document"
+  },
+  "cognitive": {
+    "reflection": true,
+    "planner": false,
+    "critic": true
+  },
+  "budget": {
+    "expected_token_budget_per_turn": {
+      "system_prompt": 800,
+      "memory": 500,
+      "user_message": 500,
+      "thinking": 8000,
+      "response": 2000,
+      "total_estimate": 11800
+    },
+    "expected_latency_seconds": "15-25",
+    "rpm_cost": 1,
+    "daily_budget_impact": "low"
+  }
+}

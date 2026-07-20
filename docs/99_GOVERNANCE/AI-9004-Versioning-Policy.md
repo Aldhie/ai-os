@@ -19,87 +19,108 @@
 
 | Document | Relationship |
 |----------|--------------|
-| [AI-9001](AI-9001-Documentation-Standard.md) | Depends on version scheme |
-| [AI-9005](AI-9005-Release-Process.md) | Implements version bump process |
+| [AI-9001](AI-9001-Documentation-Standard.md) | Documentation standard |
+| [AI-9005](AI-9005-Release-Process.md) | Release process |
+| [AI-9006](AI-9006-Repository-Structure.md) | Repository structure |
 
 ---
 
-## 1. Semantic Versioning for Engineering Documents
+## 1. Purpose
 
-All documents and configuration files use **Semantic Versioning (SemVer)**:
-
-```
-MAJOR.MINOR.PATCH
-```
-
-| Component | Increment When |
-|-----------|----------------|
-| `MAJOR` | Breaking change to engineering claims, structure, or decisions |
-| `MINOR` | New content added, existing content expanded |
-| `PATCH` | Corrections, typo fixes, clarifications without new information |
+This document defines versioning rules for all artifacts in the `ai-os` repository: documents, configurations, system prompts, benchmark suites, and experiments.
 
 ---
 
-## 2. Version States
+## 2. Semantic Versioning (Documents)
 
-| Version Range | State | Meaning |
-|---------------|-------|---------|
-| `0.x.y` | Draft | Content not yet validated |
-| `1.0.0` | Stable | First validated production version |
-| `≥ 1.0.0` | Production | Can be cited in other documents |
-| `DEPRECATED` | Legacy | Superseded; do not use for new work |
+All documents follow `MAJOR.MINOR.PATCH`:
 
-**Rule:** Documents in state `0.x.y` MUST NOT be cited as authoritative sources in other documents.
-
----
-
-## 3. Version Bump Protocol
-
-### MAJOR bump triggers:
-- An existing engineering claim is proven wrong by benchmark or experiment
-- Document structure is significantly reorganized
-- A critical finding invalidates a previous decision
-
-### MINOR bump triggers:
-- New section added
-- New benchmark results added
-- New experiments added
-- Existing content expanded with new evidence
-
-### PATCH bump triggers:
-- Typo or grammar correction
-- Metadata update (date, owner)
-- Cross-reference link updated
+| Increment | Trigger | Example |
+|-----------|---------|--------|
+| **MAJOR** | Breaking change to configuration, behavior, or interface | Parameter removed, thinking mode default changed |
+| **MINOR** | New section added, new requirement added, new EDR added | New benchmark category, new compatibility row |
+| **PATCH** | Correction, clarification, typo fix, link update | Fixed broken link, corrected spec value |
 
 ---
 
-## 4. Configuration File Versioning
+## 3. Configuration Versioning
 
-All JSON/YAML configuration files MUST include:
+Configuration files in `configs/` follow a separate version tracked in a `metadata` block inside each config:
 
 ```json
 {
- "_metadata": {
- "version": "X.Y.Z",
- "status": "draft | active | deprecated",
- "last_updated": "YYYY-MM-DD",
- "owner": "[username]",
- "changelog": [
- {"version": "1.0.0", "date": "YYYY-MM-DD", "changes": "[description]"}
- ]
- }
+  "metadata": {
+    "version": "1.2.0",
+    "created": "2026-07-20",
+    "updated": "2026-07-20",
+    "owner": "Aldhie",
+    "changelog": [
+      {"version": "1.2.0", "date": "2026-07-20", "change": "Updated temperature to 1.0 per EXP-0001 results"}
+    ]
+  }
 }
 ```
 
 ---
 
-## 5. Git Tag Convention
+## 4. Experiment Versioning
+
+Experiments follow a lifecycle, not semantic versioning:
+
+| Status | Meaning |
+|--------|---------|
+| `Pending Execution` | Designed, not run |
+| `In Progress` | Currently being run |
+| `Completed` | Results recorded, analysis done |
+| `Superseded` | Replaced by newer experiment |
+| `Archived` | No longer relevant |
+
+Experiment designs may be revised (MINOR/PATCH changes to the design document) before execution. After execution, only the Results and Analysis sections may be updated. Conclusions and Decisions are immutable once written.
+
+---
+
+## 5. Benchmark TC Versioning
+
+Benchmark TCs are versioned independently. Results are IMMUTABLE once recorded.
+
+| Version Change | Trigger |
+|---------------|--------|
+| PATCH | Clarification to question wording that does not change difficulty |
+| MINOR | New evaluation criterion added |
+| MAJOR | Question changed materially — previous results are no longer comparable |
+
+When a TC increments MAJOR, all previous results are archived (not deleted) and labeled with the old version.
+
+---
+
+## 6. Repository Release Versioning
+
+The repository itself is versioned via Git tags:
 
 ```
-repo-vX.Y.Z — Full repository milestone release
-doc/AI-XXXX-vX.Y.Z — Individual document version tag
-benchmark/CATEGORY-vX.Y.Z — Benchmark suite version tag
+v0.1.0   Initial structure
+v0.2.0   First benchmark suite
+v0.3.0   First experiment results
+v1.0.0   Production-ready: all TCs pass, all critical experiments complete
 ```
+
+See [AI-9005](AI-9005-Release-Process.md) for release criteria.
+
+---
+
+## 7. Changelog Rules
+
+Every document MUST include a Changelog table as its LAST section:
+
+```markdown
+## Changelog
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0.0 | YYYY-MM-DD | [author] | [description] |
+```
+
+Changelogs are append-only. Never delete changelog entries.
 
 ---
 

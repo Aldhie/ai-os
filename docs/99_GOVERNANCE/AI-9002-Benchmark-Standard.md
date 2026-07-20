@@ -19,212 +19,145 @@
 
 | Document | Relationship |
 |----------|--------------|
-| [AI-9001](AI-9001-Documentation-Standard.md) | Parent standard |
-| [AI-9003](AI-9003-Prompt-Engineering-Standard.md) | Prompt format for benchmarks |
-| [AI-0004](../00_ENGINEERING/AI-0004-Benchmark.md) | Benchmark execution records |
-| [benchmark/](../../benchmark/) | All benchmark test cases |
+| [AI-9001](AI-9001-Documentation-Standard.md) | Documentation standard |
+| [AI-9003](AI-9003-Prompt-Engineering-Standard.md) | Prompt standard |
+| [benchmark/](../../benchmark/) | Benchmark suite root |
 
 ---
 
 ## 1. Purpose
 
-This standard defines the mandatory structure, scoring methodology, and lifecycle for all benchmark test cases in `Aldhie/ai-os`. Benchmarks are the **primary mechanism** for converting hypotheses into validated engineering facts.
+This document defines the engineering standard for all benchmark test cases in the `ai-os` repository. Every engineering claim that is marked `[FACT: Benchmark]` MUST have a corresponding benchmark TC in this suite.
 
-**Engineering Principle:** A claim that cannot be benchmarked is an assumption. An assumption that is not tracked is a risk.
+Benchmarks in this repository serve three purposes:
+1. **Validation:** Verify claims made in engineering specs
+2. **Regression:** Detect quality degradation across model versions or configuration changes
+3. **Comparison:** Enable evidence-based comparison between configurations
 
 ---
 
 ## 2. Benchmark Categories
 
-| Category | Path | Scope |
-|----------|------|-------|
-| `discussion` | `benchmark/tests/discussion/` | General conversational quality |
-| `reasoning` | `benchmark/tests/reasoning/` | Multi-step logical reasoning |
-| `planning` | `benchmark/tests/planning/` | Task planning and decomposition |
-| `architecture` | `benchmark/tests/architecture/` | System design and ADR quality |
-| `coding` | `benchmark/tests/coding/` | Code generation and debugging |
-| `debugging` | `benchmark/tests/debugging/` | Bug identification and resolution |
-| `hospitality` | `benchmark/tests/hospitality/` | Domain-specific: hospitality industry |
-| `business` | `benchmark/tests/business/` | Business analysis and strategy |
-| `docker` | `benchmark/tests/docker/` | Containerization and deployment |
-| `openwebui` | `benchmark/tests/openwebui/` | Open WebUI integration behavior |
-| `nim` | `benchmark/tests/nim/` | NVIDIA NIM API behavior |
-| `memory` | `benchmark/tests/memory/` | Long-term memory and recall |
-| `rag` | `benchmark/tests/rag/` | Retrieval-Augmented Generation |
+| Category | Path | Description |
+|----------|------|-------------|
+| Discussion | `benchmark/tests/discussion/` | Open-ended reasoning and discussion |
+| Reasoning | `benchmark/tests/reasoning/` | Multi-step logical and mathematical reasoning |
+| Planning | `benchmark/tests/planning/` | Task decomposition and planning |
+| Architecture | `benchmark/tests/architecture/` | Software architecture design |
+| Coding | `benchmark/tests/coding/` | Code generation and review |
+| Debugging | `benchmark/tests/debugging/` | Bug identification and fixing |
+| Hospitality | `benchmark/tests/hospitality/` | Domain-specific hotel/hospitality tasks |
+| Business | `benchmark/tests/business/` | Business strategy and operations |
+| Docker | `benchmark/tests/docker/` | Container and infrastructure tasks |
+| OpenWebUI | `benchmark/tests/openwebui/` | Open WebUI integration behavior |
+| NIM | `benchmark/tests/nim/` | NVIDIA NIM API-specific behavior |
+| Memory | `benchmark/tests/memory/` | Memory injection and recall |
+| RAG | `benchmark/tests/rag/` | Retrieval-augmented generation quality |
 
 ---
 
-## 3. Mandatory Test Case Structure
+## 3. Mandatory TC Structure
 
-Every test case file MUST follow this exact template:
+Every benchmark test case (TC) MUST use this structure:
 
 ```markdown
-# [CATEGORY]-TC-[XXXX]: [Short Title]
-
----
+# TC-XXXX: [Short Title]
 
 ## Metadata
-
 | Field | Value |
 |-------|-------|
-| **TC ID** | [CATEGORY]-TC-[XXXX] |
-| **Category** | [category] |
-| **Difficulty** | [Trivial / Easy / Medium / Hard / Expert] |
-| **Required Capability** | [list of model capabilities tested] |
-| **Status** | [Pending / Running / Complete / Retired] |
-| **Created** | [YYYY-MM-DD] |
-| **Last Run** | [YYYY-MM-DD or N/A] |
-| **References** | [links to relevant docs, APIs, papers] |
+| TC ID | TC-XXXX |
+| Category | [category] |
+| Difficulty | Easy / Medium / Hard / Expert |
+| Required Capability | [capability ID] |
+| Created | YYYY-MM-DD |
+| Last Run | YYYY-MM-DD |
+| Status | Active / Archived |
 
----
+## Question
+[The exact prompt or task to send to the model]
 
-## Objective
+## Context (if RAG/Memory)
+[Context documents if required]
 
-[1-2 sentences: what specific behavior this test validates]
-
----
-
-## Hypothesis
-
-[Specific, falsifiable claim: "The model will X when given Y"]
-
----
-
-## Question / Prompt
-
-```
-[Exact prompt text that will be sent to the model]
-```
-
----
-
-## Environment
-
-| Parameter | Value |
-|-----------|-------|
-| **Model** | nvidia/nemotron-3-ultra-550b-a55b |
-| **Temperature** | [value] |
-| **Top-P** | [value] |
-| **Max Tokens** | [value] |
-| **Thinking Mode** | [on / off / medium_effort] |
-| **System Prompt** | [text or reference] |
-| **Open WebUI Version** | [version] |
-| **NIM Endpoint** | https://integrate.api.nvidia.com/v1 |
-
----
-
-## Expected Behavior
-
-[Precise description of what a correct response looks like]
-
----
+## Expected Behaviour
+[Description of what a correct, high-quality response contains]
 
 ## Evaluation Criteria
-
 | Criterion | Weight | Description |
 |-----------|--------|-------------|
-| [criterion 1] | [0-100] | [what counts as passing] |
-| [criterion 2] | [0-100] | [what counts as passing] |
-
----
+| Accuracy | X% | |
+| Completeness | X% | |
+| Format | X% | |
+| Reasoning quality | X% | |
 
 ## Scoring
-
-| Score | Label | Meaning |
-|-------|-------|---------|
-| 90-100 | PASS | Meets all criteria |
-| 70-89 | PARTIAL | Meets major criteria, misses minor |
-| 50-69 | WEAK | Partially correct, significant gaps |
-| 0-49 | FAIL | Does not meet criteria |
-
----
+| Score | Description |
+|-------|-------------|
+| 100 | Perfect — all criteria met |
+| 80-99 | High quality — minor gaps |
+| 60-79 | Acceptable — significant gaps |
+| <60 | FAIL — unacceptable |
 
 ## Success Condition
-
-[Score ≥ X AND specific observable output Y]
-
----
+[Minimum score to pass]
 
 ## Failure Condition
-
-[Score < X OR observable failure pattern Z]
-
----
-
-## Actual Result
-
-> Status: PENDING
-
-```
-[Actual model output when run]
-```
-
----
-
-## Score
-
-| Criterion | Score | Notes |
-|-----------|-------|-------|
-| [criterion 1] | PENDING | |
-
-**Total Score: PENDING**
-
----
-
-## Analysis
-
-[What the result reveals about model capability]
-
----
-
-## Conclusion
-
-[Pass/Fail verdict with evidence-tagged claim]
-
----
-
-## Decision
-
-[Engineering action taken based on result]
-
----
+[What constitutes a clear fail]
 
 ## References
+[Links to related documents, experiments, requirements]
 
-- [links]
+## Results History
+| Date | Model | Config | Score | Notes |
+|------|-------|--------|-------|-------|
 ```
 
 ---
 
-## 4. Difficulty Scale
+## 4. Scoring Standard
 
-| Level | Meaning | Expected Pass Rate |
-|-------|---------|-------------------|
-| `Trivial` | Any competent LLM should pass | > 95% |
-| `Easy` | Standard capability, well-documented | > 80% |
-| `Medium` | Requires reasoning or domain knowledge | 60-80% |
-| `Hard` | Requires advanced reasoning + domain expertise | 40-60% |
-| `Expert` | State-of-the-art capability required | < 40% |
+| Dimension | Measurement Method |
+|-----------|-------------------|
+| Accuracy | Compare to ground truth; 0-10 integer score |
+| Completeness | Does response cover all required elements? 0-10 |
+| Format | Does output match required format? Pass/Fail |
+| Reasoning quality | Is `<think>` trace relevant and correct? 0-10 |
+| Composite | Weighted average per TC definition |
 
----
-
-## 5. Benchmark Execution Protocol
-
-1. **Pre-run:** Verify environment parameters match TC spec
-2. **Isolation:** Run each TC independently (no shared context)
-3. **Repetition:** For stochastic tests, run minimum 3 times and report median
-4. **Recording:** Copy exact model output verbatim into `Actual Result` section
-5. **Scoring:** Apply criteria independently before reading score
-6. **Post-run:** Update `Last Run` date and promote TC to `Complete`
-7. **Failure:** If FAIL, open a GitHub Issue tagged `benchmark-failure`
+**Minimum pass score:** 70/100 (unless TC specifies otherwise)
 
 ---
 
-## 6. Benchmark-to-Requirement Linking
+## 5. Benchmark Execution Rules
 
-Every benchmark TC MUST link to at least one requirement in [REQ-INDEX](../00_ENGINEERING/REQ-INDEX.md).
+1. **Isolation:** Run each TC in isolation (no shared conversation history unless explicitly testing multi-turn)
+2. **Controlled environment:** Use exact config specified in TC metadata
+3. **Multi-run:** Run each TC a minimum of 3 times; report mean and std deviation
+4. **Seed:** Use `seed=42` where supported for reproducibility
+5. **Record everything:** Store raw outputs in `benchmark/results/YYYY-MM-DD/`
 
-Every requirement with `Verification Method: Benchmark` MUST have at least one TC assigned.
+---
+
+## 6. Regression Policy
+
+- Any config change to `parameters.json` or system prompts MUST be followed by re-running the full relevant category benchmark
+- A regression is defined as: any TC score drops by ≥5 points or any previously passing TC now fails
+- A regression blocks promotion to `main` unless explicitly accepted with an EDR
+
+---
+
+## 7. Relationship to Experiments
+
+Benchmark TCs provide **reusable, repeatable measurements**. Experiments provide **hypothesis-driven, one-time investigations**.
+
+| Aspect | Benchmark TC | Experiment |
+|--------|-------------|------------|
+| Purpose | Regression + validation | Discovery |
+| Frequency | Every config change | Once (or few times) |
+| Format | Standardized | Flexible |
+| Results | Always recorded | Can be pending |
+| Promotes | Engineering fact | Hypothesis resolution |
 
 ---
 

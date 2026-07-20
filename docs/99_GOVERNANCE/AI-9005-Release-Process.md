@@ -19,76 +19,85 @@
 
 | Document | Relationship |
 |----------|--------------|
-| [AI-9004](AI-9004-Versioning-Policy.md) | Version scheme |
-| [AI-9006](AI-9006-Repository-Structure.md) | Structure it operates on |
-| [AI-9001](AI-9001-Documentation-Standard.md) | Document quality gate |
+| [AI-9004](AI-9004-Versioning-Policy.md) | Versioning rules |
+| [AI-9006](AI-9006-Repository-Structure.md) | Structure |
+| [AI-9002](AI-9002-Benchmark-Standard.md) | Benchmark requirements |
 
 ---
 
-## 1. Release Types
+## 1. Purpose
 
-| Type | Trigger | Scope |
-|------|---------|-------|
-| **Patch Release** | Config fixes, doc corrections | `configs/`, typo fixes |
-| **Minor Release** | New experiments, new benchmarks | `docs/05_EXPERIMENTS/`, `benchmark/` |
-| **Major Release** | Architecture changes, new documents | All `docs/00_ENGINEERING/` changes |
-| **Emergency Fix** | Critical finding validation | Immediate push to `main` |
+This document defines the criteria, process, and gate controls for releasing a new version of the `ai-os` repository.
 
 ---
 
-## 2. Release Checklist
+## 2. Release Levels
 
-### Pre-Release
-```
-[ ] All changed documents pass AI-9001 review checklist
-[ ] No Draft documents cited as authoritative sources
-[ ] Cross-references verified (no broken links)
-[ ] Changelog updated in all modified documents
-[ ] configs/ versions bumped if changed
-[ ] REQ-INDEX updated if requirements changed
-```
+| Release | Criteria |
+|---------|----------|
+| **PATCH** (0.0.x) | Documentation corrections, link fixes, result updates |
+| **MINOR** (0.x.0) | New benchmark TCs, new experiments, new governance docs, config updates |
+| **MAJOR** (x.0.0) | Production-ready milestone: see Section 3 |
 
-### Release
-```
-[ ] Commit message follows convention: type(scope): description
-[ ] Push to main branch
-[ ] Git tag created: repo-vX.Y.Z
-[ ] AUDIT document updated with release date
-```
+---
 
-### Post-Release
+## 3. Production Release Criteria (v1.0.0)
+
+The repository is considered production-ready when ALL of the following are complete:
+
+| Criterion | Status |
+|-----------|---------|
+| All critical experiments (EXP-0001 through EXP-0010) completed | PENDING |
+| All benchmark TCs pass (≥70/100) | PENDING |
+| AI-0001 through AI-0005 fully validated (no unresolved hypotheses) | PENDING |
+| configs/openwebui/parameters.json validated by benchmarks | PENDING |
+| No open HIGH priority issues in GitHub Issues | PENDING |
+| All cross-references in all documents are valid (no broken links) | PENDING |
+| Documentation standard (AI-9001) compliance checked for all docs | PENDING |
+
+---
+
+## 4. Release Process Steps
+
 ```
-[ ] Brain Memory updated with key decisions (via MCP)
-[ ] Any new open benchmarks logged in AI-0004
-[ ] Any new open experiments logged in experiment index
+1. Create release branch: release/vX.Y.Z
+2. Run full benchmark suite
+3. Verify all cross-references
+4. Update CHANGELOG.md with all changes
+5. Update version field in all modified documents
+6. Tag release: git tag vX.Y.Z
+7. Push tag to main
+8. Create GitHub Release with release notes
 ```
 
 ---
 
-## 3. Commit Message Convention
+## 5. Hotfix Process
+
+For critical fixes to `main` outside the normal release cycle:
 
 ```
-type(scope): description [version]
+1. Create branch: hotfix/description
+2. Apply fix
+3. Verify benchmark TCs for affected area
+4. Fast-merge to main with commit message: hotfix: [description]
+5. Increment PATCH version
 ```
 
-| Type | When |
-|------|------|
-| `feat` | New document or feature |
-| `fix` | Correction to existing content |
-| `refactor` | Structural reorganization |
-| `docs` | Documentation-only change |
-| `benchmark` | Benchmark test case changes |
-| `config` | Configuration file changes |
-| `exp` | Experiment document changes |
-| `governance` | Governance document changes |
+---
 
-Examples:
-```
-feat(engineering): add AI-0007 agent workflow spec v1.0.0
-fix(config): remove top_k and repetition_penalty from parameters.json v1.1.0
-benchmark(reasoning): add TC-0001 through TC-0003 for reasoning category
-refactor: upgrade repository to production architecture
-```
+## 6. Breaking Changes
+
+A change is considered breaking if it:
+- Changes default parameter values
+- Changes system prompt directive behavior
+- Changes benchmark scoring criteria
+- Renames document IDs or requirement IDs
+
+Breaking changes require:
+- EDR in AI-0006
+- MAJOR version increment
+- Migration notes in CHANGELOG
 
 ---
 

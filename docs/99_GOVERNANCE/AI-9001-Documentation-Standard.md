@@ -19,188 +19,181 @@
 
 | Document | Relationship |
 |----------|--------------|
-| [AI-9002](AI-9002-Benchmark-Standard.md) | Benchmark documentation format |
-| [AI-9003](AI-9003-Prompt-Engineering-Standard.md) | Prompt doc format |
-| [AI-9004](AI-9004-Versioning-Policy.md) | Version scheme |
-| [AI-9006](AI-9006-Repository-Structure.md) | Folder structure |
-| [AI-9008](AI-9008-Engineering-Decision-Record-Standard.md) | ADR format |
+| [AI-9008](AI-9008-Engineering-Decision-Record-Standard.md) | EDR standard |
+| [AI-9006](AI-9006-Repository-Structure.md) | Repository structure |
+| [AI-9004](AI-9004-Versioning-Policy.md) | Versioning rules |
+| [AI-9003](AI-9003-Prompt-Engineering-Standard.md) | Prompt doc standard |
 
 ---
 
 ## 1. Purpose
 
-This standard defines the mandatory structure, quality criteria, and lifecycle rules for all documents in the `Aldhie/ai-os` repository. Every document that does not conform to this standard is classified as **DRAFT** regardless of its declared status.
+This document defines the mandatory documentation standard for all files in the `ai-os` repository. Every document produced in this repository must conform to this standard. The goal is to produce documentation that functions simultaneously as:
 
-**Engineering Principle:** Documentation is code. It must be versioned, reviewed, and maintained with the same discipline as source code.
+- Engineering Design Document (EDD)
+- Architecture Decision Record (ADR)
+- Technical Specification
+- Software Requirements Specification (SRS)
+- Production Runbook
 
----
-
-## 2. Document Categories
-
-| Category | ID Prefix | Location | Description |
-|----------|-----------|----------|-------------|
-| Engineering Spec | `AI-00xx` | `docs/00_ENGINEERING/` | Architecture, API, compatibility, strategy |
-| Experiment | `EXP-00xx` | `docs/05_EXPERIMENTS/` | Empirical investigation results |
-| Configuration | `CFG-00xx` | `docs/10_CONFIGURATION/` | Runtime configuration documentation |
-| Runtime | `RUN-00xx` | `docs/20_RUNTIME/` | Operational procedures |
-| Dataset | `DS-00xx` | `docs/30_DATASET/` | Dataset definitions and schemas |
-| Fine-tune | `FT-00xx` | `docs/40_FINETUNE/` | Fine-tuning specifications |
-| Testing | `TST-00xx` | `docs/90_TESTING/` | Test plans and results |
-| Governance | `AI-90xx` | `docs/99_GOVERNANCE/` | Standards, policies, processes |
-| Benchmark | `BM-00xx` | `benchmark/` | Benchmark test cases |
-| Requirement | `REQ-AI-00xx` | `docs/00_ENGINEERING/REQ-INDEX.md` | Requirement traceability |
+Documentation that does not meet this standard is considered **incomplete** and must be updated before merging to `main`.
 
 ---
 
-## 3. Mandatory Document Header
+## 2. Document Types
 
-Every document MUST begin with a metadata table:
+| Type | Prefix | Location | Description |
+|------|--------|----------|--------------|
+| Engineering Spec | `AI-XXXX` | `docs/00_ENGINEERING/` | Core model and system specifications |
+| Experiment | `EXP-XXXX` | `docs/05_EXPERIMENTS/` | Experiments with hypothesis and results |
+| Governance | `AI-9XXX` | `docs/99_GOVERNANCE/` | Standards, policies, processes |
+| Benchmark TC | `TC-XXXX` | `benchmark/tests/*/` | Individual benchmark test cases |
+| Config | `.json/.yaml` | `configs/` | Validated configuration files |
+
+---
+
+## 3. Mandatory Document Structure
+
+Every document in this repository MUST contain the following sections:
+
+### 3.1 Metadata Block
+
+Each document MUST begin with a metadata table:
 
 ```markdown
-# [DOCUMENT-ID]: [Title]
-
----
-
 ## Metadata
 
 | Field | Value |
 |-------|-------|
-| **Document ID** | [ID] |
+| **Document ID** | AI-XXXX |
 | **Title** | [Full title] |
-| **Version** | [semver: X.Y.Z] |
-| **Status** | [Draft / Active / Deprecated / Archived] |
+| **Version** | 0.1.0 |
+| **Status** | Draft / Active / Deprecated |
 | **Owner** | [GitHub username] |
-| **Created** | [YYYY-MM-DD] |
-| **Updated** | [YYYY-MM-DD] |
-| **Category** | [Category from §2] |
+| **Created** | YYYY-MM-DD |
+| **Updated** | YYYY-MM-DD |
+| **Category** | [Category] |
 ```
 
-Optional fields (required for Engineering Specs):
+### 3.2 Cross-References Block
 
-```markdown
-| **Reviewed By** | [username or team] |
-| **Source** | [URL to official doc if applicable] |
-| **Evidence Level** | [Official Doc / Benchmark / Experiment / Hypothesis] |
-```
-
----
-
-## 4. Cross-Reference Requirements
-
-Every Engineering Spec (`AI-00xx`) MUST include a Cross-References table:
+Every document MUST contain a Cross-References table:
 
 ```markdown
 ## Cross-References
 
 | Document | Relationship |
 |----------|--------------|
-| [AI-XXXX](path) | [depends-on / implements / tested-by / supersedes] |
+| [AI-0001](path/to/AI-0001.md) | Related — reason |
 ```
 
-Relationship vocabulary:
-- `depends-on` — this document requires the referenced document
-- `implements` — this document puts the referenced spec into practice
-- `tested-by` — the referenced benchmark or experiment validates this document
-- `supersedes` — this document replaces the referenced document
-- `extends` — this document adds to the referenced document
+Relationship types:
+- `Depends on` — this document cannot be understood without the referenced document
+- `Referenced by` — another document depends on this one
+- `Benchmark for` — provides benchmark evidence
+- `Experiment for` — provides experimental evidence
+- `Governance for` — provides governance rules
+- `Supersedes` — replaces an older document
+
+### 3.3 Fact vs Assumption Marking
+
+All claims in engineering documents MUST be labeled:
+
+| Label | Meaning | Requirement |
+|-------|---------|-------------|
+| `[FACT: Official Doc]` | Supported by official documentation | Must cite source |
+| `[FACT: Benchmark]` | Supported by this repo's benchmark results | Must link to TC |
+| `[FACT: Experiment]` | Supported by this repo's experiment results | Must link to EXP |
+| `[HYPOTHESIS]` | Engineering hypothesis — not yet validated | Must have linked EXP |
+| `[ASSUMPTION]` | Engineering assumption — may not be validated | Must note risk |
+
+Never mix facts and assumptions in the same sentence without explicit labeling.
 
 ---
 
-## 5. Evidence Classification
+## 4. Required Content by Document Type
 
-Every engineering claim in any document MUST be tagged with one of:
+### Engineering Spec (AI-XXXX)
 
-| Tag | Meaning | When to use |
-|-----|---------|-------------|
-| `[FACT: Official Doc]` | Directly sourced from official documentation | Verified API behavior, official specs |
-| `[FACT: Benchmark]` | Measured empirically in this repository | Benchmark results from `benchmark/` |
-| `[FACT: Experiment]` | Validated via controlled experiment | Results from `docs/05_EXPERIMENTS/` |
-| `[HYPOTHESIS]` | Engineering assumption not yet validated | Reasonable but unverified claims |
-| `[ASSUMPTION]` | Known gap; requires future validation | Documented unknowns |
+| Section | Required |
+|---------|----------|
+| Metadata | ✅ |
+| Cross-References | ✅ |
+| Overview | ✅ |
+| Requirements (REQ-IDs) | ✅ |
+| Engineering Decisions (EDR-IDs) | ✅ |
+| Benchmarks / Evidence | ✅ |
+| Configuration | ✅ |
+| Changelog | ✅ |
 
-**Rule:** `[HYPOTHESIS]` and `[ASSUMPTION]` tags MUST be accompanied by:
-1. The specific validation method
-2. The benchmark or experiment ID that will validate it
-3. The target date or milestone for validation
+### Experiment (EXP-XXXX)
 
----
+| Section | Required |
+|---------|----------|
+| Metadata | ✅ |
+| Cross-References | ✅ |
+| Objective | ✅ |
+| Hypothesis | ✅ |
+| Variables | ✅ |
+| Environment | ✅ |
+| Procedure | ✅ |
+| Expected Results | ✅ |
+| Actual Results | ✅ |
+| Analysis | ✅ |
+| Conclusion | ✅ |
+| Decision | ✅ |
+| Changelog | ✅ |
 
-## 6. Version Scheme
+### Benchmark TC (TC-XXXX)
 
-Follows [AI-9004 Versioning Policy](AI-9004-Versioning-Policy.md).
-
-| Version | Meaning |
-|---------|---------|
-| `0.x.0` | Draft — not validated |
-| `1.0.0` | First stable validated version |
-| `1.x.0` | Minor updates, backwards compatible |
-| `x.0.0` | Major revision, breaking change to claims or structure |
-
-**Rule:** A document cannot reach `1.0.0` without at least one `[FACT]` citation per major claim.
-
----
-
-## 7. Status Lifecycle
-
-```
-Draft → Review → Active → Deprecated → Archived
-                    ↕
-                 Updated
-```
-
-| Status | Meaning | Can be cited? |
-|--------|---------|---------------|
-| `Draft` | Work in progress | No (internal use only) |
-| `Review` | Under engineering review | Provisional |
-| `Active` | Validated and production-ready | Yes |
-| `Deprecated` | Superseded by newer document | Cite with warning |
-| `Archived` | Historical record only | No |
+| Section | Required |
+|---------|----------|
+| Metadata | ✅ |
+| Question | ✅ |
+| Expected Behaviour | ✅ |
+| Evaluation Criteria | ✅ |
+| Scoring | ✅ |
+| Failure Condition | ✅ |
+| Success Condition | ✅ |
+| Difficulty | ✅ |
+| Required Capability | ✅ |
+| References | ✅ |
 
 ---
 
-## 8. Changelog Requirement
+## 5. Writing Style
 
-Every document at version `≥ 1.0.0` MUST contain a Changelog section:
-
-```markdown
-## Changelog
-
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0.0 | YYYY-MM-DD | [username] | Initial stable release |
-```
-
----
-
-## 9. Forbidden Practices
-
-| Practice | Why Forbidden |
-|----------|---------------|
-| `TODO: Fill this in later` | Creates permanent technical debt |
-| Claims without evidence tag | Cannot verify engineering decisions |
-| Mixing facts and assumptions | Creates false confidence |
-| Shortening existing content without versioning | Destroys engineering history |
-| Removing cross-references | Breaks traceability |
-| Placeholder sections | Degrades repository quality |
-| Vague recommendations without rationale | Not actionable |
+| Rule | Requirement |
+|------|-------------|
+| Language | English (technical) |
+| Voice | Active voice preferred |
+| Tense | Present tense for specs, past tense for completed experiments |
+| Lists | Use tables when comparing; use bullet lists for sequential steps |
+| Code | Always use fenced code blocks with language tag |
+| Diagrams | Mermaid diagrams preferred; include text fallback |
+| Length | Never truncate — completeness over brevity |
 
 ---
 
-## 10. Review Checklist
+## 6. Versioning
 
-Before any document is promoted from `Draft` to `Active`:
+See [AI-9004](AI-9004-Versioning-Policy.md) for full versioning policy.
 
-```
-[ ] Metadata table complete
-[ ] All claims have evidence tags
-[ ] Cross-references table populated
-[ ] No TODO items remaining
-[ ] No placeholder sections
-[ ] Changelog updated
-[ ] Version ≥ 1.0.0
-[ ] At least one FACT citation
-[ ] Linked from parent document or index
-```
+Summary:
+- `MAJOR.MINOR.PATCH` semantic versioning
+- MAJOR: breaking change to configuration or behavior
+- MINOR: new section or significant addition
+- PATCH: corrections, clarifications, typos
+
+---
+
+## 7. Review and Approval
+
+| Stage | Requirement |
+|-------|-------------|
+| Draft | Author self-review against this standard |
+| Active | Reviewed for completeness, linked experiments/benchmarks |
+| Deprecated | Note replacement document and reason |
 
 ---
 

@@ -19,158 +19,120 @@
 
 | Document | Relationship |
 |----------|--------------|
-| [AI-0001](../00_ENGINEERING/AI-0001-Nemotron-Engineering-Spec.md) | Primary model spec |
-| [AI-0006](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md) | ADR records |
-| [AI-9008](AI-9008-Engineering-Decision-Record-Standard.md) | ADR standard |
+| [AI-9008](AI-9008-Engineering-Decision-Record-Standard.md) | EDR standard (implements these principles) |
+| [AI-0006](../00_ENGINEERING/AI-0006-Architecture-Decision-Record.md) | Active EDRs |
+| [AI-9001](AI-9001-Documentation-Standard.md) | Documentation standard |
 
 ---
 
-## 1. Core Architecture Philosophy
+## 1. Purpose
 
-The `ai-os` system is built on **four non-negotiable principles**:
-
-### P1: Separation of Concerns
-Every layer has exactly one responsibility:
-- **Model layer** (NIM): Token generation only
-- **Inference layer** (parameters): Control generation quality
-- **Integration layer** (Open WebUI): User interaction, tool execution, memory
-- **Knowledge layer** (RAG): Domain context injection
-- **Governance layer** (this repo): Engineering decisions and traceability
-
-Violating this separation creates tight coupling that makes the system brittle to model upgrades.
-
-### P2: Evidence-First Engineering
-No engineering decision is made without a classification:
-- `[FACT: Official Doc]` — directly from vendor documentation
-- `[FACT: Benchmark]` — measured in our own benchmark suite
-- `[FACT: Experiment]` — validated in controlled experiment
-- `[HYPOTHESIS]` — reasonable belief awaiting validation
-- `[ASSUMPTION]` — known unknown being tracked
-
-Every `[HYPOTHESIS]` has a validation plan. Every `[ASSUMPTION]` has a risk mitigation.
-
-### P3: Traceability by Default
-Every configuration value traces to:
-1. A requirement (REQ-AI-XXXX)
-2. An engineering decision (AI-0006 ADR)
-3. An evidence source (Official Doc, Benchmark, or Experiment)
-
-An undocumented configuration value is a liability, not an asset.
-
-### P4: Graceful Degradation
-The system is designed to fail predictably:
-- If NIM returns an unsupported parameter error → log, alert, continue with defaults
-- If embeddings endpoint is unavailable → fail with explicit error, not silent wrong behavior
-- If tool calling fails → return error to user, do not silently ignore
-- If context limit is exceeded → explicit truncation warning, not silent truncation
+This document defines the fundamental architecture principles that govern all engineering decisions in the `ai-os` system. Any EDR, configuration change, or system design that violates these principles requires explicit justification and acceptance.
 
 ---
 
-## 2. System Architecture Diagram
+## 2. Core Principles
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        USER LAYER                           │
-│  Browser / API Client / Automated Agent                     │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                   OPEN WEBUI LAYER                          │
-│  ┌─────────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐  │
-│  │ Auth / RBAC │  │  Memory  │  │   RAG    │  │  Tools  │  │
-│  └──────┬──────┘  └────┬─────┘  └────┬─────┘  └────┬────┘  │
-│         └──────────────┴─────────────┴─────────────┘        │
-│                              │                              │
-│                    ┌─────────▼──────────┐                   │
-│                    │  Pipeline Layer    │                   │
-│                    │  (extra_body inj.) │                   │
-│                    └─────────┬──────────┘                   │
-└──────────────────────────────┼──────────────────────────────┘
-                               │ HTTPS POST /v1/chat/completions
-┌──────────────────────────────▼──────────────────────────────┐
-│              NVIDIA NIM CLOUD LAYER                         │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  integrate.api.nvidia.com/v1                        │    │
-│  │  Model: nvidia/nemotron-3-ultra-550b-a55b           │    │
-│  │  Backend: vLLM / SGLang / TRT-LLM (NVIDIA-managed) │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-```
+### Principle 1: Evidence-First Engineering
+
+> Every engineering configuration must be supported by evidence.
+
+| Aspect | Rule |
+|--------|------|
+| Configuration values | Must be traceable to FACT, Benchmark, or Experiment |
+| Architecture decisions | Must have EDR with rationale |
+| Parameter choices | Must have benchmark baseline |
+
+Anti-pattern: Setting `temperature=0.6` because it "feels right" — this is the exact mistake identified in AI-0003-Audit. [FACT: AI-0003-Audit]
 
 ---
 
-## 3. Integration Architecture: Open WebUI × NIM
+### Principle 2: Minimal Coupling to Platform
 
+> The system logic must not be tightly coupled to any specific hosting platform.
+
+The AI behavior (model behavior, memory policy, tool usage) MUST be independent from the Open WebUI layer.
+
+| Layer | Responsibility |
+|-------|---------------|
+| NIM API | Model inference |
+| Pipeline | Advanced parameter injection, tool orchestration |
+| Open WebUI | UI, memory, RAG |
+| This Repository | Configuration, documentation, benchmarks |
+
+No business logic lives in the UI layer. Configuration belongs in `configs/`. Documentation belongs in `docs/`.
+
+---
+
+### Principle 3: Thinking Mode as First-Class Citizen
+
+> Reasoning capability is the primary differentiation of Nemotron Ultra 550B. It must be explicitly controlled.
+
+- Every system prompt MUST explicitly set thinking mode [FACT: AI-0003]
+- Thinking mode ON is the default for analytical tasks
+- Thinking mode OFF is the explicit choice for simple/RAG tasks (not the default)
+- Token budget for thinking MUST be considered in every profile [HYPOTHESIS: see EXP-0003]
+
+---
+
+### Principle 4: No Configuration Without Validation
+
+> No configuration change ships to `main` without a benchmark run.
+
+This prevents configuration drift — where parameters gradually change based on intuition rather than evidence.
+
+Enforced by: [AI-9002](AI-9002-Benchmark-Standard.md) Regression Policy.
+
+---
+
+### Principle 5: Traceability
+
+> Every requirement has an ID. Every decision has an EDR. Every claim has a fact label.
+
+Full traceability chain:
 ```
-Open WebUI Request Pipeline:
-
-User Input
-    │
-    ├─► Memory Retrieval (OW-side)
-    ├─► RAG Document Retrieval (OW-side)
-    ├─► Tool Pre-processing (OW-side)
-    │
-    ▼
-Pipeline Filter (if configured)
-    │
-    ├─► Inject extra_body.chat_template_kwargs [REQUIRED for tools + reasoning]
-    ├─► Validate parameters (remove top_k, repetition_penalty)
-    ├─► Apply profile parameters
-    │
-    ▼
-NIM API Call
-    │
-    ▼
-NIM Response
-    │
-    ├─► Stream SSE chunks (if stream: true)
-    ├─► Tool call execution (OW-side, if tool_calls in response)
-    ├─► Memory save (OW-side)
-    │
-    ▼
-User Display
+User Need
+  ↓
+Requirement (REQ-AI-XXXX in REQ-INDEX.md)
+  ↓
+Engineering Decision (EDR-XXX in AI-0006)
+  ↓
+Configuration (configs/openwebui/parameters.json)
+  ↓
+Benchmark Validation (benchmark/tests/*/TC-XXXX.md)
+  ↓
+Experiment Evidence (docs/05_EXPERIMENTS/EXP-XXXX.md)
 ```
 
 ---
 
-## 4. Reasoning Architecture
+### Principle 6: Preserve Knowledge
 
-Nemotron Ultra 550B operates in two distinct modes. [FACT: Official Doc]
+> Engineering knowledge accumulated in this repository is never deleted — only superseded.
 
-```
-Reasoning ON (/think):
-  ┌─────────────────────────────────────────┐
-  │  <think>                                │
-  │    [Internal reasoning trace]           │  Hidden from user in standard UI
-  │    [Multi-step analysis]                │
-  │  </think>                               │
-  │  [Final answer]                         │  Visible to user
-  └─────────────────────────────────────────┘
-
-Reasoning OFF (/nothink):
-  ┌─────────────────────────────────────────┐
-  │  [Direct answer, no reasoning trace]    │  Faster, cheaper
-  └─────────────────────────────────────────┘
-```
-
-Token cost implication: reasoning traces consume tokens. [HYPOTHESIS: reasoning traces average 500-2000 tokens per complex query — needs EXP-0003 validation]
+- Deprecated documents are marked `Deprecated` and kept
+- Archived benchmark results are never deleted
+- Old configurations are kept in changelog format
+- git history is never force-pushed or rebased on `main`
 
 ---
 
-## 5. Decision Framework
+### Principle 7: Explicit Over Implicit
 
-When making an architectural decision:
+> Behavior must be explicit. Defaults are documented, not assumed.
 
-```
-1. IDENTIFY: What problem are we solving?
-2. EVIDENCE: What do official docs say?
-3. OPTIONS: What are the alternatives?
-4. EVALUATE: What are the trade-offs?
-5. DECIDE: Which option and why?
-6. RECORD: ADR in AI-0006
-7. VALIDATE: Benchmark or experiment assigned
-8. REVIEW: Schedule for re-evaluation
-```
+Every configuration value, whether explicitly set or relying on default, MUST be documented in AI-0003 compatibility matrix with its effective value and the reason it is or is not explicitly set.
+
+---
+
+## 3. Principle Precedence
+
+When principles conflict:
+
+1. Evidence-First (P1) trumps all others
+2. No Configuration Without Validation (P4) is non-negotiable
+3. Traceability (P5) is non-negotiable
+4. All others can be traded off with explicit EDR justification
 
 ---
 

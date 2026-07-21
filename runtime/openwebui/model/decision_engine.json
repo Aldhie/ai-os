@@ -1,0 +1,150 @@
+{
+  "version": "1.0.0",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "infrastructure": "nvidia-cloud-nim-free-tier",
+  "rpm_limit": 32,
+  "rpm_guard_threshold": 28,
+  "policies": {
+    "planner": {
+      "trigger": "task requires > 3 sequential steps OR user explicitly requests plan/roadmap/phases",
+      "priority": 1,
+      "required_input": ["goal", "constraints", "context"],
+      "skip_condition": "task is single-step OR conversational OR user has already provided a plan",
+      "failure_strategy": "respond with partial plan up to known phase, flag incomplete sections with [needs_input: X]",
+      "latency_budget_ms": 8000,
+      "token_budget": 800,
+      "expected_benefit": "structured multi-step output with critical path and first action, prevents scope drift",
+      "expected_cost": "+300 tokens per plan, +1 NIM call if plan requires clarification",
+      "decision_matrix": {
+        "task_steps_gt_3": "activate",
+        "task_steps_le_3": "skip",
+        "user_says_plan": "activate",
+        "user_says_roadmap": "activate",
+        "already_planned": "skip"
+      }
+    },
+    "memory": {
+      "trigger": "query references user preferences, prior decisions, project state, or cross-session context",
+      "priority": 2,
+      "required_input": ["user_id", "session_id", "query_embedding"],
+      "skip_condition": "query is purely factual with no user-specific context dependency",
+      "failure_strategy": "proceed without memory, do not announce failure, do not fabricate memory content",
+      "latency_budget_ms": 3000,
+      "token_budget": 400,
+      "min_relevance_score": 0.70,
+      "expected_benefit": "personalised response that respects prior decisions, reduces repeated context from user",
+      "expected_cost": "+200 tokens injected context per memory retrieval, +1 tool call",
+      "decision_matrix": {
+        "query_references_prior_decision": "activate",
+        "query_references_preference": "activate",
+        "query_references_project": "activate",
+        "pure_factual_query": "skip",
+        "memory_relevance_below_threshold": "skip"
+      }
+    },
+    "knowledge_rag": {
+      "trigger": "query involves domain-specific content, library/API usage, or codebase questions",
+      "priority": 3,
+      "required_input": ["query_embedding", "collection_ids"],
+      "skip_condition": "query is general knowledge answerable from model training without domain docs",
+      "failure_strategy": "fall back to model knowledge, append [model knowledge — verify with current docs]",
+      "latency_budget_ms": 4000,
+      "token_budget": 600,
+      "top_k_chunks": 5,
+      "min_similarity_score": 0.65,
+      "expected_benefit": "accurate domain-specific answers grounded in loaded documentation",
+      "expected_cost": "+300 tokens injected chunks, +1 retrieval call",
+      "decision_matrix": {
+        "domain_specific_query": "activate",
+        "library_api_usage_query": "activate",
+        "codebase_query": "activate",
+        "general_knowledge_query": "skip",
+        "no_relevant_collection": "skip"
+      }
+    },
+    "tools": {
+      "trigger": "query requires live data, repository access, time-sensitive facts, or mathematical precision",
+      "priority": 4,
+      "required_input": ["tool_name", "tool_params"],
+      "skip_condition": "query is answerable from model training or loaded context without live data",
+      "failure_strategy": "acknowledge tool unavailability explicitly, answer from model knowledge, flag limitations",
+      "latency_budget_ms": 6000,
+      "token_budget": 500,
+      "batch_before_nim_call": true,
+      "expected_benefit": "accurate live data, verified repository state, precise calculations",
+      "expected_cost": "+1 RPM per tool call, +latency per external API",
+      "decision_matrix": {
+        "query_about_specific_repo": "activate_github",
+        "query_about_user_context": "activate_brain_memory",
+        "query_about_current_events": "activate_web_search",
+        "query_requires_arithmetic": "activate_calculator",
+        "query_answerable_from_training": "skip_all_tools"
+      }
+    },
+    "reflection": {
+      "trigger": "response involves architecture, security analysis, complex code, business strategy, or research synthesis",
+      "priority": 5,
+      "required_input": ["draft_response", "task_class"],
+      "skip_condition": "response is conversational, factual, or < 200 tokens",
+      "failure_strategy": "emit response without reflection label, do not retry",
+      "latency_budget_ms": 0,
+      "token_budget": 400,
+      "expected_benefit": "catches logic errors, missing edge cases, format violations before user sees them",
+      "expected_cost": "+400 tokens internal review, zero additional NIM calls",
+      "decision_matrix": {
+        "task_class_architecture": "activate",
+        "task_class_security": "activate",
+        "task_class_complex_code": "activate",
+        "task_class_business_strategy": "activate",
+        "task_class_research_synthesis": "activate",
+        "task_class_conversational": "skip",
+        "response_tokens_lt_200": "skip"
+      }
+    },
+    "critic": {
+      "trigger": "response involves architecture decisions, security-critical code, or business recommendations with significant downside risk",
+      "priority": 6,
+      "required_input": ["draft_response", "decision_type", "risk_level"],
+      "skip_condition": "decision has low downside risk OR response is purely informational",
+      "failure_strategy": "emit response without critic pass, append [critical review skipped — verify independently]",
+      "latency_budget_ms": 0,
+      "token_budget": 300,
+      "expected_benefit": "adversarial challenge of primary recommendation reveals blind spots before action is taken",
+      "expected_cost": "+300 tokens adversarial pass, zero additional NIM calls",
+      "decision_matrix": {
+        "decision_is_architecture": "activate",
+        "decision_is_security": "activate",
+        "decision_is_business_high_risk": "activate",
+        "decision_is_informational": "skip",
+        "decision_risk_low": "skip"
+      }
+    },
+    "reasoning": {
+      "trigger": "task class requires extended thinking (see thinking.md budget table)",
+      "priority": 7,
+      "required_input": ["task_class", "current_rpm_count"],
+      "skip_condition": "task class is greeting, simple_factual, or clarification",
+      "failure_strategy": "retry once with halved budget; if second timeout, disable thinking and answer from model knowledge",
+      "latency_budget_ms": 45000,
+      "token_budget": 20000,
+      "rpm_downgrade_threshold": 28,
+      "expected_benefit": "prevents logic errors in multi-step reasoning, improves code correctness, strengthens architecture analysis",
+      "expected_cost": "up to 20,000 thinking tokens per request, increases TTFT by 10–30 seconds",
+      "decision_matrix": {
+        "task_class_comparison": {"enable": true, "budget": 4096},
+        "task_class_code_small": {"enable": true, "budget": 4096},
+        "task_class_debugging": {"enable": true, "budget": 8192},
+        "task_class_architecture": {"enable": true, "budget": 16384},
+        "task_class_mathematical": {"enable": true, "budget": 20000},
+        "task_class_research": {"enable": true, "budget": 12288},
+        "task_class_security": {"enable": true, "budget": 16384},
+        "task_class_business": {"enable": true, "budget": 8192},
+        "task_class_long_context": {"enable": true, "budget": 8192},
+        "task_class_greeting": {"enable": false, "budget": 0},
+        "task_class_simple_factual": {"enable": false, "budget": 0},
+        "task_class_clarification": {"enable": false, "budget": 0},
+        "rpm_above_guard_threshold": "halve_all_budgets"
+      }
+    }
+  }
+}

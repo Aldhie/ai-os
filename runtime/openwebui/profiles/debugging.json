@@ -1,56 +1,57 @@
 {
-  "_meta": {
-    "profile": "debugging",
-    "version": "1.0.0",
-    "description": "Optimized for debugging, error analysis, and root cause identification. Lower temperature for consistency. Deep thinking for hypothesis generation.",
-    "use_when": ["debugging", "error_analysis", "root_cause", "stack_trace_analysis", "test_failure"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "medium",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "debugging",
+  "version": "1.0.0",
+  "description": "Optimised for root cause analysis, error diagnosis, and systematic debugging. Hypothesis-driven reasoning.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.25,
-    "top_p": 0.85,
-    "top_k": 20,
-    "max_tokens": 2000,
+    "temperature": 0.1,
+    "top_p": 0.95,
+    "top_k": 15,
+    "max_tokens": 3000,
     "presence_penalty": 0.0,
     "frequency_penalty": 0.0,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 10000
+    "enable_thinking": true,
+    "reasoning_budget": 8192,
+    "rationale": "Debugging requires exploring a hypothesis tree (typically 5-8 branches). Lowest temperature prevents output randomness; highest reasoning budget explores the full space before committing to a root cause."
   },
   "context": {
-    "expected_input_tokens": 6000,
-    "total_context_budget": 24000,
-    "history_turns": 7,
-    "memory_top_k": 5,
-    "rag_top_k": 5,
-    "rag_min_score": 0.70
+    "expected_input_tokens": 2500,
+    "expected_output_tokens": 2000,
+    "expected_total_tokens": 4500
   },
   "latency": {
-    "expected_p50_ms": 22000,
-    "expected_p95_ms": 45000,
-    "ttft_target_ms": 2500
+    "expected_ttft_ms": 12000,
+    "expected_total_ms": 35000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 9000,
-    "expected_output_tokens": 1200
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.75,
+    "max_memory_tokens": 400,
+    "rationale": "Prior error patterns, stack versions, and infrastructure state are critical debugging context."
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": true,
-    "planner": false,
-    "critic": true,
-    "reflection": false,
-    "tool_budget": 2
+  "knowledge_strategy": {
+    "load_rag": true,
+    "top_k_chunks": 5,
+    "min_similarity_score": 0.65,
+    "rationale": "Library changelogs, known error patterns, and API documentation ground root cause hypotheses."
+  },
+  "planner_usage": false,
+  "critic_usage": false,
+  "reflection_usage": true,
+  "tool_strategy": {
+    "github": "conditional_on_repo_reference",
+    "brain_memory": true,
+    "web_search": "conditional_on_version_specific_bug",
+    "calculator": false,
+    "rationale": "Debugging often needs repo commit history and version-specific bug reports."
   },
   "rpm_optimization": {
-    "disable_planner": true,
-    "disable_reflection": true,
-    "cache_memory": true,
-    "cache_rag": true,
-    "batch_tool_results": true
+    "strategy": "batch_all_tools_before_nim",
+    "batch_tools": true,
+    "max_rpm_per_session_minute": 5,
+    "rationale": "Debugging sessions can involve rapid iteration. 5 RPM allows diagnostic back-and-forth without starving other capabilities."
   }
 }

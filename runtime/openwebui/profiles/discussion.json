@@ -1,55 +1,55 @@
 {
-  "_meta": {
-    "profile": "discussion",
-    "version": "1.0.0",
-    "description": "Optimized for long-form business, strategic, and intellectual discussion. Balanced reasoning depth with conversational flow.",
-    "use_when": ["business_analysis", "strategy", "market_discussion", "intellectual_debate", "casual_professional"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "low",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "discussion",
+  "version": "1.0.0",
+  "description": "Optimised for natural conversation, opinion exchange, and exploratory dialogue. Minimises token usage and latency.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.65,
-    "top_p": 0.90,
+    "temperature": 0.7,
+    "top_p": 0.9,
     "top_k": 40,
-    "max_tokens": 1200,
-    "presence_penalty": 0.2,
-    "frequency_penalty": 0.1,
+    "max_tokens": 1024,
+    "presence_penalty": 0.1,
+    "frequency_penalty": 0.2,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 8000
+    "enable_thinking": false,
+    "reasoning_budget": 0,
+    "rationale": "Discussion tasks are conversational. Thinking adds 10-30s TTFT with no quality gain for this task class."
   },
   "context": {
-    "expected_input_tokens": 4000,
-    "total_context_budget": 16000,
-    "history_turns": 5,
-    "memory_top_k": 5,
-    "rag_top_k": 3,
-    "rag_min_score": 0.65
+    "expected_input_tokens": 800,
+    "expected_output_tokens": 600,
+    "expected_total_tokens": 1400
   },
   "latency": {
-    "expected_p50_ms": 12000,
-    "expected_p95_ms": 25000,
-    "ttft_target_ms": 2000
+    "expected_ttft_ms": 2000,
+    "expected_total_ms": 6000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 6000,
-    "expected_output_tokens": 900
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.70,
+    "max_memory_tokens": 300,
+    "rationale": "User preferences and prior context personalise discussion meaningfully."
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": true,
-    "planner": false,
-    "critic": true,
-    "reflection": true,
-    "tool_budget": 2
+  "knowledge_strategy": {
+    "load_rag": false,
+    "rationale": "Discussion topics rarely require domain documentation retrieval."
+  },
+  "planner_usage": false,
+  "critic_usage": false,
+  "reflection_usage": false,
+  "tool_strategy": {
+    "github": false,
+    "brain_memory": true,
+    "web_search": "only_if_current_events",
+    "calculator": false,
+    "rationale": "Minimise tool calls. Only Brain Memory is likely relevant for discussion personalisation."
   },
   "rpm_optimization": {
-    "disable_planner": true,
-    "disable_reflection_on_simple_turns": true,
-    "cache_memory": true,
-    "cache_rag": true
+    "strategy": "single_nim_call",
+    "batch_tools": true,
+    "max_rpm_per_session_minute": 4,
+    "rationale": "Discussion sessions generate frequent short turns. Cap at 4 RPM to preserve quota for heavier tasks."
   }
 }

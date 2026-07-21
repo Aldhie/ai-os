@@ -1,56 +1,57 @@
 {
-  "_meta": {
-    "profile": "coding",
-    "version": "1.0.0",
-    "description": "Optimized for code generation, review, and explanation. Lower temperature for determinism. Moderate thinking for logic verification.",
-    "use_when": ["code_generation", "code_review", "explanation_of_code", "refactoring"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "medium",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "coding",
+  "version": "1.0.0",
+  "description": "Optimised for code generation, review, and refactoring. Deterministic output with extended reasoning for logic correctness.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.3,
-    "top_p": 0.85,
+    "temperature": 0.2,
+    "top_p": 0.95,
     "top_k": 20,
-    "max_tokens": 2500,
+    "max_tokens": 4096,
     "presence_penalty": 0.0,
-    "frequency_penalty": 0.05,
+    "frequency_penalty": 0.1,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 8000
+    "enable_thinking": true,
+    "reasoning_budget": 4096,
+    "rationale": "Low temperature alone does not prevent logic errors in complex code. Reasoning budget provides a hidden verification pass before output."
   },
   "context": {
-    "expected_input_tokens": 5000,
-    "total_context_budget": 24000,
-    "history_turns": 5,
-    "memory_top_k": 3,
-    "rag_top_k": 5,
-    "rag_min_score": 0.70
+    "expected_input_tokens": 2000,
+    "expected_output_tokens": 2500,
+    "expected_total_tokens": 4500
   },
   "latency": {
-    "expected_p50_ms": 18000,
-    "expected_p95_ms": 35000,
-    "ttft_target_ms": 2500
+    "expected_ttft_ms": 8000,
+    "expected_total_ms": 25000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 7000,
-    "expected_output_tokens": 1500
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.75,
+    "max_memory_tokens": 400,
+    "rationale": "User's coding stack, preferred patterns, and prior code decisions are directly relevant."
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": true,
-    "planner": false,
-    "critic": true,
-    "reflection": false,
-    "tool_budget": 2
+  "knowledge_strategy": {
+    "load_rag": true,
+    "top_k_chunks": 5,
+    "min_similarity_score": 0.65,
+    "rationale": "Library documentation and API references ground code generation in actual current interfaces."
+  },
+  "planner_usage": "conditional_on_multi_file",
+  "critic_usage": "conditional_on_security_critical",
+  "reflection_usage": true,
+  "tool_strategy": {
+    "github": "conditional_on_repo_reference",
+    "brain_memory": true,
+    "web_search": "only_if_version_lookup",
+    "calculator": false,
+    "rationale": "GitHub needed for repo-specific code. Web search only for version/API lookups."
   },
   "rpm_optimization": {
-    "disable_planner": true,
-    "disable_reflection": true,
-    "cache_memory": true,
-    "cache_rag": true,
-    "batch_tool_results": true
+    "strategy": "batch_all_tools_before_nim",
+    "batch_tools": true,
+    "max_rpm_per_session_minute": 6,
+    "rationale": "Code tasks require more tokens and reasoning. 6 RPM leaves quota headroom for follow-up debugging."
   }
 }

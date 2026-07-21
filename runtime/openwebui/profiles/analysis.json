@@ -1,54 +1,54 @@
 {
-  "_meta": {
-    "profile": "analysis",
-    "version": "1.0.0",
-    "description": "Optimized for structured analysis tasks: market research, competitive analysis, feasibility assessment, data interpretation.",
-    "use_when": ["market_analysis", "competitive_analysis", "feasibility", "data_interpretation", "strategic_assessment"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "medium",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "analysis",
+  "version": "1.0.0",
+  "description": "Optimised for data analysis, trade-off evaluation, and comparative reasoning.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.5,
-    "top_p": 0.90,
-    "top_k": 30,
-    "max_tokens": 1500,
-    "presence_penalty": 0.15,
-    "frequency_penalty": 0.10,
+    "temperature": 0.4,
+    "top_p": 0.9,
+    "top_k": 35,
+    "max_tokens": 2048,
+    "presence_penalty": 0.05,
+    "frequency_penalty": 0.1,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 10000
+    "enable_thinking": true,
+    "reasoning_budget": 8192,
+    "rationale": "Analysis tasks require weighing multiple variables and deriving structured conclusions. 8K budget handles most comparative frameworks without excessive latency."
   },
   "context": {
-    "expected_input_tokens": 5000,
-    "total_context_budget": 24000,
-    "history_turns": 5,
-    "memory_top_k": 5,
-    "rag_top_k": 5,
-    "rag_min_score": 0.65
+    "expected_input_tokens": 2000,
+    "expected_output_tokens": 1800,
+    "expected_total_tokens": 3800
   },
   "latency": {
-    "expected_p50_ms": 20000,
-    "expected_p95_ms": 40000,
-    "ttft_target_ms": 2500
+    "expected_ttft_ms": 10000,
+    "expected_total_ms": 30000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 8000,
-    "expected_output_tokens": 1200
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.70,
+    "max_memory_tokens": 400
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": true,
-    "planner": true,
-    "critic": true,
-    "reflection": true,
-    "tool_budget": 3
+  "knowledge_strategy": {
+    "load_rag": true,
+    "top_k_chunks": 5,
+    "min_similarity_score": 0.65
+  },
+  "planner_usage": "conditional_on_multi_phase_analysis",
+  "critic_usage": true,
+  "reflection_usage": true,
+  "tool_strategy": {
+    "github": false,
+    "brain_memory": true,
+    "web_search": "conditional_on_data_freshness",
+    "calculator": true,
+    "rationale": "Analysis may require precise calculations and fresh data. Calculator always available; web search gated on freshness requirement."
   },
   "rpm_optimization": {
-    "batch_tool_results": true,
-    "cache_memory": true,
-    "cache_rag": true
+    "strategy": "batch_all_tools_before_nim",
+    "batch_tools": true,
+    "max_rpm_per_session_minute": 5
   }
 }

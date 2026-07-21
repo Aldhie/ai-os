@@ -1,55 +1,57 @@
 {
-  "_meta": {
-    "profile": "architecture",
-    "version": "1.0.0",
-    "description": "Optimized for system design, architecture analysis, and technical decision-making. Maximum reasoning depth. Full component activation.",
-    "use_when": ["system_design", "architecture_review", "infrastructure_planning", "technical_strategy"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "high",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "architecture",
+  "version": "1.0.0",
+  "description": "Optimised for system design, architectural analysis, and infrastructure decisions. Maximum reasoning depth.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.5,
-    "top_p": 0.90,
+    "temperature": 0.3,
+    "top_p": 0.9,
     "top_k": 30,
-    "max_tokens": 3000,
-    "presence_penalty": 0.1,
-    "frequency_penalty": 0.05,
+    "max_tokens": 4096,
+    "presence_penalty": 0.05,
+    "frequency_penalty": 0.1,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 14000
+    "enable_thinking": true,
+    "reasoning_budget": 16384,
+    "rationale": "Architecture decisions involve component interactions, failure modes, and evolution paths that cannot be correctly derived without deep chain-of-thought. 16K budget covers complex system exploration."
   },
   "context": {
-    "expected_input_tokens": 6000,
-    "total_context_budget": 32000,
-    "history_turns": 5,
-    "memory_top_k": 5,
-    "rag_top_k": 5,
-    "rag_min_score": 0.65
+    "expected_input_tokens": 3000,
+    "expected_output_tokens": 3000,
+    "expected_total_tokens": 6000
   },
   "latency": {
-    "expected_p50_ms": 30000,
-    "expected_p95_ms": 60000,
-    "ttft_target_ms": 3000
+    "expected_ttft_ms": 20000,
+    "expected_total_ms": 60000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 12000,
-    "expected_output_tokens": 2000
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.75,
+    "max_memory_tokens": 500,
+    "rationale": "Prior architectural decisions and system constraints must be consistent across sessions."
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": true,
-    "planner": true,
-    "critic": true,
-    "reflection": true,
-    "tool_budget": 3
+  "knowledge_strategy": {
+    "load_rag": true,
+    "top_k_chunks": 5,
+    "min_similarity_score": 0.65,
+    "rationale": "Architecture requires current infrastructure documentation, pattern references, and constraint specifications."
+  },
+  "planner_usage": true,
+  "critic_usage": true,
+  "reflection_usage": true,
+  "tool_strategy": {
+    "github": "conditional_on_codebase_reference",
+    "brain_memory": true,
+    "web_search": "conditional_on_current_tech_versions",
+    "calculator": "conditional_on_capacity_calculations",
+    "rationale": "Architecture analysis may require repo inspection, prior decisions, current library versions, and capacity math."
   },
   "rpm_optimization": {
-    "batch_tool_results": true,
-    "cache_memory": true,
-    "cache_rag": true,
-    "parallel_context_loading": true
+    "strategy": "batch_all_tools_before_nim",
+    "batch_tools": true,
+    "max_rpm_per_session_minute": 3,
+    "rationale": "Architecture tasks are expensive. Limit to 3 RPM to avoid burning quota on a single conversation thread."
   }
 }

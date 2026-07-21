@@ -1,55 +1,56 @@
 {
-  "_meta": {
-    "profile": "research",
-    "version": "1.0.0",
-    "description": "Optimized for multi-source research synthesis, literature review, and knowledge-intensive tasks. Maximum RAG budget.",
-    "use_when": ["research", "literature_review", "multi_source_synthesis", "topic_survey"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "high",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "research",
+  "version": "1.0.0",
+  "description": "Optimised for deep research, literature synthesis, and evidence-based reporting.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.5,
-    "top_p": 0.90,
+    "temperature": 0.3,
+    "top_p": 0.9,
     "top_k": 30,
-    "max_tokens": 2000,
-    "presence_penalty": 0.1,
-    "frequency_penalty": 0.05,
+    "max_tokens": 4096,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.1,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 10000
+    "enable_thinking": true,
+    "reasoning_budget": 12288,
+    "rationale": "Research synthesis requires cross-source comparison and contradiction resolution. 12K budget handles multi-source integration without hitting Free Tier timeout risk."
   },
   "context": {
-    "expected_input_tokens": 8000,
-    "total_context_budget": 32000,
-    "history_turns": 3,
-    "memory_top_k": 3,
-    "rag_top_k": 8,
-    "rag_min_score": 0.60
+    "expected_input_tokens": 3500,
+    "expected_output_tokens": 3000,
+    "expected_total_tokens": 6500
   },
   "latency": {
-    "expected_p50_ms": 25000,
-    "expected_p95_ms": 50000,
-    "ttft_target_ms": 3000
+    "expected_ttft_ms": 15000,
+    "expected_total_ms": 50000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 8000,
-    "expected_output_tokens": 1500
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.70,
+    "max_memory_tokens": 400
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": true,
-    "planner": true,
-    "critic": false,
-    "reflection": true,
-    "tool_budget": 3
+  "knowledge_strategy": {
+    "load_rag": true,
+    "top_k_chunks": 5,
+    "min_similarity_score": 0.65,
+    "rationale": "Research profiles must prioritise loaded knowledge collections before web search."
+  },
+  "planner_usage": "conditional_on_multi_phase_research",
+  "critic_usage": true,
+  "reflection_usage": true,
+  "tool_strategy": {
+    "github": false,
+    "brain_memory": true,
+    "web_search": true,
+    "calculator": "conditional_on_statistical_analysis",
+    "rationale": "Research requires both loaded collections and live web search for current information."
   },
   "rpm_optimization": {
-    "batch_tool_results": true,
-    "cache_rag": true,
-    "parallel_context_loading": true,
-    "reduce_history_on_large_rag": true
+    "strategy": "batch_all_tools_before_nim",
+    "batch_tools": true,
+    "max_rpm_per_session_minute": 3,
+    "rationale": "Research requests are expensive. Hard cap at 3 to avoid quota exhaustion."
   }
 }

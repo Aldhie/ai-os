@@ -1,55 +1,53 @@
 {
-  "_meta": {
-    "profile": "creative",
-    "version": "1.0.0",
-    "description": "Optimized for creative writing, brainstorming, ideation, and narrative tasks. Higher temperature for diversity. Light reasoning.",
-    "use_when": ["creative_writing", "brainstorming", "ideation", "storytelling", "marketing_copy"],
-    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "rpm_impact": "low",
-    "last_updated": "2026-07-21"
-  },
+  "profile_id": "creative",
+  "version": "1.0.0",
+  "description": "Optimised for creative writing, brainstorming, and idea generation. High diversity, no reasoning overhead.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
   "parameters": {
-    "temperature": 0.85,
+    "temperature": 0.9,
     "top_p": 0.95,
-    "top_k": 60,
-    "max_tokens": 2000,
+    "top_k": 50,
+    "max_tokens": 2048,
     "presence_penalty": 0.3,
-    "frequency_penalty": 0.2,
+    "frequency_penalty": 0.3,
     "stream": true
   },
   "thinking": {
-    "type": "enabled",
-    "budget_tokens": 4000
+    "enable_thinking": false,
+    "reasoning_budget": 0,
+    "rationale": "Creative tasks benefit from generative diversity, not deliberative reasoning. Thinking adds latency with no creative quality gain."
   },
   "context": {
-    "expected_input_tokens": 3000,
-    "total_context_budget": 16000,
-    "history_turns": 5,
-    "memory_top_k": 3,
-    "rag_top_k": 0,
-    "rag_min_score": 0.80
+    "expected_input_tokens": 600,
+    "expected_output_tokens": 1500,
+    "expected_total_tokens": 2100
   },
   "latency": {
-    "expected_p50_ms": 10000,
-    "expected_p95_ms": 22000,
-    "ttft_target_ms": 2000
+    "expected_ttft_ms": 1500,
+    "expected_total_ms": 8000
   },
-  "token_usage": {
-    "expected_thinking_tokens": 3000,
-    "expected_output_tokens": 1500
+  "memory_strategy": {
+    "load_memory": true,
+    "min_relevance_score": 0.65,
+    "max_memory_tokens": 200,
+    "rationale": "User's stylistic preferences and prior creative work inform tone and direction."
   },
-  "runtime": {
-    "memory": true,
-    "knowledge": false,
-    "planner": true,
-    "critic": false,
-    "reflection": false,
-    "tool_budget": 1
+  "knowledge_strategy": {
+    "load_rag": false,
+    "rationale": "Creative generation does not benefit from structured documentation retrieval."
+  },
+  "planner_usage": false,
+  "critic_usage": false,
+  "reflection_usage": false,
+  "tool_strategy": {
+    "github": false,
+    "brain_memory": true,
+    "web_search": false,
+    "calculator": false
   },
   "rpm_optimization": {
-    "disable_rag": true,
-    "disable_critic": true,
-    "disable_reflection": true,
-    "cache_memory": true
+    "strategy": "single_nim_call",
+    "batch_tools": false,
+    "max_rpm_per_session_minute": 4
   }
 }

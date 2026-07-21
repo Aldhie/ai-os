@@ -1,8 +1,8 @@
 """
 AI-OS Filter: Profile Selector
-Version: 1.2.0
+Version: 1.3.0
 Responsibility: Classify user query into task_class and apply the matching
-parameter profile (temperature, max_tokens, reasoning_budget) before the NIM call.
+parameter profile (temperature, max_tokens) before the NIM call.
 Install: Open WebUI Admin > Functions > New Function (type: Filter)
 
 WHY this filter exists:
@@ -11,17 +11,19 @@ WHY this filter exists:
   This filter dynamically selects the right profile per turn without requiring
   the user to manually switch models.
 
-Parameter key reference (Open WebUI + NIM):
-  temperature          → top-level body key, OpenAI spec, accepted by OWU+NIM
-  max_tokens           → top-level body key, OpenAI spec, accepted by OWU+NIM
-                         (num_predict is Ollama-only and is rejected by NIM)
-  chat_template_kwargs → top-level body key forwarded by OWU to NIM as-is,
-                         used to pass enable_thinking + reasoning_budget
+Parameter key reference (Open WebUI + NIM Free Tier):
+  temperature          -> top-level body key, OpenAI spec, accepted by OWU + NIM
+  max_tokens           -> top-level body key, OpenAI spec, accepted by OWU + NIM
+  chat_template_kwargs -> ONLY works on self-hosted NIM or NIM Enterprise.
+                          NIM Free Tier (integrate.api.nvidia.com) REJECTS this
+                          key with 'Inference connection error'. Keep
+                          enable_thinking = False on Free Tier at all times.
 
 CHANGELOG:
   1.0.0  Initial release
   1.1.0  Removed unsupported body keys (options, extra_body, _ai_os_*)
-  1.2.0  Replaced num_predict with max_tokens (OpenAI spec for NIM endpoint)
+  1.2.0  Replaced num_predict with max_tokens (OpenAI spec)
+  1.3.0  enable_thinking default False -- NIM Free Tier rejects chat_template_kwargs
 """
 
 from pydantic import BaseModel, Field
@@ -35,17 +37,24 @@ _TASK_CLASS_REGISTRY: dict = {}
 
 class Filter:
     class Valves(BaseModel):
-        enabled: bool = Field(default=True, description="Enable/disable profile selection")
+        enabled: bool = Field(
+            default=True,
+            description="Enable/disable profile selection"
+        )
         default_profile: str = Field(
             default="discussion",
             description="Fallback profile if no task class matches"
         )
         enable_thinking: bool = Field(
-            default=True,
-            description="Pass enable_thinking=true to NIM via chat_template_kwargs"
+            default=False,
+            description=(
+                "[WARNING] Only enable on self-hosted NIM or NIM Enterprise. "
+                "NIM Free Tier (integrate.api.nvidia.com) rejects chat_template_kwargs "
+                "and returns 'Inference connection error'. Keep False on Free Tier."
+            )
         )
 
-    # Task classification rules — ordered by specificity, first match wins.
+    # Task classification rules -- ordered by specificity, first match wins.
     TASK_RULES = [
         (re.compile(
             r'\b(debug|traceback|stack trace|exception|error:|TypeError|ValueError|'
@@ -79,7 +88,7 @@ class Filter:
         ), "creative"),
     ]
 
-    # Profiles — max_tokens is the correct OpenAI-spec key for NIM endpoint
+    # reasoning_budget kept for future use when enable_thinking is supported
     PROFILES = {
         "discussion":   {"temperature": 0.7, "max_tokens": 4096,  "reasoning_budget": 4096},
         "coding":       {"temperature": 0.2, "max_tokens": 4096,  "reasoning_budget": 4096},
@@ -103,7 +112,8 @@ class Filter:
         """
         1. Classify last user message -> task_class
         2. Write temperature + max_tokens directly to body top-level
-        3. Pass reasoning_budget via chat_template_kwargs (forwarded to NIM as-is)
+        3. Only inject chat_template_kwargs if enable_thinking is explicitly True
+           (not safe on NIM Free Tier -- see Valves warning above)
         4. Store task_class in module registry for response_quality_monitor
         """
         if not self.valves.enabled:
@@ -120,11 +130,12 @@ class Filter:
         task_class = self._classify(last_user_text)
         profile = self.PROFILES.get(task_class, self.PROFILES["discussion"])
 
-        # OpenAI-spec keys — accepted by Open WebUI + NIM
+        # OpenAI-spec keys -- accepted by Open WebUI + NIM Free Tier
         body["temperature"] = profile["temperature"]
         body["max_tokens"] = profile["max_tokens"]
 
-        # chat_template_kwargs is forwarded by Open WebUI to NIM without schema check
+        # GUARD: only inject chat_template_kwargs on supported endpoints.
+        # NIM Free Tier will return 'Inference connection error' if this is present.
         if self.valves.enable_thinking:
             body["chat_template_kwargs"] = {
                 "enable_thinking": True,

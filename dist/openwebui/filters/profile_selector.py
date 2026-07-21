@@ -1,7 +1,11 @@
-# AI-OS Production Filter: Profile Selector v1.2.0
-# Fix v1.2.0: num_predict -> max_tokens (OpenAI spec, required for NIM endpoint)
+# AI-OS Production Filter: Profile Selector v1.3.0
+# Fix v1.3.0: enable_thinking default False -- NIM Free Tier rejects chat_template_kwargs
+# Fix v1.2.0: num_predict -> max_tokens (OpenAI spec)
 # Fix v1.1.0: removed unsupported body keys (options, extra_body, _ai_os_*)
 # See runtime/openwebui/filters/profile_selector.py for full annotated version.
+#
+# IMPORTANT: enable_thinking Valve must remain False on NIM Free Tier.
+# Only set True on self-hosted NIM or NIM Enterprise.
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -14,7 +18,14 @@ class Filter:
     class Valves(BaseModel):
         enabled: bool = Field(default=True)
         default_profile: str = Field(default="discussion")
-        enable_thinking: bool = Field(default=True)
+        enable_thinking: bool = Field(
+            default=False,
+            description=(
+                "[WARNING] Keep False on NIM Free Tier. "
+                "Only enable on self-hosted NIM or NIM Enterprise. "
+                "Enabling this on Free Tier causes Inference connection error."
+            )
+        )
 
     TASK_RULES = [
         (re.compile(r'\b(debug|traceback|exception|error:|TypeError|ValueError|AttributeError)\b', re.IGNORECASE), "debugging"),
@@ -25,7 +36,6 @@ class Filter:
         (re.compile(r'\b(creative|blog post|essay|narrative|brainstorm|marketing copy)\b', re.IGNORECASE), "creative"),
     ]
 
-    # max_tokens = OpenAI spec = correct key for NIM (OpenAI-compatible endpoint)
     PROFILES = {
         "discussion":   {"temperature": 0.7, "max_tokens": 4096,  "reasoning_budget": 4096},
         "coding":       {"temperature": 0.2, "max_tokens": 4096,  "reasoning_budget": 4096},
@@ -48,6 +58,7 @@ class Filter:
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
         if not self.valves.enabled:
             return body
+
         messages = body.get("messages", [])
         last_text = next(
             (m["content"] for m in reversed(messages)
@@ -57,10 +68,11 @@ class Filter:
         tc = self._classify(last_text)
         p = self.PROFILES.get(tc, self.PROFILES["discussion"])
 
-        # OpenAI-spec keys only — accepted by Open WebUI + NIM
+        # OpenAI-spec keys only -- accepted by Open WebUI + NIM Free Tier
         body["temperature"] = p["temperature"]
         body["max_tokens"] = p["max_tokens"]
 
+        # GUARD: chat_template_kwargs only on self-hosted/Enterprise NIM
         if self.valves.enable_thinking:
             body["chat_template_kwargs"] = {
                 "enable_thinking": True,

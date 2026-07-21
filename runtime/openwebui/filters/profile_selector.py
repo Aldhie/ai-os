@@ -1,27 +1,34 @@
 """
 AI-OS Filter: Profile Selector
-Version: 1.1.0
+Version: 1.2.0
 Responsibility: Classify user query into task_class and apply the matching
-parameter profile (temperature, num_predict, reasoning_budget) before the NIM call.
+parameter profile (temperature, max_tokens, reasoning_budget) before the NIM call.
 Install: Open WebUI Admin > Functions > New Function (type: Filter)
 
-WHY: A single parameter set cannot be optimal for both creative writing (needs high
-temperature) and production code generation (needs low temperature + high reasoning).
-This filter dynamically selects the right profile per turn, giving per-task optimal
-parameters without requiring the user to manually switch models.
+WHY this filter exists:
+  A single parameter set cannot be optimal for both creative writing (needs high
+  temperature) and production code generation (needs low temperature + high reasoning).
+  This filter dynamically selects the right profile per turn without requiring
+  the user to manually switch models.
 
-FIX v1.1.0: Removed unsupported top-level body keys (_ai_os_task_class, _ai_os_profile,
-extra_body, options). Open WebUI validates body schema strictly — only known top-level
-keys are allowed. Parameters are now written directly to body top-level. task_class is
-stored in self._last_task_class for consumption by response_quality_monitor (same
-process, shared filter state via class-level registry).
+Parameter key reference (Open WebUI + NIM):
+  temperature          → top-level body key, OpenAI spec, accepted by OWU+NIM
+  max_tokens           → top-level body key, OpenAI spec, accepted by OWU+NIM
+                         (num_predict is Ollama-only and is rejected by NIM)
+  chat_template_kwargs → top-level body key forwarded by OWU to NIM as-is,
+                         used to pass enable_thinking + reasoning_budget
+
+CHANGELOG:
+  1.0.0  Initial release
+  1.1.0  Removed unsupported body keys (options, extra_body, _ai_os_*)
+  1.2.0  Replaced num_predict with max_tokens (OpenAI spec for NIM endpoint)
 """
 
 from pydantic import BaseModel, Field
 from typing import Optional
 import re
 
-# Module-level registry allows response_quality_monitor to read task_class
+# Module-level registry: response_quality_monitor reads task_class from here
 # without polluting the body dict. Key = user_id or "default".
 _TASK_CLASS_REGISTRY: dict = {}
 
@@ -38,7 +45,7 @@ class Filter:
             description="Pass enable_thinking=true to NIM via chat_template_kwargs"
         )
 
-    # Task classification rules — ordered by specificity. First match wins.
+    # Task classification rules — ordered by specificity, first match wins.
     TASK_RULES = [
         (re.compile(
             r'\b(debug|traceback|stack trace|exception|error:|TypeError|ValueError|'
@@ -72,15 +79,15 @@ class Filter:
         ), "creative"),
     ]
 
-    # Profile parameters — all values map to Open WebUI / NIM supported keys
+    # Profiles — max_tokens is the correct OpenAI-spec key for NIM endpoint
     PROFILES = {
-        "discussion":   {"temperature": 0.7, "num_predict": 4096, "reasoning_budget": 4096},
-        "coding":       {"temperature": 0.2, "num_predict": 4096, "reasoning_budget": 4096},
-        "architecture": {"temperature": 0.4, "num_predict": 6144, "reasoning_budget": 8192},
-        "analysis":     {"temperature": 0.4, "num_predict": 4096, "reasoning_budget": 6144},
-        "creative":     {"temperature": 0.9, "num_predict": 3000, "reasoning_budget": 2048},
-        "research":     {"temperature": 0.5, "num_predict": 8192, "reasoning_budget": 8192},
-        "debugging":    {"temperature": 0.1, "num_predict": 3072, "reasoning_budget": 6144},
+        "discussion":   {"temperature": 0.7, "max_tokens": 4096,  "reasoning_budget": 4096},
+        "coding":       {"temperature": 0.2, "max_tokens": 4096,  "reasoning_budget": 4096},
+        "architecture": {"temperature": 0.4, "max_tokens": 6144,  "reasoning_budget": 8192},
+        "analysis":     {"temperature": 0.4, "max_tokens": 4096,  "reasoning_budget": 6144},
+        "creative":     {"temperature": 0.9, "max_tokens": 3000,  "reasoning_budget": 2048},
+        "research":     {"temperature": 0.5, "max_tokens": 8192,  "reasoning_budget": 8192},
+        "debugging":    {"temperature": 0.1, "max_tokens": 3072,  "reasoning_budget": 6144},
     }
 
     def __init__(self):
@@ -94,11 +101,10 @@ class Filter:
 
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
         """
-        Classify the last user message and apply the matching parameter profile.
-        Writes supported keys directly to body top-level (temperature, num_predict).
-        Passes reasoning_budget via body[chat_template_kwargs] which Open WebUI
-        forwards as-is to NIM without schema validation.
-        Stores task_class in module-level registry for response_quality_monitor.
+        1. Classify last user message -> task_class
+        2. Write temperature + max_tokens directly to body top-level
+        3. Pass reasoning_budget via chat_template_kwargs (forwarded to NIM as-is)
+        4. Store task_class in module registry for response_quality_monitor
         """
         if not self.valves.enabled:
             return body
@@ -114,9 +120,9 @@ class Filter:
         task_class = self._classify(last_user_text)
         profile = self.PROFILES.get(task_class, self.PROFILES["discussion"])
 
-        # Write parameters directly to body top-level — Open WebUI supported keys
+        # OpenAI-spec keys — accepted by Open WebUI + NIM
         body["temperature"] = profile["temperature"]
-        body["num_predict"] = profile["num_predict"]
+        body["max_tokens"] = profile["max_tokens"]
 
         # chat_template_kwargs is forwarded by Open WebUI to NIM without schema check
         if self.valves.enable_thinking:
@@ -125,7 +131,7 @@ class Filter:
                 "reasoning_budget": profile["reasoning_budget"]
             }
 
-        # Store task_class in module registry for response_quality_monitor outlet
+        # Store task_class for response_quality_monitor outlet
         user_id = (__user__ or {}).get("id", "default")
         _TASK_CLASS_REGISTRY[user_id] = task_class
 

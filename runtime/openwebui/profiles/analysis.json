@@ -1,19 +1,20 @@
 {
   "_meta": {
     "profile": "analysis",
-    "description": "Optimized for structured analytical tasks: business analysis, market research, financial modeling logic, competitive analysis. Balances reasoning depth with practical output format.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for structured analysis tasks: market research, competitive analysis, feasibility assessment, data interpretation.",
+    "use_when": ["market_analysis", "competitive_analysis", "feasibility", "data_interpretation", "strategic_assessment"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "medium",
     "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 0.55,
+    "temperature": 0.5,
     "top_p": 0.90,
-    "top_k": 50,
-    "max_tokens": 2000,
-    "presence_penalty": 0.05,
-    "frequency_penalty": 0.05,
+    "top_k": 30,
+    "max_tokens": 1500,
+    "presence_penalty": 0.15,
+    "frequency_penalty": 0.10,
     "stream": true
   },
   "thinking": {
@@ -21,39 +22,33 @@
     "budget_tokens": 10000
   },
   "context": {
-    "expected_input_tokens": 4000,
-    "expected_output_tokens": 1200,
-    "expected_thinking_tokens": 8000,
-    "total_per_turn_estimate": 13200
+    "expected_input_tokens": 5000,
+    "total_context_budget": 24000,
+    "history_turns": 5,
+    "memory_top_k": 5,
+    "rag_top_k": 5,
+    "rag_min_score": 0.65
   },
   "latency": {
-    "expected_ttft_ms": 3500,
-    "expected_total_ms": 22000,
-    "p95_total_ms": 40000
+    "expected_p50_ms": 20000,
+    "expected_p95_ms": 40000,
+    "ttft_target_ms": 2500
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 8000,
+    "expected_output_tokens": 1200
   },
   "runtime": {
-    "memory_strategy": "load_user_and_project_context",
-    "knowledge_strategy": "load_for_domain_facts",
-    "planner": false,
-    "critic": false,
+    "memory": true,
+    "knowledge": true,
+    "planner": true,
+    "critic": true,
     "reflection": true,
-    "tool_strategy": "knowledge_and_memory",
-    "history_turns_verbatim": 4,
-    "history_turns_compressed": 8
+    "tool_budget": 3
   },
   "rpm_optimization": {
-    "target_rpm": 2,
-    "tool_calls_per_turn_max": 2,
-    "batch_tool_calls": true,
+    "batch_tool_results": true,
     "cache_memory": true,
     "cache_rag": true
-  },
-  "use_when": [
-    "business analysis",
-    "market analysis",
-    "financial modeling",
-    "competitive intelligence",
-    "SWOT analysis",
-    "decision support"
-  ]
+  }
 }

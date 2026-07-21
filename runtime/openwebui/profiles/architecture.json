@@ -1,62 +1,55 @@
 {
   "_meta": {
     "profile": "architecture",
-    "description": "Optimized for system design, architecture decisions, and technical trade-off analysis. Activates Planner, Reflection, and Critic. Highest thinking budget.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for system design, architecture analysis, and technical decision-making. Maximum reasoning depth. Full component activation.",
+    "use_when": ["system_design", "architecture_review", "infrastructure_planning", "technical_strategy"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "high",
     "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 0.6,
-    "top_p": 0.93,
-    "top_k": 50,
+    "temperature": 0.5,
+    "top_p": 0.90,
+    "top_k": 30,
     "max_tokens": 3000,
-    "presence_penalty": 0.05,
+    "presence_penalty": 0.1,
     "frequency_penalty": 0.05,
     "stream": true
   },
   "thinking": {
     "type": "enabled",
-    "budget_tokens": 16000
+    "budget_tokens": 14000
   },
   "context": {
-    "expected_input_tokens": 5000,
-    "expected_output_tokens": 2000,
-    "expected_thinking_tokens": 12000,
-    "total_per_turn_estimate": 19000
+    "expected_input_tokens": 6000,
+    "total_context_budget": 32000,
+    "history_turns": 5,
+    "memory_top_k": 5,
+    "rag_top_k": 5,
+    "rag_min_score": 0.65
   },
   "latency": {
-    "expected_ttft_ms": 4000,
-    "expected_total_ms": 35000,
-    "p95_total_ms": 60000
+    "expected_p50_ms": 30000,
+    "expected_p95_ms": 60000,
+    "ttft_target_ms": 3000
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 12000,
+    "expected_output_tokens": 2000
   },
   "runtime": {
-    "memory_strategy": "load_project_and_decisions",
-    "knowledge_strategy": "mandatory_for_technology_decisions",
+    "memory": true,
+    "knowledge": true,
     "planner": true,
     "critic": true,
     "reflection": true,
-    "tool_strategy": "all_relevant_tools",
-    "history_turns_verbatim": 5,
-    "history_turns_compressed": 10
+    "tool_budget": 3
   },
   "rpm_optimization": {
-    "target_rpm": 2,
-    "tool_calls_per_turn_max": 3,
-    "batch_tool_calls": true,
+    "batch_tool_results": true,
     "cache_memory": true,
     "cache_rag": true,
-    "warn_if_rpm_above": 20
-  },
-  "prompt_modules": [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14],
-  "use_when": [
-    "system architecture",
-    "infrastructure design",
-    "database schema design",
-    "API design",
-    "microservices design",
-    "scalability planning",
-    "technology selection"
-  ]
+    "parallel_context_loading": true
+  }
 }

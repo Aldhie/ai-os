@@ -1,61 +1,55 @@
 {
   "_meta": {
     "profile": "research",
-    "description": "Optimized for deep research synthesis: literature review, comparative analysis, multi-source integration. Activates Planner for structured output. Heavy RAG usage.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for multi-source research synthesis, literature review, and knowledge-intensive tasks. Maximum RAG budget.",
+    "use_when": ["research", "literature_review", "multi_source_synthesis", "topic_survey"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "high",
     "last_updated": "2026-07-21"
   },
   "parameters": {
     "temperature": 0.5,
     "top_p": 0.90,
-    "top_k": 40,
-    "max_tokens": 2500,
-    "presence_penalty": 0.05,
+    "top_k": 30,
+    "max_tokens": 2000,
+    "presence_penalty": 0.1,
     "frequency_penalty": 0.05,
     "stream": true
   },
   "thinking": {
     "type": "enabled",
-    "budget_tokens": 12000
+    "budget_tokens": 10000
   },
   "context": {
-    "expected_input_tokens": 6000,
-    "expected_output_tokens": 1800,
-    "expected_thinking_tokens": 10000,
-    "total_per_turn_estimate": 17800
+    "expected_input_tokens": 8000,
+    "total_context_budget": 32000,
+    "history_turns": 3,
+    "memory_top_k": 3,
+    "rag_top_k": 8,
+    "rag_min_score": 0.60
   },
   "latency": {
-    "expected_ttft_ms": 4000,
-    "expected_total_ms": 30000,
-    "p95_total_ms": 55000
+    "expected_p50_ms": 25000,
+    "expected_p95_ms": 50000,
+    "ttft_target_ms": 3000
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 8000,
+    "expected_output_tokens": 1500
   },
   "runtime": {
-    "memory_strategy": "load_research_context",
-    "knowledge_strategy": "mandatory_top5_chunks",
+    "memory": true,
+    "knowledge": true,
     "planner": true,
     "critic": false,
     "reflection": true,
-    "tool_strategy": "knowledge_web_memory",
-    "history_turns_verbatim": 3,
-    "history_turns_compressed": 7
+    "tool_budget": 3
   },
   "rpm_optimization": {
-    "target_rpm": 2,
-    "tool_calls_per_turn_max": 3,
-    "batch_tool_calls": true,
-    "cache_memory": true,
+    "batch_tool_results": true,
     "cache_rag": true,
-    "rag_cache_ttl_minutes": 30
-  },
-  "prompt_modules": [1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14],
-  "use_when": [
-    "literature review",
-    "research synthesis",
-    "comparative analysis",
-    "technology survey",
-    "academic research support",
-    "due diligence"
-  ]
+    "parallel_context_loading": true,
+    "reduce_history_on_large_rag": true
+  }
 }

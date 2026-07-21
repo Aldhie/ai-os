@@ -1,58 +1,55 @@
 {
   "_meta": {
     "profile": "discussion",
-    "description": "Optimized for deep, substantive conversational analysis. Balances reasoning depth with conversational flow. Supports long multi-turn discussions without latency degradation.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for long-form business, strategic, and intellectual discussion. Balanced reasoning depth with conversational flow.",
+    "use_when": ["business_analysis", "strategy", "market_discussion", "intellectual_debate", "casual_professional"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "low",
     "last_updated": "2026-07-21"
   },
   "parameters": {
     "temperature": 0.65,
-    "top_p": 0.92,
-    "top_k": 50,
+    "top_p": 0.90,
+    "top_k": 40,
     "max_tokens": 1200,
-    "presence_penalty": 0.1,
+    "presence_penalty": 0.2,
     "frequency_penalty": 0.1,
     "stream": true
   },
   "thinking": {
     "type": "enabled",
-    "budget_tokens": 6000
+    "budget_tokens": 8000
   },
   "context": {
-    "expected_input_tokens": 3000,
-    "expected_output_tokens": 800,
-    "expected_thinking_tokens": 4000,
-    "total_per_turn_estimate": 7800
+    "expected_input_tokens": 4000,
+    "total_context_budget": 16000,
+    "history_turns": 5,
+    "memory_top_k": 5,
+    "rag_top_k": 3,
+    "rag_min_score": 0.65
   },
   "latency": {
-    "expected_ttft_ms": 2500,
-    "expected_total_ms": 14000,
-    "p95_total_ms": 25000
+    "expected_p50_ms": 12000,
+    "expected_p95_ms": 25000,
+    "ttft_target_ms": 2000
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 6000,
+    "expected_output_tokens": 900
   },
   "runtime": {
-    "memory_strategy": "load_on_user_reference",
-    "knowledge_strategy": "load_on_domain_query",
+    "memory": true,
+    "knowledge": true,
     "planner": false,
-    "critic": false,
-    "reflection": false,
-    "tool_strategy": "minimum_necessary",
-    "history_turns_verbatim": 5,
-    "history_turns_compressed": 10
+    "critic": true,
+    "reflection": true,
+    "tool_budget": 2
   },
   "rpm_optimization": {
-    "target_rpm": 2,
-    "tool_calls_per_turn_max": 2,
-    "batch_tool_calls": true,
+    "disable_planner": true,
+    "disable_reflection_on_simple_turns": true,
     "cache_memory": true,
     "cache_rag": true
-  },
-  "use_when": [
-    "strategic discussion",
-    "opinion and analysis",
-    "business conversation",
-    "exploration of ideas",
-    "multi-turn deep dive"
-  ]
+  }
 }

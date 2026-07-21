@@ -1,16 +1,17 @@
 {
   "_meta": {
     "profile": "debugging",
-    "description": "Optimized for systematic debugging: hypothesis-driven diagnosis, root cause analysis, fix generation, and post-fix verification guidance. Low temperature for deterministic analysis. Reflection and Critic both enabled.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for debugging, error analysis, and root cause identification. Lower temperature for consistency. Deep thinking for hypothesis generation.",
+    "use_when": ["debugging", "error_analysis", "root_cause", "stack_trace_analysis", "test_failure"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "medium",
     "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 0.2,
+    "temperature": 0.25,
     "top_p": 0.85,
-    "top_k": 30,
+    "top_k": 20,
     "max_tokens": 2000,
     "presence_penalty": 0.0,
     "frequency_penalty": 0.0,
@@ -21,40 +22,35 @@
     "budget_tokens": 10000
   },
   "context": {
-    "expected_input_tokens": 5000,
-    "expected_output_tokens": 1200,
-    "expected_thinking_tokens": 8000,
-    "total_per_turn_estimate": 14200
+    "expected_input_tokens": 6000,
+    "total_context_budget": 24000,
+    "history_turns": 7,
+    "memory_top_k": 5,
+    "rag_top_k": 5,
+    "rag_min_score": 0.70
   },
   "latency": {
-    "expected_ttft_ms": 3000,
-    "expected_total_ms": 25000,
-    "p95_total_ms": 45000
+    "expected_p50_ms": 22000,
+    "expected_p95_ms": 45000,
+    "ttft_target_ms": 2500
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 9000,
+    "expected_output_tokens": 1200
   },
   "runtime": {
-    "memory_strategy": "load_project_and_error_history",
-    "knowledge_strategy": "load_for_library_and_error_docs",
+    "memory": true,
+    "knowledge": true,
     "planner": false,
     "critic": true,
-    "reflection": true,
-    "tool_strategy": "github_knowledge_memory",
-    "history_turns_verbatim": 5,
-    "history_turns_compressed": 8
+    "reflection": false,
+    "tool_budget": 2
   },
   "rpm_optimization": {
-    "target_rpm": 3,
-    "tool_calls_per_turn_max": 2,
-    "batch_tool_calls": true,
+    "disable_planner": true,
+    "disable_reflection": true,
     "cache_memory": true,
-    "cache_rag": true
-  },
-  "prompt_modules": [1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14],
-  "use_when": [
-    "bug diagnosis",
-    "error analysis",
-    "stack trace analysis",
-    "performance profiling",
-    "root cause analysis",
-    "post-mortem analysis"
-  ]
+    "cache_rag": true,
+    "batch_tool_results": true
+  }
 }

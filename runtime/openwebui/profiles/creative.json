@@ -1,19 +1,20 @@
 {
   "_meta": {
     "profile": "creative",
-    "description": "Optimized for creative tasks: writing, ideation, content creation, narrative development. Higher temperature for generative variety. Minimal tools.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for creative writing, brainstorming, ideation, and narrative tasks. Higher temperature for diversity. Light reasoning.",
+    "use_when": ["creative_writing", "brainstorming", "ideation", "storytelling", "marketing_copy"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "low",
     "last_updated": "2026-07-21"
   },
   "parameters": {
     "temperature": 0.85,
     "top_p": 0.95,
     "top_k": 60,
-    "max_tokens": 1500,
-    "presence_penalty": 0.2,
-    "frequency_penalty": 0.15,
+    "max_tokens": 2000,
+    "presence_penalty": 0.3,
+    "frequency_penalty": 0.2,
     "stream": true
   },
   "thinking": {
@@ -21,40 +22,34 @@
     "budget_tokens": 4000
   },
   "context": {
-    "expected_input_tokens": 2000,
-    "expected_output_tokens": 1000,
-    "expected_thinking_tokens": 3000,
-    "total_per_turn_estimate": 6000
+    "expected_input_tokens": 3000,
+    "total_context_budget": 16000,
+    "history_turns": 5,
+    "memory_top_k": 3,
+    "rag_top_k": 0,
+    "rag_min_score": 0.80
   },
   "latency": {
-    "expected_ttft_ms": 2000,
-    "expected_total_ms": 12000,
-    "p95_total_ms": 22000
+    "expected_p50_ms": 10000,
+    "expected_p95_ms": 22000,
+    "ttft_target_ms": 2000
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 3000,
+    "expected_output_tokens": 1500
   },
   "runtime": {
-    "memory_strategy": "load_style_preferences",
-    "knowledge_strategy": "skip_unless_requested",
-    "planner": false,
+    "memory": true,
+    "knowledge": false,
+    "planner": true,
     "critic": false,
     "reflection": false,
-    "tool_strategy": "none_unless_research",
-    "history_turns_verbatim": 4,
-    "history_turns_compressed": 6
+    "tool_budget": 1
   },
   "rpm_optimization": {
-    "target_rpm": 2,
-    "tool_calls_per_turn_max": 1,
-    "batch_tool_calls": false,
-    "cache_memory": true,
-    "cache_rag": false
-  },
-  "prompt_modules": [1, 2, 3, 4, 8, 10, 11, 12, 13, 14],
-  "use_when": [
-    "creative writing",
-    "content creation",
-    "brainstorming",
-    "narrative development",
-    "marketing copy",
-    "ideation sessions"
-  ]
+    "disable_rag": true,
+    "disable_critic": true,
+    "disable_reflection": true,
+    "cache_memory": true
+  }
 }

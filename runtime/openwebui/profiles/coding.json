@@ -1,16 +1,17 @@
 {
   "_meta": {
     "profile": "coding",
-    "description": "Optimized for code generation, review, and explanation. Prioritizes correctness and completeness over conversational warmth. Reflection enabled to catch logic errors before output.",
     "version": "1.0.0",
-    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "description": "Optimized for code generation, review, and explanation. Lower temperature for determinism. Moderate thinking for logic verification.",
+    "use_when": ["code_generation", "code_review", "explanation_of_code", "refactoring"],
+    "nim_model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "rpm_impact": "medium",
     "last_updated": "2026-07-21"
   },
   "parameters": {
     "temperature": 0.3,
     "top_p": 0.85,
-    "top_k": 40,
+    "top_k": 20,
     "max_tokens": 2500,
     "presence_penalty": 0.0,
     "frequency_penalty": 0.05,
@@ -21,40 +22,35 @@
     "budget_tokens": 8000
   },
   "context": {
-    "expected_input_tokens": 4000,
-    "expected_output_tokens": 1500,
-    "expected_thinking_tokens": 6000,
-    "total_per_turn_estimate": 11500
+    "expected_input_tokens": 5000,
+    "total_context_budget": 24000,
+    "history_turns": 5,
+    "memory_top_k": 3,
+    "rag_top_k": 5,
+    "rag_min_score": 0.70
   },
   "latency": {
-    "expected_ttft_ms": 3000,
-    "expected_total_ms": 20000,
-    "p95_total_ms": 35000
+    "expected_p50_ms": 18000,
+    "expected_p95_ms": 35000,
+    "ttft_target_ms": 2500
+  },
+  "token_usage": {
+    "expected_thinking_tokens": 7000,
+    "expected_output_tokens": 1500
   },
   "runtime": {
-    "memory_strategy": "load_project_context",
-    "knowledge_strategy": "load_for_library_queries",
+    "memory": true,
+    "knowledge": true,
     "planner": false,
-    "critic": false,
-    "reflection": true,
-    "tool_strategy": "github_and_knowledge_only",
-    "history_turns_verbatim": 5,
-    "history_turns_compressed": 8
+    "critic": true,
+    "reflection": false,
+    "tool_budget": 2
   },
   "rpm_optimization": {
-    "target_rpm": 3,
-    "tool_calls_per_turn_max": 2,
-    "batch_tool_calls": true,
+    "disable_planner": true,
+    "disable_reflection": true,
     "cache_memory": true,
-    "cache_rag": true
-  },
-  "prompt_modules": [1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14],
-  "use_when": [
-    "code generation",
-    "code review",
-    "refactoring",
-    "unit test generation",
-    "code explanation",
-    "API design"
-  ]
+    "cache_rag": true,
+    "batch_tool_results": true
+  }
 }

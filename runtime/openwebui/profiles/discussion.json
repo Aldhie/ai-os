@@ -1,63 +1,58 @@
 {
   "_meta": {
-    "profile_id": "discussion",
+    "profile": "discussion",
+    "description": "Optimized for deep, substantive conversational analysis. Balances reasoning depth with conversational flow. Supports long multi-turn discussions without latency degradation.",
     "version": "1.0.0",
-    "description": "General discussion, analysis, and conversational depth. Balanced creativity and precision.",
-    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md §3.2",
-    "last_updated": "2026-07-20"
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 1.0,
-    "top_p": 0.95,
-    "top_k": null,
-    "frequency_penalty": 0.1,
+    "temperature": 0.65,
+    "top_p": 0.92,
+    "top_k": 50,
+    "max_tokens": 1200,
     "presence_penalty": 0.1,
-    "max_tokens": 4096,
-    "stream": true,
-    "seed": null,
-    "stop": null
+    "frequency_penalty": 0.1,
+    "stream": true
   },
   "thinking": {
-    "enabled": true,
-    "budget_tokens": 8000,
-    "mode": "auto",
-    "note": "Inject via extra_body only. See thinking_policy.md."
+    "type": "enabled",
+    "budget_tokens": 6000
   },
   "context": {
-    "recommended_context_tokens": 32000,
-    "max_context_tokens": 128000
+    "expected_input_tokens": 3000,
+    "expected_output_tokens": 800,
+    "expected_thinking_tokens": 4000,
+    "total_per_turn_estimate": 7800
   },
-  "tools": {
-    "recommended_tool_usage": "minimal",
-    "allowed_tools": ["web_search", "calculator"],
-    "auto_invoke": false
+  "latency": {
+    "expected_ttft_ms": 2500,
+    "expected_total_ms": 14000,
+    "p95_total_ms": 25000
   },
-  "memory": {
-    "load_on_session_start": true,
-    "max_memory_tokens": 500,
-    "priority": ["preferences", "recent_context", "project_state"]
-  },
-  "knowledge": {
-    "rag_enabled": false,
-    "auto_retrieve": false,
-    "note": "RAG disabled by default for discussion; enable only if user references a document"
-  },
-  "cognitive": {
-    "reflection": true,
+  "runtime": {
+    "memory_strategy": "load_on_user_reference",
+    "knowledge_strategy": "load_on_domain_query",
     "planner": false,
-    "critic": true
+    "critic": false,
+    "reflection": false,
+    "tool_strategy": "minimum_necessary",
+    "history_turns_verbatim": 5,
+    "history_turns_compressed": 10
   },
-  "budget": {
-    "expected_token_budget_per_turn": {
-      "system_prompt": 800,
-      "memory": 500,
-      "user_message": 500,
-      "thinking": 8000,
-      "response": 2000,
-      "total_estimate": 11800
-    },
-    "expected_latency_seconds": "15-25",
-    "rpm_cost": 1,
-    "daily_budget_impact": "low"
-  }
+  "rpm_optimization": {
+    "target_rpm": 2,
+    "tool_calls_per_turn_max": 2,
+    "batch_tool_calls": true,
+    "cache_memory": true,
+    "cache_rag": true
+  },
+  "use_when": [
+    "strategic discussion",
+    "opinion and analysis",
+    "business conversation",
+    "exploration of ideas",
+    "multi-turn deep dive"
+  ]
 }

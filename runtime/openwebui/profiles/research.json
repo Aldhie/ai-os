@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "profile": "research",
+    "description": "Optimized for deep research synthesis: literature review, comparative analysis, multi-source integration. Activates Planner for structured output. Heavy RAG usage.",
+    "version": "1.0.0",
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
+  },
+  "parameters": {
+    "temperature": 0.5,
+    "top_p": 0.90,
+    "top_k": 40,
+    "max_tokens": 2500,
+    "presence_penalty": 0.05,
+    "frequency_penalty": 0.05,
+    "stream": true
+  },
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 12000
+  },
+  "context": {
+    "expected_input_tokens": 6000,
+    "expected_output_tokens": 1800,
+    "expected_thinking_tokens": 10000,
+    "total_per_turn_estimate": 17800
+  },
+  "latency": {
+    "expected_ttft_ms": 4000,
+    "expected_total_ms": 30000,
+    "p95_total_ms": 55000
+  },
+  "runtime": {
+    "memory_strategy": "load_research_context",
+    "knowledge_strategy": "mandatory_top5_chunks",
+    "planner": true,
+    "critic": false,
+    "reflection": true,
+    "tool_strategy": "knowledge_web_memory",
+    "history_turns_verbatim": 3,
+    "history_turns_compressed": 7
+  },
+  "rpm_optimization": {
+    "target_rpm": 2,
+    "tool_calls_per_turn_max": 3,
+    "batch_tool_calls": true,
+    "cache_memory": true,
+    "cache_rag": true,
+    "rag_cache_ttl_minutes": 30
+  },
+  "prompt_modules": [1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14],
+  "use_when": [
+    "literature review",
+    "research synthesis",
+    "comparative analysis",
+    "technology survey",
+    "academic research support",
+    "due diligence"
+  ]
+}

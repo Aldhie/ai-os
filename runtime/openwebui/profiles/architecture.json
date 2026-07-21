@@ -1,68 +1,62 @@
 {
   "_meta": {
-    "profile_id": "architecture",
+    "profile": "architecture",
+    "description": "Optimized for system design, architecture decisions, and technical trade-off analysis. Activates Planner, Reflection, and Critic. Highest thinking budget.",
     "version": "1.0.0",
-    "description": "System design, architectural review, technical research. Maximum depth and thinking budget.",
-    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md, AI-0006-Architecture-Decision-Record.md",
-    "last_updated": "2026-07-20"
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 1.0,
-    "top_p": 0.95,
-    "top_k": null,
-    "frequency_penalty": 0.0,
-    "presence_penalty": 0.0,
-    "max_tokens": 8192,
-    "stream": true,
-    "seed": null,
-    "stop": null
+    "temperature": 0.6,
+    "top_p": 0.93,
+    "top_k": 50,
+    "max_tokens": 3000,
+    "presence_penalty": 0.05,
+    "frequency_penalty": 0.05,
+    "stream": true
   },
   "thinking": {
-    "enabled": true,
-    "budget_tokens": 32000,
-    "mode": "always_on",
-    "note": "Maximum thinking budget. Architecture tasks require deep deliberation."
+    "type": "enabled",
+    "budget_tokens": 16000
   },
   "context": {
-    "recommended_context_tokens": 96000,
-    "max_context_tokens": 128000
+    "expected_input_tokens": 5000,
+    "expected_output_tokens": 2000,
+    "expected_thinking_tokens": 12000,
+    "total_per_turn_estimate": 19000
   },
-  "tools": {
-    "recommended_tool_usage": "high",
-    "allowed_tools": ["web_search", "code_interpreter", "file_reader", "diagram_generator"],
-    "auto_invoke": true
+  "latency": {
+    "expected_ttft_ms": 4000,
+    "expected_total_ms": 35000,
+    "p95_total_ms": 60000
   },
-  "memory": {
-    "load_on_session_start": true,
-    "max_memory_tokens": 800,
-    "priority": ["project_architecture", "adr_decisions", "technology_preferences", "recent_decisions"]
-  },
-  "knowledge": {
-    "rag_enabled": true,
-    "auto_retrieve": true,
-    "sources": ["engineering_specs", "adrs", "project_docs"],
-    "note": "All knowledge sources active for architecture work"
-  },
-  "cognitive": {
-    "reflection": true,
+  "runtime": {
+    "memory_strategy": "load_project_and_decisions",
+    "knowledge_strategy": "mandatory_for_technology_decisions",
     "planner": true,
     "critic": true,
-    "multi_pass": true,
-    "note": "Full cognitive stack with multi-pass validation for critical architecture decisions"
+    "reflection": true,
+    "tool_strategy": "all_relevant_tools",
+    "history_turns_verbatim": 5,
+    "history_turns_compressed": 10
   },
-  "budget": {
-    "expected_token_budget_per_turn": {
-      "system_prompt": 800,
-      "memory": 800,
-      "knowledge_chunks": 4000,
-      "user_message": 3000,
-      "thinking": 32000,
-      "response": 6000,
-      "total_estimate": 46600
-    },
-    "expected_latency_seconds": "60-120",
-    "rpm_cost": 1,
-    "daily_budget_impact": "very_high",
-    "recommended_daily_limit": "max 20 turns in architecture profile"
-  }
+  "rpm_optimization": {
+    "target_rpm": 2,
+    "tool_calls_per_turn_max": 3,
+    "batch_tool_calls": true,
+    "cache_memory": true,
+    "cache_rag": true,
+    "warn_if_rpm_above": 20
+  },
+  "prompt_modules": [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14],
+  "use_when": [
+    "system architecture",
+    "infrastructure design",
+    "database schema design",
+    "API design",
+    "microservices design",
+    "scalability planning",
+    "technology selection"
+  ]
 }

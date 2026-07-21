@@ -1,67 +1,59 @@
 {
   "_meta": {
-    "profile_id": "analysis",
+    "profile": "analysis",
+    "description": "Optimized for structured analytical tasks: business analysis, market research, financial modeling logic, competitive analysis. Balances reasoning depth with practical output format.",
     "version": "1.0.0",
-    "description": "Business analysis, research synthesis, data interpretation. Maximum accuracy and structured output.",
-    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md, benchmark/tests/business/",
-    "last_updated": "2026-07-20"
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 0.9,
-    "top_p": 0.9,
-    "top_k": null,
-    "frequency_penalty": 0.0,
-    "presence_penalty": 0.0,
-    "max_tokens": 6144,
-    "stream": true,
-    "seed": null,
-    "stop": null
+    "temperature": 0.55,
+    "top_p": 0.90,
+    "top_k": 50,
+    "max_tokens": 2000,
+    "presence_penalty": 0.05,
+    "frequency_penalty": 0.05,
+    "stream": true
   },
   "thinking": {
-    "enabled": true,
-    "budget_tokens": 12000,
-    "mode": "auto",
-    "note": "Strong thinking for structured analysis; less than architecture"
+    "type": "enabled",
+    "budget_tokens": 10000
   },
   "context": {
-    "recommended_context_tokens": 48000,
-    "max_context_tokens": 128000
+    "expected_input_tokens": 4000,
+    "expected_output_tokens": 1200,
+    "expected_thinking_tokens": 8000,
+    "total_per_turn_estimate": 13200
   },
-  "tools": {
-    "recommended_tool_usage": "moderate",
-    "allowed_tools": ["web_search", "calculator", "file_reader"],
-    "auto_invoke": false,
-    "note": "User-initiated tool invocation preferred for analysis"
+  "latency": {
+    "expected_ttft_ms": 3500,
+    "expected_total_ms": 22000,
+    "p95_total_ms": 40000
   },
-  "memory": {
-    "load_on_session_start": true,
-    "max_memory_tokens": 600,
-    "priority": ["domain_expertise", "project_context", "previous_analyses"]
-  },
-  "knowledge": {
-    "rag_enabled": true,
-    "auto_retrieve": true,
-    "sources": ["project_docs", "research_papers", "market_data"],
-    "max_chunks": 5,
-    "note": "RAG active for document-grounded analysis"
-  },
-  "cognitive": {
+  "runtime": {
+    "memory_strategy": "load_user_and_project_context",
+    "knowledge_strategy": "load_for_domain_facts",
+    "planner": false,
+    "critic": false,
     "reflection": true,
-    "planner": true,
-    "critic": true
+    "tool_strategy": "knowledge_and_memory",
+    "history_turns_verbatim": 4,
+    "history_turns_compressed": 8
   },
-  "budget": {
-    "expected_token_budget_per_turn": {
-      "system_prompt": 800,
-      "memory": 600,
-      "knowledge_chunks": 3000,
-      "user_message": 1500,
-      "thinking": 12000,
-      "response": 4000,
-      "total_estimate": 21900
-    },
-    "expected_latency_seconds": "25-45",
-    "rpm_cost": 1,
-    "daily_budget_impact": "moderate"
-  }
+  "rpm_optimization": {
+    "target_rpm": 2,
+    "tool_calls_per_turn_max": 2,
+    "batch_tool_calls": true,
+    "cache_memory": true,
+    "cache_rag": true
+  },
+  "use_when": [
+    "business analysis",
+    "market analysis",
+    "financial modeling",
+    "competitive intelligence",
+    "SWOT analysis",
+    "decision support"
+  ]
 }

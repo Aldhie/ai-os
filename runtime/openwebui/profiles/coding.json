@@ -1,67 +1,60 @@
 {
   "_meta": {
-    "profile_id": "coding",
+    "profile": "coding",
+    "description": "Optimized for code generation, review, and explanation. Prioritizes correctness and completeness over conversational warmth. Reflection enabled to catch logic errors before output.",
     "version": "1.0.0",
-    "description": "Software engineering, code generation, debugging. Precision-first, low randomness.",
-    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md £6, benchmark/tests/architecture/",
-    "last_updated": "2026-07-20"
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 0.8,
-    "top_p": 0.9,
-    "top_k": null,
-    "frequency_penalty": 0.0,
+    "temperature": 0.3,
+    "top_p": 0.85,
+    "top_k": 40,
+    "max_tokens": 2500,
     "presence_penalty": 0.0,
-    "max_tokens": 8192,
-    "stream": true,
-    "seed": null,
-    "stop": null
+    "frequency_penalty": 0.05,
+    "stream": true
   },
   "thinking": {
-    "enabled": true,
-    "budget_tokens": 16000,
-    "mode": "auto",
-    "note": "Higher budget for debugging and architecture tasks. Inject via extra_body."
+    "type": "enabled",
+    "budget_tokens": 8000
   },
   "context": {
-    "recommended_context_tokens": 64000,
-    "max_context_tokens": 128000,
-    "note": "Large context for codebase-aware tasks"
+    "expected_input_tokens": 4000,
+    "expected_output_tokens": 1500,
+    "expected_thinking_tokens": 6000,
+    "total_per_turn_estimate": 11500
   },
-  "tools": {
-    "recommended_tool_usage": "moderate",
-    "allowed_tools": ["code_interpreter", "file_reader"],
-    "auto_invoke": false
+  "latency": {
+    "expected_ttft_ms": 3000,
+    "expected_total_ms": 20000,
+    "p95_total_ms": 35000
   },
-  "memory": {
-    "load_on_session_start": true,
-    "max_memory_tokens": 500,
-    "priority": ["coding_preferences", "project_stack", "recent_code_context"]
-  },
-  "knowledge": {
-    "rag_enabled": true,
-    "auto_retrieve": true,
-    "sources": ["project_docs", "api_references"],
-    "note": "RAG enabled to pull in project documentation and specs"
-  },
-  "cognitive": {
+  "runtime": {
+    "memory_strategy": "load_project_context",
+    "knowledge_strategy": "load_for_library_queries",
+    "planner": false,
+    "critic": false,
     "reflection": true,
-    "planner": true,
-    "critic": true,
-    "note": "Full cognitive stack for complex coding tasks"
+    "tool_strategy": "github_and_knowledge_only",
+    "history_turns_verbatim": 5,
+    "history_turns_compressed": 8
   },
-  "budget": {
-    "expected_token_budget_per_turn": {
-      "system_prompt": 800,
-      "memory": 500,
-      "knowledge_chunks": 2000,
-      "user_message": 2000,
-      "thinking": 16000,
-      "response": 4000,
-      "total_estimate": 25300
-    },
-    "expected_latency_seconds": "30-60",
-    "rpm_cost": 1,
-    "daily_budget_impact": "high"
-  }
+  "rpm_optimization": {
+    "target_rpm": 3,
+    "tool_calls_per_turn_max": 2,
+    "batch_tool_calls": true,
+    "cache_memory": true,
+    "cache_rag": true
+  },
+  "prompt_modules": [1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14],
+  "use_when": [
+    "code generation",
+    "code review",
+    "refactoring",
+    "unit test generation",
+    "code explanation",
+    "API design"
+  ]
 }

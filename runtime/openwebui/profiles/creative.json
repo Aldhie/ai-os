@@ -1,63 +1,60 @@
 {
   "_meta": {
-    "profile_id": "creative",
+    "profile": "creative",
+    "description": "Optimized for creative tasks: writing, ideation, content creation, narrative development. Higher temperature for generative variety. Minimal tools.",
     "version": "1.0.0",
-    "description": "Creative writing, ideation, brainstorming. Higher temperature for variety and originality.",
-    "spec_ref": "AI-0001-Nemotron-Engineering-Spec.md £3.3",
-    "last_updated": "2026-07-20"
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
   },
   "parameters": {
-    "temperature": 1.1,
-    "top_p": 0.97,
-    "top_k": null,
-    "frequency_penalty": 0.3,
+    "temperature": 0.85,
+    "top_p": 0.95,
+    "top_k": 60,
+    "max_tokens": 1500,
     "presence_penalty": 0.2,
-    "max_tokens": 4096,
-    "stream": true,
-    "seed": null,
-    "stop": null
+    "frequency_penalty": 0.15,
+    "stream": true
   },
   "thinking": {
-    "enabled": true,
-    "budget_tokens": 5000,
-    "mode": "auto",
-    "note": "Light thinking for planning and structure; not deep reasoning"
+    "type": "enabled",
+    "budget_tokens": 4000
   },
   "context": {
-    "recommended_context_tokens": 16000,
-    "max_context_tokens": 128000
+    "expected_input_tokens": 2000,
+    "expected_output_tokens": 1000,
+    "expected_thinking_tokens": 3000,
+    "total_per_turn_estimate": 6000
   },
-  "tools": {
-    "recommended_tool_usage": "minimal",
-    "allowed_tools": ["web_search"],
-    "auto_invoke": false
+  "latency": {
+    "expected_ttft_ms": 2000,
+    "expected_total_ms": 12000,
+    "p95_total_ms": 22000
   },
-  "memory": {
-    "load_on_session_start": true,
-    "max_memory_tokens": 300,
-    "priority": ["style_preferences", "tone_preferences"]
-  },
-  "knowledge": {
-    "rag_enabled": false,
-    "auto_retrieve": false
-  },
-  "cognitive": {
-    "reflection": false,
+  "runtime": {
+    "memory_strategy": "load_style_preferences",
+    "knowledge_strategy": "skip_unless_requested",
     "planner": false,
-    "critic": true,
-    "note": "Only critic active — check for coherence and quality"
+    "critic": false,
+    "reflection": false,
+    "tool_strategy": "none_unless_research",
+    "history_turns_verbatim": 4,
+    "history_turns_compressed": 6
   },
-  "budget": {
-    "expected_token_budget_per_turn": {
-      "system_prompt": 800,
-      "memory": 300,
-      "user_message": 300,
-      "thinking": 5000,
-      "response": 3000,
-      "total_estimate": 9400
-    },
-    "expected_latency_seconds": "10-20",
-    "rpm_cost": 1,
-    "daily_budget_impact": "low"
-  }
+  "rpm_optimization": {
+    "target_rpm": 2,
+    "tool_calls_per_turn_max": 1,
+    "batch_tool_calls": false,
+    "cache_memory": true,
+    "cache_rag": false
+  },
+  "prompt_modules": [1, 2, 3, 4, 8, 10, 11, 12, 13, 14],
+  "use_when": [
+    "creative writing",
+    "content creation",
+    "brainstorming",
+    "narrative development",
+    "marketing copy",
+    "ideation sessions"
+  ]
 }

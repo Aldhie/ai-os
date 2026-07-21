@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "profile": "debugging",
+    "description": "Optimized for systematic debugging: hypothesis-driven diagnosis, root cause analysis, fix generation, and post-fix verification guidance. Low temperature for deterministic analysis. Reflection and Critic both enabled.",
+    "version": "1.0.0",
+    "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "optimized_for": "NVIDIA Cloud NIM Free Tier",
+    "last_updated": "2026-07-21"
+  },
+  "parameters": {
+    "temperature": 0.2,
+    "top_p": 0.85,
+    "top_k": 30,
+    "max_tokens": 2000,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "stream": true
+  },
+  "thinking": {
+    "type": "enabled",
+    "budget_tokens": 10000
+  },
+  "context": {
+    "expected_input_tokens": 5000,
+    "expected_output_tokens": 1200,
+    "expected_thinking_tokens": 8000,
+    "total_per_turn_estimate": 14200
+  },
+  "latency": {
+    "expected_ttft_ms": 3000,
+    "expected_total_ms": 25000,
+    "p95_total_ms": 45000
+  },
+  "runtime": {
+    "memory_strategy": "load_project_and_error_history",
+    "knowledge_strategy": "load_for_library_and_error_docs",
+    "planner": false,
+    "critic": true,
+    "reflection": true,
+    "tool_strategy": "github_knowledge_memory",
+    "history_turns_verbatim": 5,
+    "history_turns_compressed": 8
+  },
+  "rpm_optimization": {
+    "target_rpm": 3,
+    "tool_calls_per_turn_max": 2,
+    "batch_tool_calls": true,
+    "cache_memory": true,
+    "cache_rag": true
+  },
+  "prompt_modules": [1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14],
+  "use_when": [
+    "bug diagnosis",
+    "error analysis",
+    "stack trace analysis",
+    "performance profiling",
+    "root cause analysis",
+    "post-mortem analysis"
+  ]
+}

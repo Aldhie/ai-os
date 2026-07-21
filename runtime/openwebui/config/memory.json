@@ -1,73 +1,66 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/memory.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Memory orchestration policy. Governs when memory loads, when it is ignored, how it is compressed, and how conflicts are resolved. Tuned for long-running technical conversations."
-  },
-  "load_policy": {
+  "_schema": "ai-os/runtime-config/memory",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Memory orchestration policy for Open WebUI long-term memory and in-context working memory. Designed for long-running technical conversations where prior decisions must remain accessible without exceeding the 65K free-tier context budget.",
+
+  "long_term_memory": {
+    "provider": "brain_memory_mcp",
+    "namespace": "ai-os",
+    "load_trigger": "user_context_relevant",
     "minimum_relevance_score": 0.70,
     "max_items_per_turn": 5,
-    "max_tokens_per_turn": 1024,
-    "trigger_conditions": [
-      "user references a prior decision",
-      "query involves project-specific context",
-      "query involves user preferences",
-      "query involves configuration or architecture choices made in prior sessions"
+    "announce_loading": false,
+    "why": "Loading memory silently prevents conversational disruption. Users do not need to know memory was consulted unless a conflict is found."
+  },
+
+  "write_policy": {
+    "auto_save": true,
+    "save_triggers": [
+      "explicit_user_preference_stated",
+      "architectural_decision_made",
+      "coding_standard_agreed",
+      "project_constraint_established"
     ],
-    "skip_conditions": [
-      "query is purely factual with no session dependency",
-      "query is a greeting or social exchange",
-      "context window is within 10% of ceiling"
-    ]
+    "never_store": ["passwords", "api_keys", "credentials", "health_data", "payment_info"],
+    "why": "Only decisions and preferences worth recalling in a future session should be persisted. Raw conversation content is ephemeral."
   },
-  "compression_policy": {
-    "trigger_turn": 15,
-    "strategy": "summarise_resolved_subproblems",
-    "max_summary_tokens": 512,
-    "preserve_raw_turns": 3,
-    "why": "At turn 15 the raw transcript consumes significant context budget. Compressing resolved sub-problems into summaries recovers tokens without losing decision continuity."
-  },
-  "summarisation_policy": {
-    "mode": "extractive_key_decisions",
-    "format": "Decision: [topic] → [choice made] → [reason]",
-    "max_decisions_per_summary": 10
-  },
-  "cache_policy": {
-    "session_ttl_minutes": 120,
-    "cross_session": true,
-    "cross_session_ttl_days": 30,
-    "why": "120-minute session cache prevents redundant memory loads within an active conversation. 30-day cross-session persistence covers typical project durations."
-  },
-  "priority_policy": {
-    "order": [
-      "explicit user instructions",
-      "architecture decisions",
-      "technology choices",
-      "user preferences",
-      "incidental context"
-    ],
-    "why": "When token budget forces dropping memory items, drop lowest-priority items first. Explicit instructions are never dropped."
-  },
+
   "conflict_resolution": {
-    "strategy": "surface_to_user",
-    "prompt_template": "This differs from [prior decision at session {session_id}, turn {turn}]. Which should take precedence?",
-    "auto_resolve": false,
-    "why": "Auto-resolving conflicts silently risks propagating incorrect assumptions. Surfacing them gives the user control."
+    "strategy": "surface_and_ask",
+    "prompt_template": "This differs from [prior decision]. Do you want to update or override it?",
+    "why": "Silent overwrite of prior decisions corrupts long-term context. Surfacing the conflict preserves user agency."
   },
-  "confidence_tiers": {
-    "high": {"min": 0.90, "behaviour": "use_directly"},
-    "medium": {"min": 0.70, "behaviour": "use_with_qualification", "prefix": "Based on prior context..."},
-    "low": {"min": 0.0, "behaviour": "discard"}
+
+  "compression": {
+    "trigger_turn": 15,
+    "strategy": "summarise_resolved_subtopics",
+    "preserve": ["open_decisions", "established_constraints", "current_task"],
+    "discard": ["resolved_subtopics_raw_transcript", "greetings", "acknowledgements"],
+    "token_target_after_compression": 4096,
+    "why": "At turn 15, raw transcript typically exceeds 8K tokens of working context. Compressing resolved threads to summaries recovers ~60% of that budget for future turns."
   },
+
+  "working_memory": {
+    "scope": "single_session",
+    "max_context_tokens": 65536,
+    "truncation_strategy": "preserve_system_plus_last_n_turns",
+    "min_turns_preserved": 3,
+    "truncation_filter": "context_budget_enforcer.py",
+    "why": "NIM Free Tier degrades severely above 65K tokens. The context_budget_enforcer filter enforces this hard ceiling before each request."
+  },
+
+  "expiration": {
+    "session_memory_ttl_minutes": 0,
+    "long_term_memory_ttl_days": 90,
+    "confidence_decay_per_day": 0.005,
+    "minimum_confidence_to_surface": 0.50,
+    "why": "Memory items older than 90 days without reinforcement are likely stale. Confidence decay prevents old decisions from overriding newer ones silently."
+  },
+
   "token_budget": {
-    "max_memory_tokens_per_context": 2048,
-    "emergency_floor_tokens": 256,
-    "why": "Memory must never consume more than ~3% of the 65K safe context ceiling. 2048 tokens is sufficient for 10–15 decision summaries."
-  },
-  "never_store": [
-    "passwords", "api_keys", "tokens", "credentials",
-    "health_data", "payment_information", "personal_identification_numbers"
-  ]
+    "memory_context_allocation_tokens": 2048,
+    "max_percent_of_total_context": 5,
+    "why": "Memory items should never consume more than 5% of total context budget. At 65K ceiling, that is 3276 tokens. 2048 is conservative and leaves headroom."
+  }
 }

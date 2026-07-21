@@ -1,37 +1,42 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/model.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Single source of truth for the AI-OS model identity in Open WebUI. All other configs reference this model_id."
-  },
-  "model_id": "ai-os-nemotron-ultra",
-  "display_name": "AI-OS · Nemotron Ultra",
-  "description": "Production reasoning intelligence. NVIDIA Nemotron-3-Ultra-550B-A55B via NIM Free Tier. Optimized for architecture, coding, analysis, and long technical conversations.",
-  "base_model": {
-    "provider": "nvidia",
-    "api_type": "openai_compatible",
+  "_schema": "ai-os/runtime-config/model",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Single source of truth for the Open WebUI model record. All fields map directly to Open WebUI Admin > Models. Keeping this in version control ensures every deployment is reproducible and auditable.",
+
+  "id": "ai-os-nemotron-ultra",
+  "name": "AI-OS · Nemotron Ultra",
+  "base_model_id": "nvidia/nemotron-3-ultra-550b",
+  "description": "Production AI-OS runtime powered by NVIDIA Nemotron-3-Ultra-550B via NIM Free Tier. Optimised for reasoning, architecture analysis, and production code generation.",
+
+  "connection": {
+    "type": "openai_compatible",
     "base_url": "https://integrate.api.nvidia.com/v1",
-    "model_name": "nvidia/nemotron-ultra-253b-v1",
-    "api_key_env": "NVIDIA_NIM_API_KEY"
+    "api_key_env": "NVIDIA_API_KEY",
+    "model_name": "nvidia/nemotron-3-ultra-550b"
   },
-  "system_prompt_ref": "runtime/openwebui/model/compiled_prompt_v2.md",
+
   "capabilities": {
-    "streaming": true,
-    "function_calling": false,
-    "vision": false,
     "thinking": true,
-    "extended_context": true,
-    "max_context_tokens": 1000000,
-    "safe_context_tokens": 65536
+    "streaming": true,
+    "tool_use": true,
+    "vision": false,
+    "context_window_tokens": 1048576,
+    "free_tier_safe_context_tokens": 65536,
+    "max_output_tokens": 32768
   },
-  "tier": {
-    "name": "free",
-    "rpm_limit": 32,
-    "tpm_limit": null,
+
+  "nim_free_tier": {
+    "rpm_ceiling": 32,
     "concurrent_requests": 1,
-    "shared_infrastructure": true
+    "sla": "none",
+    "infrastructure": "shared",
+    "priority": "low",
+    "notes": "Free Tier has no SLA. Shared infrastructure means latency is non-deterministic. Context > 65K tokens produces severe latency degradation. Keep active context below 65K at all times."
   },
-  "tags": ["ai-os", "nemotron", "nvidia", "production", "reasoning"]
+
+  "system_prompt_file": "runtime/openwebui/model/compiled_prompt_v2.md",
+  "system_prompt_version": "2.0.0",
+
+  "tags": ["ai-os", "nemotron", "reasoning", "production", "nim"]
 }

@@ -1,31 +1,37 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/parameters.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Default parameter set applied when no task-class profile is active. Balanced for general discussion. Profile Selector filter overrides these per-turn."
-  },
+  "_schema": "ai-os/runtime-config/parameters",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Default parameters applied at model level in Open WebUI. These are the safe defaults before the profile_selector filter overrides them per-turn. Defaults are biased toward discussion quality (most common use case).",
+
   "defaults": {
-    "temperature": 0.6,
+    "temperature": 0.7,
     "top_p": 0.95,
     "top_k": 50,
     "max_tokens": 4096,
     "presence_penalty": 0.1,
     "frequency_penalty": 0.1,
-    "stop": [],
-    "stream": true
+    "stream": true,
+    "stop": []
   },
+
   "thinking": {
     "enabled": true,
-    "default_budget_tokens": 4096,
-    "api_param": "reasoning_budget",
-    "chat_template_kwargs": {"enable_thinking": true},
-    "why": "Nemotron Ultra exposes a reasoning_budget parameter that controls how many tokens are allocated to internal chain-of-thought before the visible response. Enabling thinking by default produces higher-quality answers with minimal latency penalty on Free Tier because the thinking tokens are not counted against the visible token limit."
+    "budget_tokens_default": 4096,
+    "budget_tokens_max": 16384,
+    "enable_thinking_param": "chat_template_kwargs.enable_thinking",
+    "budget_param": "reasoning_budget",
+    "why": "Nemotron Ultra performs significantly better with extended thinking enabled. The budget_tokens_default of 4096 is sufficient for most discussion turns. Architecture and research tasks use up to 16384 via profile_selector override."
   },
-  "nim_specific": {
-    "extra_body_key": "reasoning_budget",
-    "extra_body_chat_template": "chat_template_kwargs",
-    "note": "NIM requires reasoning_budget in extra_body, not in the standard OpenAI parameters object."
+
+  "nim_api_extras": {
+    "extra_body": {
+      "chat_template_kwargs": { "enable_thinking": true }
+    },
+    "why": "NIM requires enable_thinking in chat_template_kwargs, not as a top-level parameter. This differs from standard OpenAI API shape."
+  },
+
+  "per_profile_overrides": {
+    "_ref": "See runtime/openwebui/config/profiles.json for per-task-class overrides applied by profile_selector.py filter at runtime."
   }
 }

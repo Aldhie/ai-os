@@ -1,99 +1,103 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/tools.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Tool routing policy. Maps each available tool to its trigger conditions, skip conditions, latency cost, and RPM cost. Enforces minimum-tool principle."
-  },
-  "rpm_constraint": {
-    "total_rpm": 32,
-    "nim_inference_cost_rpm": 1,
+  "_schema": "ai-os/runtime-config/tools",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Production tool routing policy. Each tool has an explicit trigger, deny condition, latency budget, and RPM cost. This policy is the machine-readable equivalent of the TOOLS section in compiled_prompt_v2.md.",
+
+  "batching_rule": {
+    "policy": "all_tools_parallel_before_nim",
     "max_tool_calls_per_turn": 3,
-    "batching_required": true
+    "why": "Cap at 3 to prevent combinatorial RPM waste. If > 3 tool calls are needed, prioritise the 3 highest-value ones and note gaps in the response."
   },
+
   "tools": [
     {
-      "id": "github",
-      "display_name": "GitHub MCP",
-      "latency_estimate_ms": 800,
+      "id": "github_mcp",
+      "name": "GitHub MCP",
+      "trigger": [
+        "query_about_specific_repository",
+        "query_about_commit_issue_pr_or_code_search"
+      ],
+      "deny_when": [
+        "general_programming_question",
+        "best_practices_question_without_specific_repo",
+        "greeting_or_meta_question"
+      ],
+      "latency_budget_ms": 3000,
       "rpm_cost": 0,
-      "triggers": [
-        "query references specific repo, commit, issue, pull request",
-        "query asks about code in a specific repository",
-        "query asks about release versions of a specific project"
-      ],
-      "skip_when": [
-        "general programming question with no specific repo",
-        "conceptual question about a language or framework",
-        "user has not provided a repo context"
-      ],
-      "failure_strategy": "surface_error_continue_with_model_knowledge"
+      "priority": 2,
+      "why": "GitHub queries are specific and high-signal. Never use for generic questions — adds latency without value."
     },
     {
-      "id": "brain_memory",
-      "display_name": "Brain Memory",
-      "latency_estimate_ms": 200,
+      "id": "brain_memory_mcp",
+      "name": "Brain Memory MCP",
+      "trigger": [
+        "user_specific_context_changes_answer",
+        "prior_session_decision_is_relevant",
+        "user_preference_or_constraint_applies"
+      ],
+      "deny_when": [
+        "factual_question_with_no_personalisation_dimension",
+        "first_turn_greeting",
+        "general_concept_definition"
+      ],
+      "latency_budget_ms": 1500,
       "rpm_cost": 0,
-      "triggers": [
-        "query depends on prior session decisions",
-        "query asks about user preferences or project state",
-        "user references something said in a previous session"
-      ],
-      "skip_when": [
-        "query is stateless and factual",
-        "session is turn 1 with no prior context expected",
-        "context window is within 10% of 65K ceiling"
-      ],
-      "failure_strategy": "continue_without_memory_log_warning"
+      "priority": 1,
+      "why": "Memory is the lowest-latency personalisation signal. Load early in the turn to inform all other decisions."
     },
     {
       "id": "web_search",
-      "display_name": "Web Search",
-      "latency_estimate_ms": 1500,
+      "name": "Web Search",
+      "trigger": [
+        "query_requires_post_training_cutoff_fact",
+        "query_asks_current_version_release_or_price",
+        "query_asks_for_live_incident_or_news"
+      ],
+      "deny_when": [
+        "concept_is_stable_in_training_data",
+        "rag_collection_already_covers_domain",
+        "greeting_meta_or_opinion_question"
+      ],
+      "latency_budget_ms": 5000,
       "rpm_cost": 0,
-      "triggers": [
-        "query asks for current version, price, or availability",
-        "topic is likely post-training-cutoff",
-        "user explicitly requests web search"
-      ],
-      "skip_when": [
-        "answer exists in model knowledge with high confidence",
-        "query is about established concepts not subject to change",
-        "RAG collection covers the topic"
-      ],
-      "failure_strategy": "fall_back_to_model_knowledge_with_flag"
+      "priority": 3,
+      "why": "Web search is highest latency. Only use when freshness is the critical quality factor."
     },
     {
       "id": "knowledge_rag",
-      "display_name": "Knowledge (RAG)",
-      "latency_estimate_ms": 300,
+      "name": "Knowledge RAG",
+      "trigger": [
+        "loaded_collection_relevant_to_query",
+        "query_references_uploaded_document",
+        "codebase_specific_symbol_mentioned"
+      ],
+      "deny_when": [
+        "no_collection_loaded",
+        "general_concept_query",
+        "code_generation_from_clear_spec"
+      ],
+      "latency_budget_ms": 2000,
       "rpm_cost": 0,
-      "triggers": [
-        "relevant collection is loaded for this conversation",
-        "query asks about project-specific standards or APIs"
-      ],
-      "skip_when": [
-        "no collection is loaded",
-        "query is purely conceptual",
-        "all chunk similarity scores < 0.65"
-      ],
-      "failure_strategy": "fall_back_to_model_knowledge"
+      "priority": 1,
+      "why": "RAG on a curated collection is highest signal-to-noise. Prefer over web search when a relevant collection exists."
     },
     {
       "id": "calculator",
-      "display_name": "Calculator",
-      "latency_estimate_ms": 50,
+      "name": "Calculator",
+      "trigger": [
+        "multi_step_arithmetic_requiring_precision",
+        "statistical_calculation",
+        "financial_modelling"
+      ],
+      "deny_when": [
+        "single_step_mental_math",
+        "estimation_is_sufficient"
+      ],
+      "latency_budget_ms": 200,
       "rpm_cost": 0,
-      "triggers": [
-        "multi-step arithmetic required",
-        "precision matters (financial, scientific, cryptographic)"
-      ],
-      "skip_when": [
-        "single-step arithmetic resolvable without error",
-        "result is an estimate (round numbers acceptable)"
-      ],
-      "failure_strategy": "perform_arithmetic_in_model_with_verify_flag"
+      "priority": 1,
+      "why": "Never do multi-step arithmetic in prose. LLM arithmetic errors are silent and confidence-appearing. Calculator eliminates that risk."
     }
   ]
 }

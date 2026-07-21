@@ -1,59 +1,62 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/knowledge.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Knowledge orchestration policy. Governs RAG retrieval, citation, freshness, fallback, and web search override behaviour."
-  },
-  "retrieval_policy": {
+  "_schema": "ai-os/runtime-config/knowledge",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Knowledge orchestration policy for Open WebUI RAG pipeline. Defines when to retrieve, how to rank, how to cite, and when to fall back to model knowledge.",
+
+  "retrieval": {
+    "provider": "open_webui_rag",
     "top_k": 5,
     "minimum_similarity_score": 0.65,
-    "max_tokens_per_chunk": 512,
-    "max_total_retrieval_tokens": 2560,
-    "rerank": true,
-    "why": "top-5 at 0.65 threshold balances recall and precision for technical documentation. 2560 tokens (5 × 512) fits comfortably within the 65K context ceiling without crowding reasoning space."
+    "chunk_size_tokens": 512,
+    "chunk_overlap_tokens": 64,
+    "embedding_model": "nomic-embed-text",
+    "why": "top_k=5 with score floor 0.65 balances recall against noise injection. Chunks of 512 tokens fit comfortably within the 65K context budget even when 5 are injected simultaneously."
   },
+
   "priority_order": [
-    "explicit_collection_loaded",
-    "project_specific_collection",
-    "general_technical_collection",
+    "loaded_collection_rag",
     "model_knowledge",
     "web_search"
   ],
-  "freshness_policy": {
-    "max_age_days_preferred": 180,
-    "max_age_days_hard_limit": 730,
-    "stale_flag": "[knowledge may be outdated — verify]",
-    "why": "Technical documentation older than 6 months may reference deprecated APIs or outdated versions. Flagging stale content prevents confident presentation of superseded information."
-  },
-  "citation_policy": {
-    "format": "[Source: {collection}, chunk {N}, score: {score:.2f}]",
-    "mandatory_when": "RAG chunk was used in the response",
-    "prohibited_when": "model knowledge only",
-    "why": "Citations allow users to verify claims and trace which knowledge source influenced an answer. Omitting them when RAG was used is a quality failure."
-  },
-  "rag_mandatory_conditions": [
-    "query explicitly references a loaded collection by name",
-    "query asks about a specific version, API, or library that has a collection loaded",
-    "query asks for code that must conform to a project-specific standard"
+  "priority_why": "Loaded collections are curated and domain-specific — highest signal. Model knowledge is broad but may be stale. Web search is last resort: incurs extra RPM charge and latency.",
+
+  "rag_mandatory_when": [
+    "query_references_uploaded_document",
+    "query_contains_codebase_specific_symbol",
+    "query_asks_for_data_from_named_collection"
   ],
-  "rag_skip_conditions": [
-    "query is conversational with no domain-specific terms",
-    "query asks for general computer science concepts covered in model training",
-    "RAG retrieval score < 0.65 for all chunks (fall back to model knowledge)"
+
+  "rag_skip_when": [
+    "query_is_greeting_or_meta",
+    "query_asks_for_general_concept_definition",
+    "query_is_code_generation_from_clear_spec",
+    "no_relevant_collection_loaded"
   ],
-  "web_search_override": {
-    "triggers": [
-      "user asks for current version, price, or availability",
-      "topic is post-training-cutoff",
-      "user explicitly requests a web search"
-    ],
-    "why": "Web search overrides RAG when freshness is the primary concern. RAG collections are snapshots; web search is real-time."
+
+  "web_search_override_when": [
+    "query_asks_for_current_version_or_release",
+    "query_asks_for_breaking_news_or_incident",
+    "query_asks_for_live_price_or_metric"
+  ],
+
+  "citation": {
+    "format": "[Source: {collection}, chunk {N}, score: {X.XX}]",
+    "mandatory_when_rag_used": true,
+    "never_present_rag_as_own_reasoning": true,
+    "fallback_citation": "[model knowledge — verify with current docs]"
   },
-  "fallback_chain": [
-    {"step": 1, "source": "RAG", "condition": "score >= 0.65"},
-    {"step": 2, "source": "model_knowledge", "condition": "RAG score < 0.65", "flag": "[model knowledge — verify with current docs]"},
-    {"step": 3, "source": "web_search", "condition": "model knowledge confidence low", "flag": "[web search result]"}
-  ]
+
+  "freshness": {
+    "max_chunk_age_days_preferred": 180,
+    "stale_threshold_days": 365,
+    "stale_action": "prefer_web_search_if_available",
+    "why": "Chunks older than 1 year in fast-moving domains (LLMs, cloud APIs, frameworks) are likely outdated. Prefer live web search for those domains."
+  },
+
+  "token_budget": {
+    "rag_context_allocation_tokens": 5120,
+    "max_percent_of_total_context": 12,
+    "why": "5 chunks × 512 tokens = 2560 tokens minimum. 5120 allows for full chunks with overlap. Never exceeds 12% of 65K ceiling."
+  }
 }

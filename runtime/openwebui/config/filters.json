@@ -1,79 +1,96 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/filters.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Filter chain registry. Defines installation order, type, source path, and valve defaults for all Open WebUI Python filters."
-  },
-  "filter_chain": [
+  "_schema": "ai-os/runtime-config/filters",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Registry of all Open WebUI Python Filters in this runtime. Defines install order, dependencies, and assignment to the AI-OS model. Use this as the authoritative checklist when deploying to a new Open WebUI instance.",
+
+  "model_assignment": "ai-os-nemotron-ultra",
+
+  "filters": [
     {
-      "priority": 1,
       "id": "rpm_guard",
-      "display_name": "AI-OS RPM Guard",
-      "type": "inlet",
-      "source": "runtime/openwebui/filters/rpm_guard.py",
-      "dist": "dist/openwebui/filters/rpm_guard.py",
-      "enabled": true,
+      "name": "AI-OS RPM Guard",
+      "file": "runtime/openwebui/filters/rpm_guard.py",
+      "dist_file": "dist/openwebui/filters/rpm_guard.py",
+      "type": "filter",
+      "direction": "inlet",
+      "install_order": 1,
+      "enabled_default": true,
+      "depends_on": [],
       "valves": {
         "max_rpm": 32,
         "window_seconds": 60,
         "enabled": true
-      }
+      },
+      "why": "Must be first. Cheapest possible gate. Rejects at Open WebUI layer before any downstream processing consumes resources."
     },
     {
-      "priority": 2,
       "id": "credential_scrub",
-      "display_name": "AI-OS Credential Scrub",
-      "type": "inlet",
-      "source": "runtime/openwebui/filters/credential_scrub.py",
-      "dist": "dist/openwebui/filters/credential_scrub.py",
-      "enabled": true,
+      "name": "AI-OS Credential Scrub",
+      "file": "runtime/openwebui/filters/credential_scrub.py",
+      "dist_file": "dist/openwebui/filters/credential_scrub.py",
+      "type": "filter",
+      "direction": "inlet",
+      "install_order": 2,
+      "enabled_default": true,
+      "depends_on": [],
       "valves": {
         "enabled": true,
         "redaction_placeholder": "[REDACTED-CREDENTIAL]"
-      }
+      },
+      "why": "Must run before profile_selector to prevent secret tokens from being injected into NIM API call."
     },
     {
-      "priority": 3,
       "id": "profile_selector",
-      "display_name": "AI-OS Profile Selector",
-      "type": "inlet",
-      "source": "runtime/openwebui/filters/profile_selector.py",
-      "dist": "dist/openwebui/filters/profile_selector.py",
-      "enabled": true,
+      "name": "AI-OS Profile Selector",
+      "file": "runtime/openwebui/filters/profile_selector.py",
+      "dist_file": "dist/openwebui/filters/profile_selector.py",
+      "type": "filter",
+      "direction": "inlet",
+      "install_order": 3,
+      "enabled_default": true,
+      "depends_on": ["credential_scrub"],
+      "writes_to_body": ["_ai_os_task_class", "_ai_os_profile", "options.temperature", "options.num_predict", "extra_body.reasoning_budget"],
       "valves": {
         "enabled": true,
         "default_profile": "discussion"
-      }
+      },
+      "why": "Task classification drives all downstream parameter selection. Must run after credential_scrub to ensure clean message content."
     },
     {
-      "priority": 4,
       "id": "context_budget_enforcer",
-      "display_name": "AI-OS Context Budget Enforcer",
-      "type": "inlet",
-      "source": "runtime/openwebui/filters/context_budget_enforcer.py",
-      "dist": "dist/openwebui/filters/context_budget_enforcer.py",
-      "enabled": true,
+      "name": "AI-OS Context Budget Enforcer",
+      "file": "runtime/openwebui/filters/context_budget_enforcer.py",
+      "dist_file": "dist/openwebui/filters/context_budget_enforcer.py",
+      "type": "filter",
+      "direction": "inlet",
+      "install_order": 4,
+      "enabled_default": true,
+      "depends_on": ["profile_selector"],
       "valves": {
         "enabled": true,
         "max_context_tokens": 65536,
-        "tokens_per_char_estimate": 0.25,
         "min_history_turns": 3
-      }
+      },
+      "why": "Final gate before NIM call. Enforces hard context ceiling to prevent latency degradation and overflow on Free Tier."
     },
     {
-      "priority": 5,
       "id": "response_quality_monitor",
-      "display_name": "AI-OS Quality Monitor",
-      "type": "outlet",
-      "source": "runtime/openwebui/filters/response_quality_monitor.py",
-      "dist": "dist/openwebui/filters/response_quality_monitor.py",
-      "enabled": true,
+      "name": "AI-OS Response Quality Monitor",
+      "file": "runtime/openwebui/filters/response_quality_monitor.py",
+      "dist_file": "dist/openwebui/filters/response_quality_monitor.py",
+      "type": "filter",
+      "direction": "outlet",
+      "install_order": 5,
+      "enabled_default": true,
+      "depends_on": ["profile_selector"],
+      "reads_from_body": ["_ai_os_task_class", "_ai_os_rag_used"],
+      "writes_to_body": ["_ai_os_quality"],
       "valves": {
         "enabled": true,
         "append_quality_metadata": false
-      }
+      },
+      "why": "Quality metadata written to body enables benchmark harness to score without re-querying NIM. Set append_quality_metadata=true for debug runs."
     }
   ]
 }

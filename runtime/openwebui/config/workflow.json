@@ -1,82 +1,83 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/workflow.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Defines the per-turn execution pipeline. Each stage has a condition, execution order, latency budget, and failure strategy."
-  },
-  "pipeline": [
+  "_schema": "ai-os/runtime-config/workflow",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Defines the sequential decision logic executed per turn before and after the NIM inference call. Each stage has a defined skip condition to minimise unnecessary processing on simple turns.",
+
+  "turn_workflow": [
     {
       "stage": 1,
       "name": "rpm_guard",
       "type": "filter_inlet",
-      "ref": "runtime/openwebui/filters/rpm_guard.py",
-      "condition": "always",
-      "failure_strategy": "reject_with_message",
+      "file": "filters/rpm_guard.py",
+      "skip_condition": "disabled_in_valves",
+      "failure_strategy": "reject_with_user_message",
       "latency_budget_ms": 5,
-      "why": "Must be first. A rejected request here costs zero NIM RPM."
+      "why": "First gate. Reject before any processing if RPM ceiling reached. Cheapest possible check."
     },
     {
       "stage": 2,
       "name": "credential_scrub",
       "type": "filter_inlet",
-      "ref": "runtime/openwebui/filters/credential_scrub.py",
-      "condition": "always",
-      "failure_strategy": "pass_through_log_error",
+      "file": "filters/credential_scrub.py",
+      "skip_condition": "disabled_in_valves",
+      "failure_strategy": "continue_with_redaction",
       "latency_budget_ms": 10,
-      "why": "Must run before any content reaches NIM. Regex-only, negligible latency."
+      "why": "Redact secrets before any external API call. Must run before profile_selector to avoid leaking tokens into NIM."
     },
     {
       "stage": 3,
       "name": "profile_selector",
       "type": "filter_inlet",
-      "ref": "runtime/openwebui/filters/profile_selector.py",
-      "condition": "always",
-      "failure_strategy": "use_default_profile",
-      "latency_budget_ms": 10,
-      "why": "Classify task and set parameters before NIM call. No-op if classification fails — defaults apply."
+      "file": "filters/profile_selector.py",
+      "skip_condition": "disabled_in_valves",
+      "failure_strategy": "use_default_discussion_profile",
+      "latency_budget_ms": 15,
+      "why": "Classify task class and inject correct temperature, max_tokens, and reasoning_budget before NIM call."
     },
     {
       "stage": 4,
       "name": "context_budget_enforcer",
       "type": "filter_inlet",
-      "ref": "runtime/openwebui/filters/context_budget_enforcer.py",
-      "condition": "always",
-      "failure_strategy": "pass_through_log_warning",
+      "file": "filters/context_budget_enforcer.py",
+      "skip_condition": "estimated_tokens_below_ceiling",
+      "failure_strategy": "truncate_oldest_turns",
       "latency_budget_ms": 20,
-      "why": "Must run after profile_selector so task_class is available. Prevents NIM timeout from context overflow."
+      "why": "Enforce 65K token ceiling before NIM call. Truncation preserves system prompt + last 3 turns + current message."
     },
     {
       "stage": 5,
       "name": "nim_inference",
       "type": "model_call",
-      "model_ref": "runtime/openwebui/config/model.json",
-      "condition": "always",
+      "model": "nvidia/nemotron-3-ultra-550b",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "streaming": true,
       "failure_strategy": "surface_error_to_user",
       "latency_budget_ms": 30000,
-      "why": "The actual NIM call. Latency budget is 30s; Free Tier shared infra can spike to 15–25s on heavy load."
+      "why": "The actual NIM inference call. Streaming enabled to reduce perceived latency on Free Tier."
     },
     {
       "stage": 6,
       "name": "response_quality_monitor",
       "type": "filter_outlet",
-      "ref": "runtime/openwebui/filters/response_quality_monitor.py",
-      "condition": "always",
-      "failure_strategy": "pass_through_log_error",
-      "latency_budget_ms": 15,
-      "why": "Outlet-only. Attaches quality metadata to body for benchmark consumption. Never modifies visible response."
+      "file": "filters/response_quality_monitor.py",
+      "skip_condition": "disabled_in_valves",
+      "failure_strategy": "continue_without_metadata",
+      "latency_budget_ms": 10,
+      "why": "Outlet quality scoring. Attaches _ai_os_quality metadata for benchmark harness. Zero impact on user-visible response."
     }
   ],
-  "tool_orchestration": {
-    "max_tool_calls_per_turn": 3,
-    "batching_rule": "collect_all_results_before_inference",
-    "execution_order": ["memory", "knowledge", "github", "web_search"],
-    "rpm_accounting": {
-      "memory_call": 0,
-      "rag_call": 0,
-      "nim_inference": 1,
-      "why": "Only NIM inference calls count against the 32 RPM budget. Memory and RAG are local operations."
-    }
+
+  "tool_batching_policy": {
+    "rule": "collect_all_tool_calls_before_nim_inference",
+    "rationale": "Each NIM call consumes 1 RPM. Chaining NIM→Tool→NIM doubles RPM cost per turn. All tools must be called in parallel before the single NIM inference call.",
+    "violation_action": "block_chained_nim_calls"
+  },
+
+  "rpm_accounting": {
+    "ceiling": 32,
+    "counted_events": ["nim_inference"],
+    "not_counted": ["filter_inlet", "filter_outlet", "tool_calls"],
+    "why": "Only NIM API calls count against RPM. Filters and tools do not consume NIM quota."
   }
 }

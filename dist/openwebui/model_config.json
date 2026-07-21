@@ -1,30 +1,38 @@
 {
-  "_meta": {
-    "description": "NIM model configuration for Open WebUI import",
-    "version": "1.0.0",
-    "last_updated": "2026-07-20"
+  "_schema": "ai-os/dist/model-config",
+  "_version": "2.0.0",
+  "_sprint": "C",
+  "_changelog": "v2: corrected model ID to nvidia/nemotron-3-ultra-550b, corrected rpm_ceiling to 32, aligned context limits with NIM Free Tier empirical ceiling of 65536 tokens.",
+
+  "id": "ai-os-nemotron-ultra",
+  "name": "AI-OS · Nemotron Ultra",
+  "description": "Production AI-OS runtime. Nemotron-3-Ultra-550B via NIM Free Tier. Optimised for reasoning, architecture, and code.",
+
+  "connection": {
+    "type": "openai_compatible",
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "api_key_env": "NVIDIA_API_KEY",
+    "model_name": "nvidia/nemotron-3-ultra-550b"
   },
-  "model_id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-  "base_url": "https://integrate.api.nvidia.com/v1",
-  "api_key_env": "NVIDIA_API_KEY",
+
   "capabilities": {
     "thinking": true,
-    "tool_use": true,
     "streaming": true,
-    "context_window": 128000,
-    "max_output_tokens": 4096
+    "tool_use": true,
+    "vision": false,
+    "context_window_tokens": 1048576,
+    "free_tier_safe_context_tokens": 65536,
+    "max_output_tokens": 32768
   },
-  "free_tier": {
-    "rpm_limit": 40,
-    "daily_request_limit": 1000,
+
+  "nim_free_tier": {
+    "rpm_ceiling": 32,
+    "concurrent_requests": 1,
     "sla": "none",
-    "notes": "Free tier for development. No SLA. Rate limits apply."
+    "infrastructure": "shared"
   },
-  "recommended_settings": {
-    "temperature": 0.6,
-    "top_p": 0.9,
-    "stream": true,
-    "max_context_used": 32000,
-    "thinking_budget_default": 5000
-  }
+
+  "system_prompt": "dist/openwebui/compiled_prompt_v2.md",
+  "filters": "dist/openwebui/filters/",
+  "profiles": "dist/openwebui/parameter_profiles/"
 }

@@ -1,41 +1,47 @@
 {
-  "$schema": "https://ai-os.dev/schemas/runtime/capabilities.json",
-  "_meta": {
-    "version": "1.0.0",
-    "sprint": "C",
-    "last_updated": "2026-07-21",
-    "why": "Declares which Open WebUI capabilities are enabled for this model. Controls what UI elements appear and what pipeline features activate."
-  },
-  "open_webui": {
-    "chat": true,
-    "streaming": true,
-    "markdown_rendering": true,
-    "code_highlighting": true,
-    "mermaid_diagrams": true,
-    "latex_math": true,
-    "image_generation": false,
-    "image_input": false,
-    "voice_input": false,
-    "voice_output": false,
-    "web_search": true,
-    "rag": true,
-    "memory": true,
-    "tools": true,
-    "filters": true,
-    "arena_mode": false
-  },
-  "model_native": {
+  "_schema": "ai-os/runtime-config/capabilities",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Declares the capabilities this runtime exposes to Open WebUI. Matches the Open WebUI model capabilities schema. Disabling a capability prevents Open WebUI from showing irrelevant UI controls.",
+
+  "model_capabilities": {
     "thinking": true,
-    "extended_context": true,
-    "max_context_tokens": 1000000,
-    "safe_context_tokens": 65536,
-    "function_calling": false,
-    "parallel_tool_calls": false,
-    "why_safe_ceiling": "NIM Free Tier shared infra produces extreme latency and occasional timeouts above 64K tokens. 65536 is the enforced operational ceiling, not a model limit."
+    "streaming": true,
+    "tool_use": true,
+    "vision": false,
+    "file_upload": true,
+    "web_search": true,
+    "code_execution": false,
+    "image_generation": false
   },
-  "disabled_features": {
-    "image_input": {"reason": "Nemotron Ultra is a text-only model. Enabling would surface confusing UI without function."},
-    "image_generation": {"reason": "Out of scope for reasoning runtime."},
-    "arena_mode": {"reason": "Arena mode wastes 2× RPM budget for A/B comparison. Not viable on 32 RPM Free Tier."}
-  }
+
+  "reasoning": {
+    "extended_thinking": true,
+    "thinking_token_budget_min": 1024,
+    "thinking_token_budget_max": 16384,
+    "thinking_token_budget_default": 4096,
+    "thinking_visible_in_ui": true,
+    "why": "Nemotron Ultra's extended thinking is its primary quality differentiator. Exposing the thinking block in UI allows users to verify reasoning quality. Budget max 16384 covers research and architecture tasks without exceeding Free Tier context limits."
+  },
+
+  "context": {
+    "model_max_tokens": 1048576,
+    "runtime_safe_max_tokens": 65536,
+    "input_token_warning_threshold": 50000,
+    "why": "Model supports 1M context but NIM Free Tier degrades above 65K. Warning threshold at 50K gives user advance notice before the enforcer truncates."
+  },
+
+  "tools_enabled": [
+    "github_mcp",
+    "brain_memory_mcp",
+    "web_search",
+    "knowledge_rag",
+    "calculator"
+  ],
+
+  "tools_disabled": [
+    "code_interpreter",
+    "image_generation",
+    "dalle"
+  ]
 }

@@ -1,0 +1,107 @@
+{
+  "schema": "ai-os/benchmark-suite",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Each benchmark dimension produces a score in [0, 100]. Scoring rubrics are explicit — no subjective evaluation. Benchmark results must be reproducible from the same prompt set.",
+  "dimensions": {
+    "discussion_quality": {
+      "weight": 0.12,
+      "metrics": [
+        {"id": "DQ-01", "name": "Answer-first rate", "method": "Check if response begins with direct answer, not preamble", "score_pass": 10, "score_fail": 0},
+        {"id": "DQ-02", "name": "Prohibited pattern absence", "method": "Count filler affirmations. Score = 10 * (1 - min(count/3, 1))", "max_score": 10},
+        {"id": "DQ-03", "name": "Length compliance", "method": "output_tokens / target_tokens. Score = 10 if ratio in [0.5, 1.5] else 0", "max_score": 10}
+      ],
+      "max_score": 30
+    },
+    "reasoning": {
+      "weight": 0.18,
+      "metrics": [
+        {"id": "RS-01", "name": "Framework application", "method": "Does response name and apply a reasoning framework? Score 20 if yes.", "max_score": 20},
+        {"id": "RS-02", "name": "Assumption surfacing", "method": "Count explicit assumptions stated. Score = min(count * 5, 15).", "max_score": 15},
+        {"id": "RS-03", "name": "Uncertainty calibration", "method": "Count [verify] tags vs actual uncertain facts. Score = 15 if all uncertain facts tagged, else proportional.", "max_score": 15}
+      ],
+      "max_score": 50
+    },
+    "architecture": {
+      "weight": 0.12,
+      "metrics": [
+        {"id": "AR-01", "name": "Structure completeness", "method": "Check coverage: Requirements, Constraints, Components, Interfaces, Failure Modes, Trade-offs. Score = covered/6 * 30.", "max_score": 30},
+        {"id": "AR-02", "name": "Trade-off explicitness", "method": "Does response quantify or qualify the main trade-off? Score 20 if yes.", "max_score": 20}
+      ],
+      "max_score": 50
+    },
+    "coding": {
+      "weight": 0.15,
+      "metrics": [
+        {"id": "CD-01", "name": "Syntax correctness", "method": "Run lint or parse. Score 40 if zero errors.", "max_score": 40},
+        {"id": "CD-02", "name": "Test coverage present", "method": "Does response include or reference tests? Score 10 if yes.", "max_score": 10}
+      ],
+      "max_score": 50
+    },
+    "memory": {
+      "weight": 0.08,
+      "metrics": [
+        {"id": "ME-01", "name": "Relevant memory loaded", "method": "For sessions with prior context, verify response references relevant prior decision. Score 25 if yes.", "max_score": 25},
+        {"id": "ME-02", "name": "No stale memory injected", "method": "Verify no memory items older than TTL are cited. Score 25 if clean.", "max_score": 25}
+      ],
+      "max_score": 50
+    },
+    "knowledge": {
+      "weight": 0.08,
+      "metrics": [
+        {"id": "KN-01", "name": "Citation rate when RAG used", "method": "Count turns where RAG was activated. Score = (cited_turns / rag_turns) * 50.", "max_score": 50}
+      ],
+      "max_score": 50
+    },
+    "planner": {
+      "weight": 0.06,
+      "metrics": [
+        {"id": "PL-01", "name": "Planner activation accuracy", "method": "Did planner activate on > 3 step tasks and skip on single-step tasks? Score = correct_activations / total_tasks * 50.", "max_score": 50}
+      ],
+      "max_score": 50
+    },
+    "reflection": {
+      "weight": 0.06,
+      "metrics": [
+        {"id": "RF-01", "name": "Reflection on mandatory task classes", "method": "Verify reflection ran for all architecture/security/complex_code tasks. Score = reflected / mandatory * 50.", "max_score": 50}
+      ],
+      "max_score": 50
+    },
+    "critic": {
+      "weight": 0.05,
+      "metrics": [
+        {"id": "CR-01", "name": "Critic on high-risk tasks", "method": "Verify critic ran for all irreversible architecture and security-critical tasks. Score = critiqued / mandatory * 50.", "max_score": 50}
+      ],
+      "max_score": 50
+    },
+    "tool_usage": {
+      "weight": 0.06,
+      "metrics": [
+        {"id": "TU-01", "name": "Minimum tools principle", "method": "Count unnecessary tool calls (tool called when answer was in context). Score = 50 - (unnecessary_calls * 10).", "max_score": 50},
+        {"id": "TU-02", "name": "Batching compliance", "method": "Verify all tool calls preceded single NIM call. Score 50 if 100% batched.", "max_score": 50}
+      ],
+      "max_score": 100
+    },
+    "conversation_consistency": {
+      "weight": 0.06,
+      "metrics": [
+        {"id": "CC-01", "name": "Contradiction rate", "method": "Count turns where response contradicts earlier decision without explicit override. Score = 50 * (1 - contradiction_rate).", "max_score": 50}
+      ],
+      "max_score": 50
+    },
+    "long_context_handling": {
+      "weight": 0.06,
+      "metrics": [
+        {"id": "LC-01", "name": "Compression trigger accuracy", "method": "Verify compression activates at turn 15+. Score 25 if yes.", "max_score": 25},
+        {"id": "LC-02", "name": "Context budget compliance", "method": "Verify context never exceeds 65536 tokens. Score 25 if always compliant.", "max_score": 25}
+      ],
+      "max_score": 50
+    }
+  },
+  "scoring": {
+    "method": "weighted_sum",
+    "normalised_to": 100,
+    "minimum_passing_score": 70,
+    "rationale": "70/100 minimum reflects production standard. A failing dimension score must be investigated and remediated before the runtime can be considered Sprint A complete."
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schema": "ai-os/workflow",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Defines the deterministic processing pipeline executed for every user turn. Each stage has a skip condition to prevent unnecessary computation. Stages execute in order. Stage failures degrade gracefully — they do not abort the response.",
+  "pipeline": [
+    {
+      "stage": 1,
+      "name": "task_classification",
+      "description": "Classify user query into task_class: greeting, simple_factual, technical_explanation, coding, architecture, debugging, research, planning, analysis, creative",
+      "skip_condition": "none",
+      "token_cost": 0,
+      "latency_ms": 0,
+      "output": "task_class"
+    },
+    {
+      "stage": 2,
+      "name": "profile_selection",
+      "description": "Map task_class to parameter profile. Overrides default parameters for the NIM call.",
+      "skip_condition": "none",
+      "token_cost": 0,
+      "latency_ms": 0,
+      "output": "active_profile"
+    },
+    {
+      "stage": 3,
+      "name": "memory_query",
+      "description": "Query Brain Memory if task_class indicates user-specific context is relevant.",
+      "skip_condition": "task_class IN [greeting, simple_factual] OR memory_score_lt_0.70",
+      "token_cost": 400,
+      "latency_ms": 800,
+      "output": "memory_context"
+    },
+    {
+      "stage": 4,
+      "name": "knowledge_retrieval",
+      "description": "Query active knowledge collections if query references domain content.",
+      "skip_condition": "no_relevant_collection OR similarity_lt_0.65 OR task_class IN [greeting]",
+      "token_cost": 1500,
+      "latency_ms": 1200,
+      "output": "knowledge_chunks"
+    },
+    {
+      "stage": 5,
+      "name": "tool_routing",
+      "description": "Invoke external tools (GitHub, web search, calculator) if required. All tool calls batched here before NIM.",
+      "skip_condition": "answer_already_determinable_from_context",
+      "token_cost": 600,
+      "latency_ms": 3000,
+      "output": "tool_results"
+    },
+    {
+      "stage": 6,
+      "name": "planner_activation",
+      "description": "Activate planner if task requires > 3 sequential steps.",
+      "skip_condition": "task_steps_lte_3 AND no_explicit_plan_request",
+      "token_cost": 500,
+      "latency_ms": 0,
+      "output": "plan_structure"
+    },
+    {
+      "stage": 7,
+      "name": "nim_inference",
+      "description": "Single NIM API call with full context: system prompt + memory + knowledge + tool results + plan + user message. enable_thinking and reasoning_budget applied via extra_body.",
+      "skip_condition": "none",
+      "token_cost": "profile_dependent",
+      "latency_ms": "profile_dependent",
+      "output": "draft_response"
+    },
+    {
+      "stage": 8,
+      "name": "reflection_and_critic",
+      "description": "Internal review pass for high-stakes task classes. Embedded in reasoning budget — no additional NIM call.",
+      "skip_condition": "task_class IN [greeting, simple_factual, conversational]",
+      "token_cost": 700,
+      "latency_ms": 0,
+      "output": "reviewed_response"
+    },
+    {
+      "stage": 9,
+      "name": "output_formatting",
+      "description": "Apply response format rules from response.md: length target, format type, prohibited patterns.",
+      "skip_condition": "none",
+      "token_cost": 0,
+      "latency_ms": 0,
+      "output": "final_response"
+    }
+  ],
+  "rpm_accounting": {
+    "stage_3_memory": 1,
+    "stage_4_rag": 0,
+    "stage_5_tools_per_tool": 1,
+    "stage_7_nim": 1,
+    "max_rpm_per_turn": 4,
+    "rationale": "Worst case: memory(1) + 2 tools(2) + NIM(1) = 4 RPM per turn. At 32 RPM budget, this allows 8 concurrent turns per minute before throttling."
+  }
+}

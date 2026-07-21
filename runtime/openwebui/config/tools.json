@@ -1,0 +1,62 @@
+{
+  "schema": "ai-os/tool-config",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Tool routing must minimise total tool invocations per turn. Each tool call consumes 1 RPM slot from the 32 RPM Free Tier budget. The minimum-tools principle is enforced: use the fewest tools that produce a complete, accurate answer.",
+  "tools": {
+    "github": {
+      "enabled": true,
+      "activation": "conditional",
+      "triggers": ["query_about_specific_repo", "query_about_commit_PR_issue_branch", "code_search_in_specific_repository"],
+      "skip_conditions": ["general_programming_question", "no_repo_reference_in_query"],
+      "rpm_cost": 1,
+      "latency_budget_ms": 2000,
+      "rationale": "GitHub queries only justified when repository-specific content is needed. General programming questions do not require live GitHub access."
+    },
+    "brain_memory": {
+      "enabled": true,
+      "activation": "conditional",
+      "triggers": ["user_preferences_affect_answer", "prior_session_decision_relevant", "project_state_needed"],
+      "skip_conditions": ["purely_factual_query", "session_is_first_turn", "relevance_lt_0.70"],
+      "rpm_cost": 1,
+      "latency_budget_ms": 800,
+      "rationale": "Memory query only justified when user-specific context meaningfully changes the answer."
+    },
+    "web_search": {
+      "enabled": true,
+      "activation": "conditional",
+      "triggers": ["time_sensitive_fact", "post_training_cutoff_release", "current_price_or_version", "breaking_news"],
+      "skip_conditions": ["answer_available_from_knowledge_collection", "query_is_timeless_concept"],
+      "rpm_cost": 1,
+      "latency_budget_ms": 3000,
+      "rationale": "Web search justified only for time-sensitive data. Static knowledge collections are preferred when available."
+    },
+    "knowledge_rag": {
+      "enabled": true,
+      "activation": "conditional",
+      "triggers": ["domain_content_in_loaded_collection", "library_api_usage", "codebase_specific"],
+      "skip_conditions": ["no_relevant_collection_loaded", "similarity_lt_0.65"],
+      "rpm_cost": 0,
+      "latency_budget_ms": 1200,
+      "rationale": "RAG does not consume NIM RPM. Run before NIM call. Preferred over web search for static domain content."
+    },
+    "calculator": {
+      "enabled": true,
+      "activation": "conditional",
+      "triggers": ["multi_step_arithmetic", "precision_required", "financial_calculation"],
+      "skip_conditions": ["simple_single_step_arithmetic"],
+      "rpm_cost": 0,
+      "latency_budget_ms": 50,
+      "rationale": "Arithmetic errors in prose are a known LLM failure mode. Calculator eliminates the risk with zero RPM cost."
+    }
+  },
+  "batching_rule": {
+    "policy": "collect_all_tool_results_THEN_single_nim_call",
+    "rationale": "Sequential tool → NIM → tool → NIM chains are the most common source of RPM exhaustion and high latency. Batching all tool calls into a single pre-NIM pass reduces RPM cost per turn from N to 1, and eliminates chained wait time."
+  },
+  "minimum_tools_principle": {
+    "policy": "use_fewest_tools_that_produce_complete_accurate_answer",
+    "enforcement": "Before any tool call, evaluate: is the answer already determinable from conversation context alone?",
+    "rationale": "Every unnecessary tool call wastes RPM quota, adds latency, and increases token cost. On a 32 RPM Free Tier budget, tool discipline is a hard production requirement, not a preference."
+  }
+}

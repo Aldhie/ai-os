@@ -1,0 +1,43 @@
+{
+  "schema": "openwebui/model-config",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "This file defines the canonical Open WebUI model entry for Nemotron Ultra. It is imported via Admin > Models > Import or applied through the Open WebUI API. Every field maps to a real Open WebUI model object property.",
+  "id": "ai-os-nemotron-ultra",
+  "name": "AI-OS · Nemotron Ultra",
+  "base_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "meta": {
+    "description": "Production runtime intelligence layer for NVIDIA Nemotron-3-Ultra-550B-A55B. Optimised for reasoning, architecture, coding, and long-context discussion.",
+    "profile_image_url": null,
+    "capabilities": {
+      "vision": false,
+      "file_upload": true,
+      "web_search": true,
+      "image_generation": false,
+      "code_interpreter": false
+    },
+    "tags": ["production", "nemotron", "nvidia-nim", "reasoning", "ai-os"]
+  },
+  "params": {
+    "system": "SEE: runtime/openwebui/model/compiled_prompt_v1.md — paste full contents here",
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 50,
+    "max_tokens": 4096,
+    "stream": true,
+    "frequency_penalty": 0.1,
+    "presence_penalty": 0.0
+  },
+  "nim_extra_body": {
+    "chat_template_kwargs": {
+      "enable_thinking": true
+    },
+    "reasoning_budget": 4096
+  },
+  "connection": {
+    "provider": "openai_compatible",
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "api_key_env": "NVIDIA_API_KEY",
+    "note": "Set NVIDIA_API_KEY as an environment variable or Open WebUI secret. Never hard-code."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "ai-os/profiles-index",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Index of all parameter profiles. The Profile Selector Filter maps task_class to profile_id at inlet. New profiles can be added without modifying the Filter logic — only this index needs updating.",
+  "profiles": [
+    {"profile_id": "discussion", "task_classes": ["conversational", "greeting", "meta"], "file": "runtime/openwebui/profiles/discussion.json"},
+    {"profile_id": "coding", "task_classes": ["coding", "code_review", "refactoring"], "file": "runtime/openwebui/profiles/coding.json"},
+    {"profile_id": "architecture", "task_classes": ["architecture", "system_design", "infrastructure"], "file": "runtime/openwebui/profiles/architecture.json"},
+    {"profile_id": "analysis", "task_classes": ["analysis", "business_analysis", "data_analysis"], "file": "runtime/openwebui/profiles/analysis.json"},
+    {"profile_id": "creative", "task_classes": ["creative", "writing", "brainstorm"], "file": "runtime/openwebui/profiles/creative.json"},
+    {"profile_id": "research", "task_classes": ["research", "synthesis", "literature_review"], "file": "runtime/openwebui/profiles/research.json"},
+    {"profile_id": "debugging", "task_classes": ["debugging", "error_diagnosis", "root_cause_analysis"], "file": "runtime/openwebui/profiles/debugging.json"}
+  ],
+  "default_profile": "discussion",
+  "fallback_profile": "discussion"
+}

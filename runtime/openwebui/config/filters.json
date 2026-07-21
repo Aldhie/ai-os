@@ -1,0 +1,66 @@
+{
+  "schema": "ai-os/filters-config",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Open WebUI Filters intercept messages at inlet (pre-NIM) and outlet (post-NIM). This config defines the production filter chain. Each filter has a single responsibility and can be independently disabled.",
+  "inlet_filters": [
+    {
+      "id": "rpm_guard",
+      "name": "RPM Guard",
+      "priority": 1,
+      "action": "count_requests_in_60s_window. Reject with HTTP 429 if count >= 32.",
+      "rationale": "Prevents NIM API quota exhaustion. Free Tier throttling produces hard errors that break the session. Proactive rejection at the gateway is cleaner than an upstream 429."
+    },
+    {
+      "id": "credential_scrub",
+      "name": "Credential Scrub",
+      "priority": 2,
+      "action": "Scan inlet message for API keys, passwords, tokens (pattern: nvapi-, sk-, Bearer). Redact before NIM call. Log redaction event.",
+      "rationale": "Users occasionally paste credentials into chat. Sending them to NIM creates an external data exposure risk."
+    },
+    {
+      "id": "task_classifier",
+      "name": "Task Classifier",
+      "priority": 3,
+      "action": "Classify query into task_class. Attach as message metadata. Used by downstream profile selector.",
+      "rationale": "Task classification must happen before NIM call to select the correct parameter profile and reasoning budget."
+    },
+    {
+      "id": "profile_selector",
+      "name": "Profile Selector",
+      "priority": 4,
+      "action": "Map task_class to parameter profile. Override model parameters (temperature, max_tokens, reasoning_budget) for this request.",
+      "rationale": "Open WebUI Filter inlet can modify body.options before the NIM call. Profile switching must happen here."
+    },
+    {
+      "id": "context_budget_enforcer",
+      "name": "Context Budget Enforcer",
+      "priority": 5,
+      "action": "Measure total context tokens (system + history + memory + rag + message). If > 65536, truncate oldest conversation history first. Preserve system prompt and last 3 turns.",
+      "rationale": "Unbounded context growth on Free Tier produces extreme latency and eventual context overflow errors. Proactive truncation prevents both."
+    }
+  ],
+  "outlet_filters": [
+    {
+      "id": "response_length_monitor",
+      "name": "Response Length Monitor",
+      "priority": 1,
+      "action": "Measure output token count against task_class length target. Log if response exceeds 1.5x target. Do not truncate — only log for benchmark tracking.",
+      "rationale": "Over-generation is a quality metric, not just a cost metric. Logging creates the dataset needed to tune length targets per task class."
+    },
+    {
+      "id": "hallucination_flag_checker",
+      "name": "Hallucination Flag Checker",
+      "priority": 2,
+      "action": "Scan outlet for [verify] tags. Count and log per turn. Surface count in session metadata.",
+      "rationale": "[verify] tag frequency is a leading indicator of hallucination risk in a session. High frequency should trigger human review."
+    },
+    {
+      "id": "citation_validator",
+      "name": "Citation Validator",
+      "priority": 3,
+      "action": "When RAG was used in inlet, verify outlet contains at least one [Source: ...] citation. Log if absent.",
+      "rationale": "RAG without citation violates the knowledge policy. Outlet check enforces the citation contract without requiring NIM to self-police."
+    }
+  ]
+}

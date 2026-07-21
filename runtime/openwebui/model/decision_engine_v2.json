@@ -1,0 +1,146 @@
+{
+  "schema": "ai-os/decision-engine",
+  "version": "2.0.0",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "generated": "2026-07-21",
+  "rationale": "Each policy entry is a deterministic rule evaluated in priority order. Lower number = higher priority. A policy SKIPS if its skip_condition evaluates true. A policy FAILS if required_input is absent and failure_strategy is 'abort'. Token budgets are enforced before NIM call.",
+  "policies": {
+    "planner": {
+      "trigger": "task_requires_more_than_3_sequential_steps OR user_explicitly_requests_plan_OR_roadmap_OR_phases",
+      "priority": 1,
+      "required_input": ["user_goal", "task_description"],
+      "skip_condition": "task_is_single_step OR task_is_clarification_question OR conversation_turn_count == 1",
+      "failure_strategy": "proceed_without_plan_and_note_limitation",
+      "latency_budget_ms": 0,
+      "token_budget": 500,
+      "expected_benefit": "Prevents mid-task divergence. Surfaces dependencies and risks before execution.",
+      "expected_cost": "500 tokens added to context. One extra reasoning pass.",
+      "decision_matrix": {
+        "task_steps_lte_3_AND_no_explicit_request": "skip",
+        "task_steps_gt_3": "activate",
+        "user_says_plan_OR_roadmap_OR_phase": "activate",
+        "task_is_clarification": "skip",
+        "task_is_greeting": "skip"
+      }
+    },
+    "memory": {
+      "trigger": "user_context_meaningfully_changes_answer AND memory_collection_exists",
+      "priority": 2,
+      "required_input": ["user_id", "session_context"],
+      "skip_condition": "query_is_purely_factual_no_user_context OR memory_collection_empty OR relevance_score_lt_0.70",
+      "failure_strategy": "proceed_without_memory_do_not_surface_error_to_user",
+      "latency_budget_ms": 800,
+      "token_budget": 600,
+      "expected_benefit": "Personalises answer using prior decisions, preferences, and project state.",
+      "expected_cost": "One memory query. Up to 600 tokens injected. 800ms latency.",
+      "decision_matrix": {
+        "query_mentions_my_OR_our_OR_previous": "activate",
+        "query_references_prior_project": "activate",
+        "query_is_generic_factual": "skip",
+        "memory_relevance_lt_0.70": "skip",
+        "session_turn_1_AND_no_prior_history": "skip"
+      }
+    },
+    "knowledge": {
+      "trigger": "query_references_domain_content_OR_library_OR_api_OR_codebase AND knowledge_collection_exists",
+      "priority": 3,
+      "required_input": ["query_embedding", "knowledge_collection_id"],
+      "skip_condition": "collection_empty OR max_similarity_lt_0.65 OR query_is_conversational_chitchat",
+      "failure_strategy": "fall_back_to_model_knowledge_append_verify_tag",
+      "latency_budget_ms": 1200,
+      "token_budget": 1500,
+      "expected_benefit": "Grounds answer in current, authoritative domain content. Reduces hallucination risk.",
+      "expected_cost": "RAG retrieval. Up to 1500 tokens injected. 1200ms latency.",
+      "decision_matrix": {
+        "query_about_specific_library_version": "activate",
+        "query_about_api_usage": "activate",
+        "query_about_codebase_specific_behaviour": "activate",
+        "query_is_general_programming_concept": "skip",
+        "query_is_greeting_OR_meta": "skip",
+        "similarity_lt_0.65": "fallback_model_knowledge"
+      }
+    },
+    "tools": {
+      "trigger": "query_requires_live_data OR external_system_reference OR repository_specific_content",
+      "priority": 4,
+      "required_input": ["tool_routing_classification"],
+      "skip_condition": "all_needed_context_already_in_conversation OR query_is_theoretical",
+      "failure_strategy": "note_tool_unavailable_answer_from_model_knowledge_with_verify_tag",
+      "latency_budget_ms": 3000,
+      "token_budget": 800,
+      "expected_benefit": "Provides real-time, repository-specific, or time-sensitive data.",
+      "expected_cost": "External API call. Up to 3s latency. Consumes 1 RPM per tool invocation.",
+      "decision_matrix": {
+        "query_about_specific_repo_commit_PR_issue": "activate_github",
+        "query_about_user_prior_decision_preference": "activate_brain_memory",
+        "query_about_current_price_version_news": "activate_web_search",
+        "query_needs_precise_arithmetic": "activate_calculator",
+        "query_is_general_knowledge": "skip_all_tools",
+        "batch_rule": "collect_all_tool_results_before_nim_call"
+      }
+    },
+    "reflection": {
+      "trigger": "task_class_IN [architecture, security, complex_code, business_strategy, research_synthesis]",
+      "priority": 5,
+      "required_input": ["draft_response"],
+      "skip_condition": "task_is_simple_factual OR task_is_greeting OR task_is_acknowledgement",
+      "failure_strategy": "output_draft_without_reflection_tag_response_as_unreflected",
+      "latency_budget_ms": 0,
+      "token_budget": 400,
+      "expected_benefit": "Catches logical errors, omissions, and misaligned assumptions before output.",
+      "expected_cost": "400 token internal review pass. No additional NIM call — embedded in reasoning budget.",
+      "decision_matrix": {
+        "task_class_architecture": "mandatory",
+        "task_class_security": "mandatory",
+        "task_class_business_strategy_high_risk": "mandatory",
+        "task_class_complex_code_gt_50_lines": "mandatory",
+        "task_class_simple_factual": "skip",
+        "task_class_conversational": "skip"
+      }
+    },
+    "critic": {
+      "trigger": "response_involves_significant_downside_risk OR security_critical_code OR irreversible_architecture_decision",
+      "priority": 6,
+      "required_input": ["draft_response", "task_class"],
+      "skip_condition": "task_has_no_meaningful_downside OR task_is_informational_only",
+      "failure_strategy": "output_without_critic_note_in_response",
+      "latency_budget_ms": 0,
+      "token_budget": 300,
+      "expected_benefit": "Adversarial review prevents confident wrong recommendations reaching the user.",
+      "expected_cost": "300 token adversarial pass within reasoning budget.",
+      "decision_matrix": {
+        "architecture_decision_irreversible": "mandatory",
+        "security_critical_code": "mandatory",
+        "business_recommendation_high_downside": "mandatory",
+        "informational_explanation": "skip",
+        "code_review_no_security_implication": "optional"
+      }
+    },
+    "reasoning": {
+      "trigger": "always — reasoning budget is scaled to task complexity, never disabled",
+      "priority": 7,
+      "required_input": ["task_class", "parameter_profile"],
+      "skip_condition": "NONE — reasoning always runs. Budget may be minimised for greetings.",
+      "failure_strategy": "N/A",
+      "latency_budget_ms": "profile_dependent",
+      "token_budget": "profile_dependent",
+      "expected_benefit": "Internal reasoning trace reduces surface-level errors and hallucinations.",
+      "expected_cost": "Reasoning tokens are hidden from user. Adds to total inference cost.",
+      "decision_matrix": {
+        "task_class_greeting_or_ack": {"enable_thinking": true, "reasoning_budget": 512},
+        "task_class_simple_factual": {"enable_thinking": true, "reasoning_budget": 1024},
+        "task_class_technical_explanation": {"enable_thinking": true, "reasoning_budget": 4096},
+        "task_class_coding": {"enable_thinking": true, "reasoning_budget": 4096},
+        "task_class_architecture": {"enable_thinking": true, "reasoning_budget": 8192},
+        "task_class_research": {"enable_thinking": true, "reasoning_budget": 8192},
+        "task_class_debugging": {"enable_thinking": true, "reasoning_budget": 6144}
+      }
+    }
+  },
+  "rpm_guard": {
+    "max_rpm": 32,
+    "strategy": "batch_all_tools_before_single_nim_call",
+    "rationale": "NVIDIA Cloud NIM Free Tier allows 32 RPM on shared infrastructure. Every tool call consumes 1 RPM budget slot. Batching all tool calls before the final NIM inference call prevents quota exhaustion and minimises total latency by eliminating sequential wait chains.",
+    "enforcement": "Filter must reject requests that would exceed 32 RPM within any 60-second window."
+  }
+}

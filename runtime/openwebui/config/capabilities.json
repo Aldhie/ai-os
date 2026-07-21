@@ -1,0 +1,45 @@
+{
+  "schema": "ai-os/capabilities",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Declares the verified runtime capabilities of this AI-OS configuration. Capabilities are only marked enabled if they are actually implemented and tested — no aspirational flags.",
+  "model_capabilities": {
+    "context_window_tokens": 1048576,
+    "effective_context_ceiling_tokens": 65536,
+    "reasoning": true,
+    "reasoning_implementation": "enable_thinking via extra_body.chat_template_kwargs",
+    "tool_calling": true,
+    "structured_output": true,
+    "code_generation": true,
+    "multilingual": true,
+    "primary_languages": ["English", "Indonesian"]
+  },
+  "runtime_capabilities": {
+    "modular_prompt_compiler": true,
+    "task_class_detection": true,
+    "parameter_profile_switching": true,
+    "memory_orchestration": true,
+    "knowledge_rag": true,
+    "tool_routing": true,
+    "reflection": true,
+    "critic": true,
+    "planner": true,
+    "rpm_guard": true,
+    "benchmark_suite": true
+  },
+  "openwebui_compatibility": {
+    "verified_version": "0.6.x",
+    "model_import": "Admin > Models > Import or API POST /api/models/create",
+    "system_prompt_location": "Model params.system field",
+    "extra_body_support": "Via openai_compatible provider with extra_body passthrough",
+    "filter_support": true,
+    "pipe_support": true
+  },
+  "nim_compatibility": {
+    "endpoint": "https://integrate.api.nvidia.com/v1",
+    "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "free_tier_rpm": 32,
+    "thinking_param": "extra_body.chat_template_kwargs.enable_thinking",
+    "reasoning_budget_param": "extra_body.reasoning_budget"
+  }
+}

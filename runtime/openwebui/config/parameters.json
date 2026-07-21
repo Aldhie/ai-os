@@ -1,0 +1,34 @@
+{
+  "schema": "ai-os/parameter-defaults",
+  "version": "1.0.0",
+  "generated": "2026-07-21",
+  "rationale": "Default parameters applied when no task-specific profile is active. Balanced across quality, latency, and token cost for the NVIDIA Cloud NIM Free Tier.",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "defaults": {
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 50,
+    "max_tokens": 4096,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.1,
+    "stream": true,
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": true
+      },
+      "reasoning_budget": 4096
+    }
+  },
+  "override_rules": [
+    {"condition": "task_class == greeting", "temperature": 0.7, "max_tokens": 256, "reasoning_budget": 512},
+    {"condition": "task_class == coding", "temperature": 0.2, "max_tokens": 4096, "reasoning_budget": 4096},
+    {"condition": "task_class == architecture", "temperature": 0.4, "max_tokens": 6144, "reasoning_budget": 8192},
+    {"condition": "task_class == debugging", "temperature": 0.1, "max_tokens": 3072, "reasoning_budget": 6144},
+    {"condition": "task_class == research", "temperature": 0.5, "max_tokens": 8192, "reasoning_budget": 8192},
+    {"condition": "task_class == creative", "temperature": 0.9, "max_tokens": 3000, "reasoning_budget": 2048}
+  ],
+  "token_ceiling": {
+    "max_context_tokens": 65536,
+    "rationale": "Nemotron Ultra supports 1M context but Free Tier shared infrastructure penalises large contexts with high latency. Cap at 64K unless long-context task is explicitly required."
+  }
+}

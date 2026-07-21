@@ -1,66 +1,94 @@
 {
-  "schema": "ai-os/filters-config",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Open WebUI Filters intercept messages at inlet (pre-NIM) and outlet (post-NIM). This config defines the production filter chain. Each filter has a single responsibility and can be independently disabled.",
-  "inlet_filters": [
+  "_schema": "ai-os/owu-filters-config",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Registry of all Open WebUI Python filters for AI-OS. Defines installation order, dependencies, valve defaults, and enable/disable policy. Source of truth for the filter chain.",
+
+  "filter_chain": [
     {
-      "id": "rpm_guard",
-      "name": "RPM Guard",
       "priority": 1,
-      "action": "count_requests_in_60s_window. Reject with HTTP 429 if count >= 32.",
-      "rationale": "Prevents NIM API quota exhaustion. Free Tier throttling produces hard errors that break the session. Proactive rejection at the gateway is cleaner than an upstream 429."
+      "id": "ai_os_rpm_guard",
+      "name": "AI-OS RPM Guard",
+      "file": "dist/openwebui/filters/rpm_guard.py",
+      "type": "inlet",
+      "enabled_default": true,
+      "_why": "First in chain. Prevents NIM 429 errors from corrupting active streaming sessions.",
+      "valves": {
+        "max_rpm": { "default": 32, "description": "Match to NIM tier limit" },
+        "window_seconds": { "default": 60 },
+        "enabled": { "default": true }
+      },
+      "dependencies": [],
+      "must_precede": ["all other filters"]
     },
     {
-      "id": "credential_scrub",
-      "name": "Credential Scrub",
       "priority": 2,
-      "action": "Scan inlet message for API keys, passwords, tokens (pattern: nvapi-, sk-, Bearer). Redact before NIM call. Log redaction event.",
-      "rationale": "Users occasionally paste credentials into chat. Sending them to NIM creates an external data exposure risk."
+      "id": "ai_os_credential_scrub",
+      "name": "AI-OS Credential Scrub",
+      "file": "dist/openwebui/filters/credential_scrub.py",
+      "type": "inlet",
+      "enabled_default": true,
+      "_why": "Second in chain. Redacts credentials before any external API call. Irreversible exposure prevention.",
+      "valves": {
+        "enabled": { "default": true },
+        "redaction_placeholder": { "default": "[REDACTED-CREDENTIAL]" }
+      },
+      "dependencies": [],
+      "must_precede": ["profile_selector", "context_budget_enforcer", "nim_inference"]
     },
     {
-      "id": "task_classifier",
-      "name": "Task Classifier",
       "priority": 3,
-      "action": "Classify query into task_class. Attach as message metadata. Used by downstream profile selector.",
-      "rationale": "Task classification must happen before NIM call to select the correct parameter profile and reasoning budget."
+      "id": "ai_os_profile_selector",
+      "name": "AI-OS Profile Selector",
+      "file": "dist/openwebui/filters/profile_selector.py",
+      "type": "inlet",
+      "enabled_default": true,
+      "_why": "Classifies task and applies optimal parameters before NIM. Sets _ai_os_task_class for downstream filters.",
+      "valves": {
+        "enabled": { "default": true },
+        "default_profile": { "default": "discussion" }
+      },
+      "dependencies": [],
+      "writes_to_body": ["_ai_os_task_class", "_ai_os_profile", "options.temperature", "options.num_predict", "extra_body.reasoning_budget"]
     },
     {
-      "id": "profile_selector",
-      "name": "Profile Selector",
       "priority": 4,
-      "action": "Map task_class to parameter profile. Override model parameters (temperature, max_tokens, reasoning_budget) for this request.",
-      "rationale": "Open WebUI Filter inlet can modify body.options before the NIM call. Profile switching must happen here."
+      "id": "ai_os_context_budget_enforcer",
+      "name": "AI-OS Context Budget Enforcer",
+      "file": "dist/openwebui/filters/context_budget_enforcer.py",
+      "type": "inlet",
+      "enabled_default": true,
+      "_why": "Prevents context overflow on NIM Free Tier. Truncates oldest history first, preserving system prompt and recent turns.",
+      "valves": {
+        "enabled": { "default": true },
+        "max_context_tokens": { "default": 65536, "description": "Adjust if NIM tier improves" },
+        "min_history_turns": { "default": 3 }
+      },
+      "dependencies": ["ai_os_profile_selector"],
+      "reads_from_body": ["_ai_os_task_class"]
     },
     {
-      "id": "context_budget_enforcer",
-      "name": "Context Budget Enforcer",
       "priority": 5,
-      "action": "Measure total context tokens (system + history + memory + rag + message). If > 65536, truncate oldest conversation history first. Preserve system prompt and last 3 turns.",
-      "rationale": "Unbounded context growth on Free Tier produces extreme latency and eventual context overflow errors. Proactive truncation prevents both."
+      "id": "ai_os_response_quality_monitor",
+      "name": "AI-OS Response Quality Monitor",
+      "file": "dist/openwebui/filters/response_quality_monitor.py",
+      "type": "outlet",
+      "enabled_default": true,
+      "_why": "Outlet only. Measures quality signals for benchmark harness. Does not modify response.",
+      "valves": {
+        "enabled": { "default": true },
+        "append_quality_metadata": { "default": false, "description": "Set true for benchmark debug runs only" }
+      },
+      "dependencies": ["ai_os_profile_selector"],
+      "reads_from_body": ["_ai_os_task_class", "_ai_os_rag_used"],
+      "writes_to_body": ["_ai_os_quality"]
     }
   ],
-  "outlet_filters": [
-    {
-      "id": "response_length_monitor",
-      "name": "Response Length Monitor",
-      "priority": 1,
-      "action": "Measure output token count against task_class length target. Log if response exceeds 1.5x target. Do not truncate — only log for benchmark tracking.",
-      "rationale": "Over-generation is a quality metric, not just a cost metric. Logging creates the dataset needed to tune length targets per task class."
-    },
-    {
-      "id": "hallucination_flag_checker",
-      "name": "Hallucination Flag Checker",
-      "priority": 2,
-      "action": "Scan outlet for [verify] tags. Count and log per turn. Surface count in session metadata.",
-      "rationale": "[verify] tag frequency is a leading indicator of hallucination risk in a session. High frequency should trigger human review."
-    },
-    {
-      "id": "citation_validator",
-      "name": "Citation Validator",
-      "priority": 3,
-      "action": "When RAG was used in inlet, verify outlet contains at least one [Source: ...] citation. Log if absent.",
-      "rationale": "RAG without citation violates the knowledge policy. Outlet check enforces the citation contract without requiring NIM to self-police."
-    }
+
+  "installation_notes": [
+    "Install filters in priority order 1 → 5",
+    "Each filter must be assigned to the 'AI-OS · Nemotron Ultra' model specifically",
+    "Do not assign filters globally — they contain NIM-specific logic",
+    "After installation, run benchmark/harness.py to verify filter chain is functioning"
   ]
 }

@@ -1,45 +1,78 @@
 {
-  "schema": "ai-os/capabilities",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Declares the verified runtime capabilities of this AI-OS configuration. Capabilities are only marked enabled if they are actually implemented and tested — no aspirational flags.",
+  "_schema": "ai-os/owu-capabilities",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Declares which Open WebUI capability flags to enable for AI-OS Nemotron Ultra. Each flag is justified.",
+
   "model_capabilities": {
-    "context_window_tokens": 1048576,
-    "effective_context_ceiling_tokens": 65536,
-    "reasoning": true,
-    "reasoning_implementation": "enable_thinking via extra_body.chat_template_kwargs",
-    "tool_calling": true,
-    "structured_output": true,
-    "code_generation": true,
-    "multilingual": true,
-    "primary_languages": ["English", "Indonesian"]
+    "vision": {
+      "enabled": false,
+      "_why": "Nemotron-3-Ultra-550B is a text model. Enabling vision in OWU would route image inputs to a capability the model cannot satisfy."
+    },
+    "file_handling": {
+      "enabled": true,
+      "_why": "Users frequently upload code files, architecture diagrams (as text), and documents for analysis. File handling enriches RAG ingestion."
+    },
+    "code_execution": {
+      "enabled": false,
+      "_why": "Code execution sandbox is not available in the target Open WebUI deployment. Enabling it would create a misleading UI affordance."
+    },
+    "web_search": {
+      "enabled": true,
+      "_why": "Time-sensitive queries (current library versions, breaking changes) require web search. Governed by tool routing rules in compiled_prompt_v2.md."
+    },
+    "tools": {
+      "enabled": true,
+      "_why": "GitHub, Brain Memory, and Calculator tools are registered. Tool routing is governed by the compiled prompt to minimise RPM usage."
+    },
+    "citations": {
+      "enabled": true,
+      "_why": "Citation display is required for RAG transparency. Users must be able to verify the source of retrieved content."
+    },
+    "memory": {
+      "enabled": true,
+      "_why": "Cross-session project continuity is a core AI-OS capability. Governed by memory.json policy."
+    },
+    "streaming": {
+      "enabled": true,
+      "_why": "Streaming is critical on NIM Free Tier. It delivers first token quickly, masking the high latency of 550B inference and improving perceived responsiveness."
+    },
+    "system_prompt_override": {
+      "enabled": false,
+      "_why": "compiled_prompt_v2.md is version-controlled. Allowing per-user system prompt override would break runtime consistency and version traceability."
+    }
   },
-  "runtime_capabilities": {
-    "modular_prompt_compiler": true,
-    "task_class_detection": true,
-    "parameter_profile_switching": true,
-    "memory_orchestration": true,
-    "knowledge_rag": true,
-    "tool_routing": true,
-    "reflection": true,
-    "critic": true,
-    "planner": true,
-    "rpm_guard": true,
-    "benchmark_suite": true
-  },
-  "openwebui_compatibility": {
-    "verified_version": "0.6.x",
-    "model_import": "Admin > Models > Import or API POST /api/models/create",
-    "system_prompt_location": "Model params.system field",
-    "extra_body_support": "Via openai_compatible provider with extra_body passthrough",
-    "filter_support": true,
-    "pipe_support": true
-  },
-  "nim_compatibility": {
-    "endpoint": "https://integrate.api.nvidia.com/v1",
-    "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
-    "free_tier_rpm": 32,
-    "thinking_param": "extra_body.chat_template_kwargs.enable_thinking",
-    "reasoning_budget_param": "extra_body.reasoning_budget"
-  }
+
+  "tool_manifest": [
+    {
+      "name": "GitHub",
+      "type": "mcp",
+      "routing_rule": "only for repo/commit/issue/PR/code-search queries",
+      "rpm_cost": 1
+    },
+    {
+      "name": "Brain Memory",
+      "type": "mcp",
+      "routing_rule": "only when user-specific context materially changes the answer",
+      "rpm_cost": 1
+    },
+    {
+      "name": "Web Search",
+      "type": "builtin",
+      "routing_rule": "time-sensitive facts, current versions, breaking news",
+      "rpm_cost": 0
+    },
+    {
+      "name": "Knowledge (RAG)",
+      "type": "builtin",
+      "routing_rule": "domain-specific collections, codebase queries",
+      "rpm_cost": 0
+    },
+    {
+      "name": "Calculator",
+      "type": "builtin",
+      "routing_rule": "multi-step arithmetic, statistical derivations requiring precision",
+      "rpm_cost": 0
+    }
+  ]
 }

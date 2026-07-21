@@ -1,17 +1,60 @@
 {
-  "schema": "ai-os/profiles-index",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Index of all parameter profiles. The Profile Selector Filter maps task_class to profile_id at inlet. New profiles can be added without modifying the Filter logic — only this index needs updating.",
-  "profiles": [
-    {"profile_id": "discussion", "task_classes": ["conversational", "greeting", "meta"], "file": "runtime/openwebui/profiles/discussion.json"},
-    {"profile_id": "coding", "task_classes": ["coding", "code_review", "refactoring"], "file": "runtime/openwebui/profiles/coding.json"},
-    {"profile_id": "architecture", "task_classes": ["architecture", "system_design", "infrastructure"], "file": "runtime/openwebui/profiles/architecture.json"},
-    {"profile_id": "analysis", "task_classes": ["analysis", "business_analysis", "data_analysis"], "file": "runtime/openwebui/profiles/analysis.json"},
-    {"profile_id": "creative", "task_classes": ["creative", "writing", "brainstorm"], "file": "runtime/openwebui/profiles/creative.json"},
-    {"profile_id": "research", "task_classes": ["research", "synthesis", "literature_review"], "file": "runtime/openwebui/profiles/research.json"},
-    {"profile_id": "debugging", "task_classes": ["debugging", "error_diagnosis", "root_cause_analysis"], "file": "runtime/openwebui/profiles/debugging.json"}
+  "_schema": "ai-os/owu-profiles",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Human-readable parameter profile reference. Machine-executable profiles live in parameters.json. This file documents the reasoning behind each profile's values for future tuning.",
+
+  "tuning_principles": [
+    "Temperature controls determinism. Every 0.1 increase adds variance. Coding tasks cannot tolerate variance above 0.3.",
+    "Reasoning budget is not free — it adds latency proportional to budget used. Set the minimum needed for task depth.",
+    "max_tokens caps output length. Set it to 1.5× the expected output to prevent cut-off without enabling over-generation.",
+    "Presence and frequency penalties reduce repetition in long conversations. Zero for coding and debugging — do not penalise repeated variable names."
   ],
-  "default_profile": "discussion",
-  "fallback_profile": "discussion"
+
+  "profiles": {
+    "discussion": {
+      "intent": "Balanced technical dialogue — fluent, precise, not repetitive",
+      "temperature_rationale": "0.7 gives natural variation in language while keeping factual accuracy. Below 0.5 produces stilted prose.",
+      "reasoning_rationale": "4,096 tokens handles multi-part questions without over-spending on simple ones.",
+      "rpm_per_turn_estimate": 2
+    },
+    "coding": {
+      "intent": "Deterministic, correct, production-grade code generation",
+      "temperature_rationale": "0.2 maximises code correctness. Above 0.4 introduces variable naming inconsistencies and logic drift.",
+      "reasoning_rationale": "4,096 tokens for non-trivial algorithms. Debugging tasks at this profile stay under budget.",
+      "rpm_per_turn_estimate": 2
+    },
+    "architecture": {
+      "intent": "Structured multi-section system design with trade-off analysis",
+      "temperature_rationale": "0.4 balances creative solution exploration with structured output. Architecture requires both.",
+      "reasoning_rationale": "8,192 tokens required — 7 mandatory sections each requiring independent reasoning chains.",
+      "max_tokens_rationale": "6,144 output tokens covers a complete architecture response with all sections.",
+      "rpm_per_turn_estimate": 3
+    },
+    "analysis": {
+      "intent": "Multi-variable analysis using named frameworks",
+      "temperature_rationale": "0.4 for the same reason as architecture — synthesis across sources requires moderate exploration.",
+      "reasoning_rationale": "6,144 tokens for MECE/SWOT/5-Whys chains across complex problem spaces.",
+      "rpm_per_turn_estimate": 2
+    },
+    "creative": {
+      "intent": "Generative content: blog posts, essays, brainstorming",
+      "temperature_rationale": "0.9 enables linguistic variety. Creative quality collapses below 0.7.",
+      "reasoning_rationale": "2,048 tokens — creative tasks need less structured reasoning than technical ones.",
+      "rpm_per_turn_estimate": 2
+    },
+    "research": {
+      "intent": "Synthesis of multiple sources into structured research output",
+      "temperature_rationale": "0.5 for cross-domain synthesis while maintaining factual precision.",
+      "max_tokens_rationale": "8,192 output tokens for complete literature synthesis. Research responses are inherently long.",
+      "reasoning_rationale": "8,192 tokens — research synthesis has the highest reasoning depth requirement.",
+      "rpm_per_turn_estimate": 3
+    },
+    "debugging": {
+      "intent": "Exact trace-following, hypothesis ranking, root cause identification",
+      "temperature_rationale": "0.1 minimum — debugging requires maximum determinism. Each hypothesis must be evaluated on evidence, not variance.",
+      "reasoning_rationale": "6,144 tokens to fully work through the hypothesis elimination chain.",
+      "rpm_per_turn_estimate": 2
+    }
+  }
 }

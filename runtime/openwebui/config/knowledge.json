@@ -1,59 +1,87 @@
 {
-  "schema": "ai-os/knowledge-config",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Knowledge retrieval (RAG) adds latency and tokens. This config enforces strict activation conditions and similarity floors to ensure only high-signal content enters the context.",
-  "priority_order": [
-    {"rank": 1, "source": "active_knowledge_collection", "condition": "query_references_loaded_collection"},
-    {"rank": 2, "source": "cached_retrieval", "condition": "same_query_run_within_ttl_window"},
-    {"rank": 3, "source": "model_parametric_knowledge", "condition": "collection_empty_OR_similarity_below_floor"},
-    {"rank": 4, "source": "live_web_search", "condition": "time_sensitive_AND_no_collection_covers_it"}
-  ],
-  "ranking": {
-    "method": "cosine_similarity",
-    "rerank": false,
+  "_schema": "ai-os/owu-knowledge-config",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Governs RAG behaviour for AI-OS runtime. Defines retrieval triggers, ranking, freshness, citation policy, and fallback strategy.",
+
+  "provider": "open_webui_rag",
+
+  "retrieval_policy": {
+    "_why": "RAG is not free. Each retrieval call costs latency. Only trigger when a loaded collection is likely to improve answer quality over model knowledge.",
+    "auto_trigger_conditions": [
+      "query contains library or API name with version specificity",
+      "query is about a codebase loaded as a collection",
+      "query asks for historical data or benchmark results",
+      "query asks 'how does X work in this project'",
+      "query contains 'according to the docs' or equivalent"
+    ],
+    "skip_conditions": [
+      "no relevant collection is loaded",
+      "query is conceptual with no document-specificity",
+      "query is about current events (use web search instead)"
+    ],
     "top_k": 5,
-    "rationale": "Top-5 is sufficient for most technical queries. Reranking is skipped to avoid additional latency on Free Tier."
+    "minimum_similarity_score": 0.65,
+    "reranking_enabled": true
   },
-  "freshness": {
-    "prefer_recent_chunks": true,
-    "max_chunk_age_days": 180,
-    "rationale": "Chunks older than 6 months may reference deprecated APIs or outdated architecture. Age penalty applied in scoring."
+
+  "ranking_policy": {
+    "_why": "Multiple retrieval signals must be combined. Recency matters for versioned APIs but not for stable algorithms.",
+    "primary_rank_signal": "similarity_score",
+    "secondary_rank_signal": "recency",
+    "recency_weight": 0.15,
+    "similarity_weight": 0.85
   },
+
+  "freshness_policy": {
+    "_why": "API and library documentation changes frequently. Cached chunk scores from old ingestion runs may be misleading.",
+    "chunk_age_warning_days": 30,
+    "chunk_age_reject_days": 180,
+    "freshness_action_on_warning": "append [possibly stale — re-ingest recommended] to citation",
+    "freshness_action_on_reject": "skip chunk, fall back to model knowledge"
+  },
+
   "chunk_strategy": {
-    "max_chunk_tokens": 512,
+    "_why": "Chunk size balances context quality against token budget. Large chunks carry more context but consume more tokens per retrieval.",
+    "preferred_chunk_size_tokens": 512,
+    "max_chunk_size_tokens": 1024,
     "overlap_tokens": 64,
-    "rationale": "512-token chunks balance retrieval precision with context budget. 64-token overlap prevents boundary truncation of critical sentences."
+    "chunk_by": "semantic_boundary"
   },
+
   "retrieval_budget": {
-    "max_tokens_injected": 1500,
-    "max_percent_of_context": 25,
-    "rationale": "1500 tokens from RAG provides substantial domain grounding without crowding the answer space. 25% context cap prevents RAG from displacing reasoning capacity."
+    "_why": "Hard ceiling prevents RAG context from overwhelming conversation context.",
+    "max_rag_context_tokens": 8192,
+    "max_chunks_per_query": 5,
+    "overflow_strategy": "drop_lowest_score_chunks"
   },
-  "citation": {
-    "format": "[Source: {collection}, chunk {N}, score: {X.XX}]",
-    "mandatory": true,
-    "rationale": "Citations allow the user to verify retrieved content and detect outdated chunks. Mandatory — never present retrieved content as original reasoning."
+
+  "citation_policy": {
+    "_why": "Citations are mandatory when presenting RAG content. They allow the user to verify the source and detect stale information.",
+    "citation_format": "[Source: {collection}, chunk {N}, score: {X.XX}]",
+    "mandatory_when": ["any RAG content is present in the response"],
+    "prohibited_when": ["presenting model knowledge as RAG"],
+    "distinguish_source_types": ["RAG", "Brain Memory", "Model Knowledge", "Live Tool Result"]
   },
-  "skip_conditions": [
-    "query_is_conversational_chitchat",
-    "query_is_greeting_or_ack",
-    "all_relevant_collections_empty",
-    "max_similarity_across_all_collections_lt_0.65"
-  ],
-  "mandatory_conditions": [
-    "query_explicitly_references_loaded_collection_name",
-    "query_asks_for_specific_API_or_library_usage",
-    "query_references_codebase_specific_behaviour"
-  ],
-  "fallback": {
-    "on_empty_or_low_score": "use_model_parametric_knowledge",
-    "append_tag": "[model knowledge — verify with current docs]",
-    "rationale": "Model parametric knowledge is often accurate but may be stale. The verify tag signals the user to check official documentation for time-sensitive facts."
+
+  "fallback_policy": {
+    "_why": "When RAG retrieval fails or scores are below threshold, the system must not hallucinate. Model knowledge with explicit flagging is safer than silence.",
+    "score_below_threshold": "fall back to model knowledge, append [model knowledge — verify with current docs]",
+    "retrieval_error": "acknowledge error, state what data is missing, proceed with model knowledge",
+    "no_collection_loaded": "skip RAG entirely, use model knowledge"
   },
+
   "web_search_override": {
-    "trigger": "query_is_time_sensitive AND no_collection_covers_topic",
-    "examples": ["current library version", "API breaking change after training cutoff", "recent incident or outage"],
-    "rationale": "Web search overrides RAG for time-sensitive facts where static collections are guaranteed stale."
+    "_why": "Web search is more current than any RAG collection. Use it when freshness is critical and no trusted collection covers the query.",
+    "override_conditions": [
+      "query is about a software release in the last 30 days",
+      "query is about current pricing or availability",
+      "query is about breaking news or incidents",
+      "query explicitly requests current information"
+    ],
+    "prefer_rag_conditions": [
+      "a project-specific collection is loaded and relevant",
+      "query is about internal architecture or codebase"
+    ]
   }
 }

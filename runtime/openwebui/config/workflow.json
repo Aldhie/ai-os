@@ -1,97 +1,140 @@
 {
-  "schema": "ai-os/workflow",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Defines the deterministic processing pipeline executed for every user turn. Each stage has a skip condition to prevent unnecessary computation. Stages execute in order. Stage failures degrade gracefully — they do not abort the response.",
+  "_schema": "ai-os/owu-workflow-config",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Defines the per-turn execution pipeline for AI-OS runtime. Each stage has a trigger, priority, skip condition, failure strategy, latency budget, and token budget. This is the Runtime Decision Engine in executable form.",
+
   "pipeline": [
     {
       "stage": 1,
-      "name": "task_classification",
-      "description": "Classify user query into task_class: greeting, simple_factual, technical_explanation, coding, architecture, debugging, research, planning, analysis, creative",
-      "skip_condition": "none",
-      "token_cost": 0,
-      "latency_ms": 0,
-      "output": "task_class"
+      "name": "RPM Guard",
+      "type": "filter_inlet",
+      "trigger": "every_turn",
+      "priority": "CRITICAL",
+      "skip_condition": "filter disabled in OWU valves",
+      "failure_strategy": "reject turn with user-visible error message",
+      "latency_budget_ms": 5,
+      "token_budget": 0,
+      "_why": "Must be first. A rejected request costs nothing. A 429 from NIM mid-stream corrupts the session."
     },
     {
       "stage": 2,
-      "name": "profile_selection",
-      "description": "Map task_class to parameter profile. Overrides default parameters for the NIM call.",
-      "skip_condition": "none",
-      "token_cost": 0,
-      "latency_ms": 0,
-      "output": "active_profile"
+      "name": "Credential Scrub",
+      "type": "filter_inlet",
+      "trigger": "every_turn",
+      "priority": "CRITICAL",
+      "skip_condition": "filter disabled",
+      "failure_strategy": "pass through without scrubbing, log warning",
+      "latency_budget_ms": 10,
+      "token_budget": 0,
+      "_why": "Credential exposure to NIM is an irreversible data leak. Prevention must run before any external call."
     },
     {
       "stage": 3,
-      "name": "memory_query",
-      "description": "Query Brain Memory if task_class indicates user-specific context is relevant.",
-      "skip_condition": "task_class IN [greeting, simple_factual] OR memory_score_lt_0.70",
-      "token_cost": 400,
-      "latency_ms": 800,
-      "output": "memory_context"
+      "name": "Profile Selector",
+      "type": "filter_inlet",
+      "trigger": "every_turn",
+      "priority": "HIGH",
+      "skip_condition": "filter disabled",
+      "failure_strategy": "apply default profile (discussion)",
+      "latency_budget_ms": 5,
+      "token_budget": 0,
+      "_why": "Parameter optimisation per task class improves quality and reduces token waste. Default profile is always safe."
     },
     {
       "stage": 4,
-      "name": "knowledge_retrieval",
-      "description": "Query active knowledge collections if query references domain content.",
-      "skip_condition": "no_relevant_collection OR similarity_lt_0.65 OR task_class IN [greeting]",
-      "token_cost": 1500,
-      "latency_ms": 1200,
-      "output": "knowledge_chunks"
+      "name": "Context Budget Enforcer",
+      "type": "filter_inlet",
+      "trigger": "every_turn",
+      "priority": "HIGH",
+      "skip_condition": "estimated context tokens < 65536",
+      "failure_strategy": "pass through without truncation, log warning",
+      "latency_budget_ms": 15,
+      "token_budget": 0,
+      "_why": "Context overflow on NIM Free Tier causes timeout. Proactive truncation is cheaper than a failed request."
     },
     {
       "stage": 5,
-      "name": "tool_routing",
-      "description": "Invoke external tools (GitHub, web search, calculator) if required. All tool calls batched here before NIM.",
-      "skip_condition": "answer_already_determinable_from_context",
-      "token_cost": 600,
-      "latency_ms": 3000,
-      "output": "tool_results"
+      "name": "Memory Retrieval",
+      "type": "tool_call",
+      "trigger": "auto_load_triggers met (see memory.json)",
+      "priority": "MEDIUM",
+      "skip_condition": "no load trigger signal in user message",
+      "failure_strategy": "skip memory, proceed without user context",
+      "latency_budget_ms": 800,
+      "token_budget": 4096,
+      "rpm_cost": 1,
+      "_why": "User context materially improves personalised answers. Optional — failure degrades personalisation, not correctness."
     },
     {
       "stage": 6,
-      "name": "planner_activation",
-      "description": "Activate planner if task requires > 3 sequential steps.",
-      "skip_condition": "task_steps_lte_3 AND no_explicit_plan_request",
-      "token_cost": 500,
-      "latency_ms": 0,
-      "output": "plan_structure"
+      "name": "Knowledge Retrieval (RAG)",
+      "type": "tool_call",
+      "trigger": "auto_trigger_conditions met (see knowledge.json)",
+      "priority": "MEDIUM",
+      "skip_condition": "no relevant collection loaded OR skip_conditions met",
+      "failure_strategy": "fall back to model knowledge with [verify] flag",
+      "latency_budget_ms": 1500,
+      "token_budget": 8192,
+      "rpm_cost": 0,
+      "_why": "RAG does not consume NIM RPM — it uses OWU's internal vector search. Zero RPM cost makes it always worth attempting when relevant."
     },
     {
       "stage": 7,
-      "name": "nim_inference",
-      "description": "Single NIM API call with full context: system prompt + memory + knowledge + tool results + plan + user message. enable_thinking and reasoning_budget applied via extra_body.",
-      "skip_condition": "none",
-      "token_cost": "profile_dependent",
-      "latency_ms": "profile_dependent",
-      "output": "draft_response"
+      "name": "Tool Calls (GitHub / Web Search / Calculator)",
+      "type": "tool_call",
+      "trigger": "routing rules met (see tools section of compiled_prompt_v2.md)",
+      "priority": "MEDIUM",
+      "skip_condition": "routing rules not met OR RPM budget exhausted",
+      "failure_strategy": "acknowledge error, proceed without tool result",
+      "latency_budget_ms": 3000,
+      "token_budget": 4096,
+      "rpm_cost": "1 per tool call — max 3 tool calls before NIM inference",
+      "batch_rule": "collect all tool results before NIM inference — no partial answer chaining",
+      "_why": "Tool results must arrive together to avoid multiple NIM inference calls per turn, which drains RPM quota."
     },
     {
       "stage": 8,
-      "name": "reflection_and_critic",
-      "description": "Internal review pass for high-stakes task classes. Embedded in reasoning budget — no additional NIM call.",
-      "skip_condition": "task_class IN [greeting, simple_factual, conversational]",
-      "token_cost": 700,
-      "latency_ms": 0,
-      "output": "reviewed_response"
+      "name": "NIM Inference",
+      "type": "nim_call",
+      "trigger": "every_turn (exactly once)",
+      "priority": "CRITICAL",
+      "skip_condition": "never",
+      "failure_strategy": "surface NIM error to user with retry guidance",
+      "latency_budget_ms": 30000,
+      "token_budget": "determined by active profile max_tokens",
+      "rpm_cost": 1,
+      "_why": "The single inference call must happen exactly once per turn. All context (memory + RAG + tool results) must be assembled before this call."
     },
     {
       "stage": 9,
-      "name": "output_formatting",
-      "description": "Apply response format rules from response.md: length target, format type, prohibited patterns.",
-      "skip_condition": "none",
-      "token_cost": 0,
-      "latency_ms": 0,
-      "output": "final_response"
+      "name": "Response Quality Monitor",
+      "type": "filter_outlet",
+      "trigger": "every_turn",
+      "priority": "LOW",
+      "skip_condition": "filter disabled",
+      "failure_strategy": "pass through response unchanged",
+      "latency_budget_ms": 10,
+      "token_budget": 0,
+      "_why": "Quality monitoring is passive — it annotates metadata for the benchmark harness without modifying the response."
     }
   ],
+
   "rpm_accounting": {
-    "stage_3_memory": 1,
-    "stage_4_rag": 0,
-    "stage_5_tools_per_tool": 1,
-    "stage_7_nim": 1,
-    "max_rpm_per_turn": 4,
-    "rationale": "Worst case: memory(1) + 2 tools(2) + NIM(1) = 4 RPM per turn. At 32 RPM budget, this allows 8 concurrent turns per minute before throttling."
+    "per_turn_budget": 32,
+    "nim_inference_cost": 1,
+    "max_tool_calls_per_turn": 4,
+    "memory_retrieval_cost": 1,
+    "rag_retrieval_cost": 0,
+    "safety_margin": 3,
+    "effective_tool_budget_per_turn": 3
+  },
+
+  "failure_modes": {
+    "nim_429": "RPM Guard should prevent this. If reached: surface error, advise 60s wait.",
+    "nim_timeout": "Context too large or NIM overloaded. Context Budget Enforcer should prevent. If reached: advise retry with shorter input.",
+    "tool_error": "Acknowledge, state what is missing, proceed with best available.",
+    "memory_conflict": "Surface conflict to user, request resolution.",
+    "rag_low_score": "Fall back to model knowledge with [verify] flag."
   }
 }

@@ -1,67 +1,95 @@
 {
-  "schema": "ai-os/memory-config",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Memory orchestration must be conservative on token budget. Every memory item injected adds latency and consumes context budget. This config enforces minimum relevance, maximum injection size, and automatic summarisation to prevent context blowout on long conversations.",
+  "_schema": "ai-os/owu-memory-config",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_why": "Governs all memory behaviour for AI-OS runtime. Defines load triggers, compression policy, conflict resolution, expiration, and token budgeting. Designed for long-running technical sessions with cross-session project continuity.",
+
+  "provider": "brain_memory",
+  "namespace": "ai_os",
+
   "load_policy": {
-    "auto_load": true,
-    "min_relevance_score": 0.70,
-    "max_items_per_turn": 5,
-    "max_tokens_per_turn": 600,
-    "rationale": "0.70 relevance floor prevents low-signal noise from diluting context. 600-token cap ensures memory never consumes more than 15% of a standard 4096-token response budget."
+    "_why": "Memory loading is not free — each retrieval costs latency and RPM. Only load when user context materially changes the answer.",
+    "auto_load_triggers": [
+      "user references a prior decision",
+      "user references a project by name",
+      "user says 'as we discussed' or equivalent",
+      "question involves personal preferences",
+      "question involves project-specific constraints",
+      "question involves previously established naming conventions"
+    ],
+    "skip_triggers": [
+      "generic factual questions with no personal dependency",
+      "first message of a new session with no project context signal",
+      "greeting or social messages"
+    ],
+    "minimum_relevance_score": 0.70,
+    "top_k": 5,
+    "announce_loading": false
   },
-  "ignore_policy": {
-    "skip_if": [
-      "query_is_purely_factual_with_no_user_context",
-      "collection_is_empty",
-      "session_is_first_turn_and_no_prior_history",
-      "relevance_score_lt_0.70"
+
+  "compression_policy": {
+    "_why": "Raw conversation history grows linearly. Without compression, long sessions hit the 65,536 token ceiling and degrade quality. Compression preserves decisions, not transcripts.",
+    "trigger_turn_count": 15,
+    "compression_strategy": "resolved_subproblem_summary",
+    "summary_format": "[RESOLVED: {topic} | {decision} | {rationale} | turns {start}-{end}]",
+    "preserve_verbatim": ["code blocks", "explicit user corrections", "explicit constraints"],
+    "discard_verbatim": ["filler affirmations", "acknowledgements", "repetitive clarifications"]
+  },
+
+  "summarization_policy": {
+    "_why": "Summarization reduces token budget pressure while keeping decision context. Triggered at the context ceiling, not on a fixed schedule.",
+    "trigger_estimated_tokens": 50000,
+    "target_summary_tokens": 2000,
+    "priority_preserve": [
+      "explicit user decisions",
+      "architectural constraints established in session",
+      "code that was accepted by user",
+      "requirements explicitly stated"
     ]
   },
-  "compression": {
-    "enabled": true,
-    "trigger": "conversation_turns_gte_15",
-    "method": "summarise_resolved_sub_problems_into_single_memory_item",
-    "rationale": "After 15 turns, raw transcript retention is token-inefficient. Compression preserves decisions and outcomes while discarding intermediate reasoning steps."
+
+  "cache_policy": {
+    "_why": "Caching avoids redundant retrieval calls for items already loaded this session. Reduces RPM consumption.",
+    "session_cache_enabled": true,
+    "cache_ttl_minutes": 60,
+    "cache_invalidation_triggers": [
+      "user explicitly overrides a cached decision",
+      "user uploads a new document contradicting cached content"
+    ]
   },
-  "summarisation": {
-    "enabled": true,
-    "trigger": "memory_item_token_count_gt_200",
-    "max_summary_tokens": 100,
-    "preserve_fields": ["decision", "outcome", "date", "project_context"]
-  },
-  "cache": {
-    "enabled": true,
-    "ttl_seconds": 300,
-    "rationale": "Cache memory query results for 5 minutes to avoid redundant vector lookups within a single session. Memory content does not change turn-to-turn."
-  },
-  "priority": {
-    "order": ["recent_project_decision", "explicit_user_preference", "prior_session_outcome", "general_context"],
-    "rationale": "Recent project decisions are most likely to affect the current answer. Preferences affect output format and style. Prior session outcomes provide continuity."
-  },
-  "persistence": {
-    "cross_session": true,
-    "storage": "open_webui_memory",
-    "rationale": "Cross-session memory enables project continuity across browser sessions and devices."
-  },
-  "expiration": {
-    "default_ttl_days": 90,
-    "high_priority_ttl_days": 365,
-    "rationale": "Standard memory expires in 90 days to prevent stale context contamination. Explicitly marked high-priority items (major decisions) persist for 1 year."
-  },
+
   "conflict_resolution": {
-    "policy": "surface_conflict_to_user",
-    "format": "This differs from [prior decision at turn N / date]. Do you want to update or override it?",
-    "rationale": "Silent overwrite risks corrupting long-running project state. Surface conflicts allow the user to make an explicit decision."
+    "_why": "Memory entries can become stale or contradicted by new user input. Explicit resolution protocol prevents silent inconsistencies.",
+    "priority_order": [
+      "explicit user instruction in current turn",
+      "brain_memory score >= 0.80",
+      "brain_memory score 0.70-0.79",
+      "model knowledge"
+    ],
+    "conflict_surface_protocol": "This differs from [prior decision: {summary}]. Do you want to update or override it?",
+    "auto_resolve_threshold": 0.90
   },
-  "confidence": {
-    "high": {"min_score": 0.85, "action": "inject_directly"},
-    "medium": {"min_score": 0.70, "action": "inject_with_soft_qualifier"},
-    "low": {"max_score": 0.69, "action": "skip"}
+
+  "expiration_policy": {
+    "_why": "Stale decisions cause incorrect recommendations. Version-tagged entries expire when their version is superseded.",
+    "default_ttl_days": 90,
+    "project_decision_ttl_days": 180,
+    "version_tagged_entries": "expire on version increment"
   },
+
   "token_budget": {
-    "max_percent_of_context": 15,
-    "hard_cap_tokens": 600,
-    "rationale": "Memory should inform, not dominate the context. 15% cap preserves budget for the actual answer and knowledge retrieval."
-  }
+    "_why": "Memory context must not crowd out the actual conversation. Hard ceiling prevents context overflow from memory alone.",
+    "max_memory_context_tokens": 4096,
+    "max_single_entry_tokens": 512,
+    "overflow_strategy": "drop_lowest_relevance_score"
+  },
+
+  "forbidden_content": [
+    "passwords",
+    "API keys",
+    "credentials",
+    "health data",
+    "payment information",
+    "PII (names, emails, phone numbers outside project context)"
+  ]
 }

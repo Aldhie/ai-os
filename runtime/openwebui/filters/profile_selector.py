@@ -1,166 +1,125 @@
 """
 AI-OS Filter: Profile Selector
 Version: 1.0.0
-Responsibility: Map task_class (set by Task Classifier) to a parameter
-                profile and override the request body parameters accordingly.
-Rationale: Different task classes require fundamentally different model
-           behaviour. Coding needs low temperature and high reasoning budget.
-           Creative needs high temperature and low reasoning budget.
-           Applying a single static parameter set to all tasks degrades
-           quality across all task classes simultaneously.
-Install: Open WebUI > Admin > Functions > + New Function > paste this file.
-Dependency: Task Classifier filter must run before this filter (lower priority
-            number = runs first in Open WebUI filter chain).
+Responsibility: Classify user query into task_class and apply the matching
+parameter profile (temperature, max_tokens, reasoning_budget) before the NIM call.
+Install: Open WebUI Admin > Functions > New Function (type: Filter)
+
+WHY: A single parameter set cannot be optimal for both creative writing (needs high
+temperature) and production code generation (needs low temperature + high reasoning).
+This filter dynamically selects the right profile per turn, giving per-task optimal
+parameters without requiring the user to manually switch models.
 """
 
 from pydantic import BaseModel, Field
 from typing import Optional
-
-
-# ---------------------------------------------------------------------------
-# Profile definitions — mirrors runtime/openwebui/profiles/*.json
-# Single source of truth is the JSON files; this is the runtime application.
-# ---------------------------------------------------------------------------
-PROFILES: dict[str, dict] = {
-    "greeting": {
-        "temperature": 0.7,
-        "top_p": 0.95,
-        "top_k": 50,
-        "max_tokens": 256,
-        "presence_penalty": 0.0,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 512,
-    },
-    "conversational": {
-        "temperature": 0.75,
-        "top_p": 0.95,
-        "top_k": 50,
-        "max_tokens": 2048,
-        "presence_penalty": 0.0,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 2048,
-    },
-    "coding": {
-        "temperature": 0.2,
-        "top_p": 0.95,
-        "top_k": 20,
-        "max_tokens": 4096,
-        "presence_penalty": 0.0,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 4096,
-    },
-    "debugging": {
-        "temperature": 0.1,
-        "top_p": 0.90,
-        "top_k": 10,
-        "max_tokens": 3072,
-        "presence_penalty": 0.0,
-        "frequency_penalty": 0.0,
-        "reasoning_budget": 6144,
-    },
-    "architecture": {
-        "temperature": 0.4,
-        "top_p": 0.95,
-        "top_k": 40,
-        "max_tokens": 6144,
-        "presence_penalty": 0.1,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 8192,
-    },
-    "research": {
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "top_k": 50,
-        "max_tokens": 8192,
-        "presence_penalty": 0.1,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 8192,
-    },
-    "analysis": {
-        "temperature": 0.3,
-        "top_p": 0.92,
-        "top_k": 30,
-        "max_tokens": 4096,
-        "presence_penalty": 0.0,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 6144,
-    },
-    "planning": {
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "top_k": 50,
-        "max_tokens": 4096,
-        "presence_penalty": 0.1,
-        "frequency_penalty": 0.1,
-        "reasoning_budget": 4096,
-    },
-    "creative": {
-        "temperature": 0.9,
-        "top_p": 0.98,
-        "top_k": 80,
-        "max_tokens": 3000,
-        "presence_penalty": 0.3,
-        "frequency_penalty": 0.2,
-        "reasoning_budget": 2048,
-    },
-}
-
-DEFAULT_PROFILE = "conversational"
+import re
 
 
 class Filter:
     class Valves(BaseModel):
-        enabled: bool = Field(
-            default=True,
-            description="Disable profile switching (all requests use default parameters)."
-        )
-        enable_thinking: bool = Field(
-            default=True,
-            description="Set enable_thinking=true in extra_body for all requests."
-        )
-        debug_log: bool = Field(
-            default=False,
-            description="Log the applied profile for each request."
-        )
+        enabled: bool = Field(default=True, description="Enable/disable profile selection")
+        default_profile: str = Field(default="discussion", description="Fallback profile if no task class matches")
+
+    # Task classification rules — ordered by specificity.
+    # First matching rule wins.
+    TASK_RULES = [
+        # Debugging: must come before coding to catch 'error', 'traceback', 'exception'
+        (re.compile(
+            r'\b(debug|traceback|stack trace|exception|error:|TypeError|ValueError|'
+            r'AttributeError|KeyError|segfault|null pointer|undefined|NaN|unexpected behaviour)\b',
+            re.IGNORECASE
+        ), "debugging"),
+        # Coding
+        (re.compile(
+            r'\b(write|implement|create|generate|refactor|optimise|code|function|class|'
+            r'method|API|endpoint|script|program|algorithm|SQL|query|regex|unit test)\b',
+            re.IGNORECASE
+        ), "coding"),
+        # Architecture
+        (re.compile(
+            r'\b(architecture|system design|infrastructure|scalab|microservice|monolith|'
+            r'event.driven|CQRS|DDD|service mesh|kubernetes|distributed|deployment topology)\b',
+            re.IGNORECASE
+        ), "architecture"),
+        # Research
+        (re.compile(
+            r'\b(research|survey|literature|compare|contrast|study|review|state of the art|'
+            r'benchmark|paper|publication|academic|citation)\b',
+            re.IGNORECASE
+        ), "research"),
+        # Analysis
+        (re.compile(
+            r'\b(analyse|analyze|analysis|evaluate|assess|diagnose|measure|metric|'
+            r'performance|bottleneck|root cause|trade.off|pros.*cons)\b',
+            re.IGNORECASE
+        ), "analysis"),
+        # Creative
+        (re.compile(
+            r'\b(write.*story|creative|blog post|essay|narrative|brainstorm|idea|'
+            r'marketing copy|tagline|slogan)\b',
+            re.IGNORECASE
+        ), "creative"),
+    ]
+
+    # Profile parameter overrides mapped by task_class
+    PROFILES = {
+        "discussion":  {"temperature": 0.7,  "max_tokens": 4096, "reasoning_budget": 4096},
+        "coding":      {"temperature": 0.2,  "max_tokens": 4096, "reasoning_budget": 4096},
+        "architecture":{"temperature": 0.4,  "max_tokens": 6144, "reasoning_budget": 8192},
+        "analysis":    {"temperature": 0.4,  "max_tokens": 4096, "reasoning_budget": 6144},
+        "creative":    {"temperature": 0.9,  "max_tokens": 3000, "reasoning_budget": 2048},
+        "research":    {"temperature": 0.5,  "max_tokens": 8192, "reasoning_budget": 8192},
+        "debugging":   {"temperature": 0.1,  "max_tokens": 3072, "reasoning_budget": 6144},
+    }
 
     def __init__(self):
         self.valves = self.Valves()
 
-    # -----------------------------------------------------------------------
-    # INLET
-    # -----------------------------------------------------------------------
+    def _classify(self, text: str) -> str:
+        for pattern, task_class in self.TASK_RULES:
+            if pattern.search(text):
+                return task_class
+        return self.valves.default_profile
+
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
+        """
+        Classify the last user message and apply matching parameter profile
+        to body["options"] before the NIM API call.
+        """
         if not self.valves.enabled:
             return body
 
-        task_class = body.get('metadata', {}).get('task_class', DEFAULT_PROFILE)
-        profile = PROFILES.get(task_class, PROFILES[DEFAULT_PROFILE])
+        messages = body.get("messages", [])
+        last_user_text = ""
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                content = msg.get("content", "")
+                last_user_text = content if isinstance(content, str) else ""
+                break
 
-        # Apply profile parameters to request body options
-        options = body.setdefault('options', {})
-        options['temperature'] = profile['temperature']
-        options['top_p'] = profile['top_p']
-        options['top_k'] = profile['top_k']
-        options['num_predict'] = profile['max_tokens']  # Open WebUI uses num_predict
-        options['presence_penalty'] = profile['presence_penalty']
-        options['frequency_penalty'] = profile['frequency_penalty']
+        task_class = self._classify(last_user_text)
+        profile = self.PROFILES.get(task_class, self.PROFILES["discussion"])
 
-        # Apply NIM-specific thinking parameters via extra_body
-        if self.valves.enable_thinking:
-            extra_body = body.setdefault('extra_body', {})
-            extra_body.setdefault('chat_template_kwargs', {})['enable_thinking'] = True
-            extra_body['reasoning_budget'] = profile['reasoning_budget']
+        # Apply profile to body options
+        if "options" not in body:
+            body["options"] = {}
 
-        if self.valves.debug_log:
-            print(
-                f"[AI-OS Profile Selector] Applied profile={task_class} | "
-                f"temp={profile['temperature']} | reasoning_budget={profile['reasoning_budget']}"
-            )
+        body["options"]["temperature"] = profile["temperature"]
+        body["options"]["num_predict"] = profile["max_tokens"]  # OWU uses num_predict
+
+        # Inject reasoning budget via extra_body for NIM
+        if "extra_body" not in body:
+            body["extra_body"] = {}
+        body["extra_body"]["chat_template_kwargs"] = {"enable_thinking": True}
+        body["extra_body"]["reasoning_budget"] = profile["reasoning_budget"]
+
+        # Tag metadata for outlet filters and benchmark
+        body["_ai_os_task_class"] = task_class
+        body["_ai_os_profile"] = task_class
 
         return body
 
-    # -----------------------------------------------------------------------
-    # OUTLET — passthrough
-    # -----------------------------------------------------------------------
     def outlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
+        """Pass-through. Profile selection is inlet-only."""
         return body

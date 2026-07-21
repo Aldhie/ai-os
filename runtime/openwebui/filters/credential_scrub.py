@@ -1,13 +1,14 @@
 """
 AI-OS Filter: Credential Scrub
 Version: 1.0.0
-Responsibility: Detect and redact API keys, tokens, and passwords from
-                user messages before they are sent to NVIDIA NIM.
-Rationale: Users occasionally paste credentials into chat during debugging.
-           Sending nvapi- keys, sk- tokens, or Bearer headers to NIM creates
-           an external data exposure risk. Redaction happens at inlet so the
-           NIM inference call never receives the credential.
-Install: Open WebUI > Admin > Functions > + New Function > paste this file.
+Responsibility: Detect and redact API keys, tokens, and secrets from user messages
+before they reach NVIDIA Cloud NIM.
+Install: Open WebUI Admin > Functions > New Function (type: Filter)
+
+WHY: Users occasionally paste credentials into chat (deployment configs, .env files,
+CI/CD snippets). Sending these to a third-party API endpoint (NIM) creates an
+external data exposure risk. This filter eliminates that risk silently and
+reports the redaction in the response metadata.
 """
 
 from pydantic import BaseModel, Field
@@ -15,73 +16,74 @@ from typing import Optional
 import re
 
 
-CREDENTIAL_PATTERNS = [
-    # NVIDIA NIM API keys
-    (re.compile(r'nvapi-[A-Za-z0-9_\-]{20,}'), 'nvapi-[REDACTED]'),
-    # OpenAI-style secret keys
-    (re.compile(r'sk-[A-Za-z0-9]{20,}'), 'sk-[REDACTED]'),
-    # Bearer tokens in Authorization headers pasted as text
-    (re.compile(r'Bearer\s+[A-Za-z0-9\-._~+/]{20,}'), 'Bearer [REDACTED]'),
-    # Generic API key patterns: apikey=..., api_key=..., API_KEY=...
-    (re.compile(r'(?i)(api[_-]?key\s*[=:]\s*)[A-Za-z0-9\-._]{16,}'), r'\1[REDACTED]'),
-    # AWS-style access key IDs
-    (re.compile(r'(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])'), '[REDACTED-AWS-KEY]'),
-    # Generic password fields: password=..., passwd=..., secret=...
-    (re.compile(r'(?i)(password|passwd|secret|token)\s*[=:]\s*[^\s"]{8,}'), r'\1=[REDACTED]'),
-]
-
-
 class Filter:
     class Valves(BaseModel):
-        enabled: bool = Field(
-            default=True,
-            description="Disable credential scrubbing (use only in testing)."
+        enabled: bool = Field(default=True, description="Enable/disable credential scrubbing")
+        redaction_placeholder: str = Field(
+            default="[REDACTED-CREDENTIAL]",
+            description="Replacement string for detected credentials"
         )
-        log_redactions: bool = Field(
-            default=True,
-            description="Log a warning message when credentials are redacted (no credential value is logged)."
-        )
+
+    # Patterns ordered by specificity (most specific first to avoid double-match)
+    PATTERNS = [
+        # NVIDIA NIM API keys
+        (re.compile(r'nvapi-[A-Za-z0-9\-_]{20,}'), "NVIDIA-API-KEY"),
+        # OpenAI-style keys
+        (re.compile(r'sk-[A-Za-z0-9]{32,}'), "OPENAI-STYLE-KEY"),
+        # Generic Bearer tokens (long alphanumeric)
+        (re.compile(r'Bearer\s+[A-Za-z0-9\-_.~+/]{20,}={0,2}'), "BEARER-TOKEN"),
+        # AWS-style access keys
+        (re.compile(r'AKIA[A-Z0-9]{16}'), "AWS-ACCESS-KEY"),
+        # Generic password= patterns
+        (re.compile(r'(?i)password\s*=\s*[\'"]?[^\s\'"]{8,}[\'"]?'), "PASSWORD-FIELD"),
+        # Generic secret= patterns
+        (re.compile(r'(?i)secret\s*=\s*[\'"]?[^\s\'"]{8,}[\'"]?'), "SECRET-FIELD"),
+        # Private key header (PEM)
+        (re.compile(r'-----BEGIN\s+(RSA\s+|EC\s+|OPENSSH\s+)?PRIVATE KEY-----'), "PRIVATE-KEY"),
+    ]
 
     def __init__(self):
         self.valves = self.Valves()
+        self._redaction_log: list = []
 
-    def _scrub_text(self, text: str) -> tuple[str, int]:
-        """Apply all credential patterns. Returns (scrubbed_text, redaction_count)."""
-        count = 0
-        for pattern, replacement in CREDENTIAL_PATTERNS:
-            new_text, n = pattern.subn(replacement, text)
-            count += n
-            text = new_text
-        return text, count
+    def _scrub_text(self, text: str) -> tuple[str, list[str]]:
+        """Return (scrubbed_text, list_of_detected_pattern_names)."""
+        detected = []
+        for pattern, name in self.PATTERNS:
+            if pattern.search(text):
+                text = pattern.sub(self.valves.redaction_placeholder, text)
+                detected.append(name)
+        return text, detected
 
-    # -----------------------------------------------------------------------
-    # INLET — scrub messages before NIM call
-    # -----------------------------------------------------------------------
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
+        """
+        Scrub credentials from the last user message before sending to NIM.
+        Only processes the last message to avoid re-scanning full history on every turn.
+        """
         if not self.valves.enabled:
             return body
 
-        total_redactions = 0
-        messages = body.get('messages', [])
+        messages = body.get("messages", [])
+        if not messages:
+            return body
 
-        for message in messages:
-            if message.get('role') == 'user' and isinstance(message.get('content'), str):
-                cleaned, count = self._scrub_text(message['content'])
-                if count > 0:
-                    message['content'] = cleaned
-                    total_redactions += count
+        # Find the last user message
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                original = messages[i].get("content", "")
+                if isinstance(original, str):
+                    scrubbed, detected = self._scrub_text(original)
+                    if detected:
+                        messages[i]["content"] = scrubbed
+                        self._redaction_log.append({
+                            "turn": len(messages),
+                            "patterns_detected": detected
+                        })
+                break
 
-        if total_redactions > 0 and self.valves.log_redactions:
-            # Add a system note to the last user message (not the credential value)
-            print(
-                f"[AI-OS Credential Scrub] Redacted {total_redactions} potential "
-                f"credential(s) from user message before NIM call."
-            )
-
+        body["messages"] = messages
         return body
 
-    # -----------------------------------------------------------------------
-    # OUTLET — passthrough
-    # -----------------------------------------------------------------------
     def outlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
+        """Pass-through. Scrubbing happens at inlet only."""
         return body

@@ -1,32 +1,32 @@
-# AI-OS Production Filter: Response Quality Monitor v1.0.0
-# Source: runtime/openwebui/filters/response_quality_monitor.py
-# Install: Open WebUI Admin > Functions > New Function (type: Filter)
-# Install order: 5 (outlet only)
+# AI-OS Production Filter: Response Quality Monitor v1.1.0
+# Fixed: no body mutations on outlet. See runtime/openwebui/filters/response_quality_monitor.py
 
 from pydantic import BaseModel, Field
 from typing import Optional
 import re
 
+try:
+    from profile_selector import _TASK_CLASS_REGISTRY
+except ImportError:
+    _TASK_CLASS_REGISTRY: dict = {}
+
 
 class Filter:
     class Valves(BaseModel):
         enabled: bool = Field(default=True)
-        append_quality_metadata: bool = Field(default=False)
+        log_to_console: bool = Field(default=False)
 
     LENGTH_TARGETS = {
         "greeting": 80, "discussion": 600, "coding": 3000,
-        "architecture": 2500, "analysis": 1500, "research": 2000,
-        "debugging": 1500, "creative": 1200,
+        "architecture": 2500, "analysis": 1500,
+        "research": 2000, "debugging": 1500, "creative": 1200,
     }
-    PROHIBITED = re.compile(
-        r'^(Great!|Sure!|Absolutely!|Of course!|Certainly!|Happy to|I\'d be happy)',
-        re.IGNORECASE | re.MULTILINE
-    )
-    VERIFY_TAG = re.compile(r'\[verify\]', re.IGNORECASE)
-    CITATION = re.compile(r'\[Source:', re.IGNORECASE)
+    PROHIBITED = re.compile(r'^(Great!|Sure!|Absolutely!|Of course!|Certainly!)', re.I | re.M)
+    VERIFY_TAG = re.compile(r'\[verify\]', re.I)
 
     def __init__(self):
         self.valves = self.Valves()
+        self._state: dict = {}
 
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
         return body
@@ -35,24 +35,27 @@ class Filter:
         if not self.valves.enabled:
             return body
         messages = body.get("messages", [])
-        text = next((m.get("content", "") for m in reversed(messages)
-                     if m.get("role") == "assistant" and isinstance(m.get("content"), str)), "")
+        text = next(
+            (m.get("content", "") for m in reversed(messages)
+             if m.get("role") == "assistant" and isinstance(m.get("content"), str)),
+            ""
+        )
         if not text:
             return body
-        tc = body.get("_ai_os_task_class", "discussion")
+        user_id = (__user__ or {}).get("id", "default")
+        tc = _TASK_CLASS_REGISTRY.get(user_id, "discussion")
         target = self.LENGTH_TARGETS.get(tc, 600)
         actual = int(len(text) * 0.25)
-        ratio = actual / target if target else 1.0
-        verify_count = len(self.VERIFY_TAG.findall(text))
-        body["_ai_os_quality"] = {
+        ratio = round(actual / target, 2) if target else 1.0
+        quality = {
             "task_class": tc,
-            "target_tokens": target,
-            "actual_tokens": actual,
-            "length_ratio": round(ratio, 2),
+            "length_ratio": ratio,
             "length_compliant": 0.5 <= ratio <= 1.5,
             "prohibited_hits": len(self.PROHIBITED.findall(text)),
-            "verify_tag_count": verify_count,
-            "citation_count": len(self.CITATION.findall(text)),
-            "hallucination_risk": "HIGH" if verify_count >= 5 else ("MEDIUM" if verify_count >= 2 else "LOW"),
+            "verify_count": len(self.VERIFY_TAG.findall(text)),
+            "hallucination_risk": "HIGH" if len(self.VERIFY_TAG.findall(text)) >= 5 else "LOW",
         }
+        self._state["last_quality"] = quality
+        if self.valves.log_to_console:
+            print(f"[AI-OS QM] {quality}")
         return body

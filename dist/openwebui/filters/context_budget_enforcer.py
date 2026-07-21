@@ -1,7 +1,5 @@
-# AI-OS Production Filter: Context Budget Enforcer v1.0.0
-# Source: runtime/openwebui/filters/context_budget_enforcer.py
-# Install: Open WebUI Admin > Functions > New Function (type: Filter)
-# Install order: 4 (last inlet, before NIM call)
+# AI-OS Production Filter: Context Budget Enforcer v1.1.0
+# Fixed: removed _ai_os_* keys from body. See runtime/openwebui/filters/context_budget_enforcer.py
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -16,16 +14,15 @@ class Filter:
 
     def __init__(self):
         self.valves = self.Valves()
+        self._state = {"last_truncated": False, "last_dropped_count": 0}
 
-    def _est(self, text: str) -> int:
+    def _tok(self, text: str) -> int:
         return int(len(text) * self.valves.tokens_per_char_estimate)
 
-    def _msg_tokens(self, msg: dict) -> int:
-        c = msg.get("content", "")
-        if isinstance(c, str):
-            return self._est(c)
-        if isinstance(c, list):
-            return sum(self._est(x.get("text", "")) for x in c if isinstance(x, dict))
+    def _msg_tok(self, m: dict) -> int:
+        c = m.get("content", "")
+        if isinstance(c, str): return self._tok(c)
+        if isinstance(c, list): return sum(self._tok(x.get("text", "")) for x in c if isinstance(x, dict))
         return 0
 
     def inlet(self, body: dict, __user__: Optional[dict] = None) -> dict:
@@ -34,20 +31,22 @@ class Filter:
         messages = body.get("messages", [])
         if not messages:
             return body
-        system = [m for m in messages if m.get("role") == "system"]
+        sys_msgs = [m for m in messages if m.get("role") == "system"]
         conv = [m for m in messages if m.get("role") != "system"]
-        total = sum(self._msg_tokens(m) for m in messages)
-        ceiling = self.valves.max_context_tokens
-        if total <= ceiling:
+        total = sum(self._msg_tok(m) for m in messages)
+        self._state["last_truncated"] = False
+        if total <= self.valves.max_context_tokens:
             return body
         min_p = self.valves.min_history_turns * 2
         protected = conv[-max(min_p, 1):]
-        candidates = conv[:-max(min_p, 1)]
-        while candidates and total > ceiling:
-            dropped = candidates.pop(0)
-            total -= self._msg_tokens(dropped)
-        body["messages"] = system + candidates + protected
-        body["_ai_os_context_truncated"] = True
+        candidates = list(conv[:-max(min_p, 1)])
+        dropped = 0
+        while candidates and total > self.valves.max_context_tokens:
+            total -= self._msg_tok(candidates.pop(0))
+            dropped += 1
+        self._state["last_truncated"] = True
+        self._state["last_dropped_count"] = dropped
+        body["messages"] = sys_msgs + candidates + protected
         return body
 
     def outlet(self, body: dict, __user__: Optional[dict] = None) -> dict:

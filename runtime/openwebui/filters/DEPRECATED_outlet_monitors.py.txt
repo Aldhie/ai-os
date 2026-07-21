@@ -1,0 +1,13 @@
+DEPRECATED — DO NOT INSTALL
+
+This file is kept for historical reference only.
+Do not install this filter in Open WebUI.
+
+Replaced by: response_quality_monitor.py (Gen 2)
+
+Reason: outlet_monitors read task_class from body["metadata"]["task_class"]
+which is written by task_classifier (Gen 1). Since Gen 1 is deprecated,
+outlet_monitors always falls back to 'conversational' task_class, producing
+incorrect length compliance scores for all other task classes.
+
+See: docs/architecture/filter-pipeline.md for canonical pipeline definition.

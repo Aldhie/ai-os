@@ -1,6 +1,6 @@
 """
 AI-OS Filter: Response Quality Monitor
-Version: 1.1.0
+Version: 1.2.0
 Responsibility: Outlet filter that checks response quality signals:
   1. Response length compliance vs task-class target
   2. Prohibited pattern detection (filler affirmations, first-person openings)
@@ -13,9 +13,17 @@ the system prompt and benchmark. Without measurement, quality is aspirational.
 This filter does NOT modify response content. It logs quality signals to
 self._state for the benchmark harness to query via /api/v1/functions/.
 
-FIX v1.1.0: Removed all body mutations on outlet (body[_ai_os_quality] etc.).
-Open WebUI rejects unknown top-level keys. Quality data is stored in self._state
-only. task_class is read from profile_selector's module-level registry.
+Body contract: inlet and outlet are pass-through — body is never mutated.
+Quality data lives in self._state["last_quality"] only.
+
+Length targets sourced from compiled_prompt_v2.md RESPONSE section.
+task_class is read from profile_selector's module-level _TASK_CLASS_REGISTRY.
+
+CHANGELOG:
+  1.0.0  Initial release
+  1.1.0  Removed all body mutations on outlet (body[_ai_os_quality] etc.)
+  1.2.0  Added greeting + creative targets; aligned targets with v2 prompt;
+         extended PROHIBITED regex; added generator_version to quality report
 """
 
 from pydantic import BaseModel, Field
@@ -29,6 +37,8 @@ except ImportError:
     # Fallback when running in isolation (unit tests, direct import)
     _TASK_CLASS_REGISTRY: dict = {}
 
+GENERATOR_VERSION = "response_quality_monitor/1.2.0"
+
 
 class Filter:
     class Valves(BaseModel):
@@ -38,7 +48,7 @@ class Filter:
             description="Print quality report to server console (debug mode)"
         )
 
-    # Token targets per task class (from compiled_prompt_v1.md response targets)
+    # Token targets per task class — aligned with compiled_prompt_v2.md RESPONSE section
     LENGTH_TARGETS = {
         "greeting":     80,
         "discussion":   600,
@@ -51,7 +61,8 @@ class Filter:
     }
 
     PROHIBITED = re.compile(
-        r'^(Great!|Sure!|Absolutely!|Of course!|Certainly!|Happy to help|I\'d be happy)',
+        r'^(Great!|Sure!|Absolutely!|Of course!|Certainly!|Happy to help|'
+        r"I'd be happy|I'd be glad|No problem!|Of course,)",
         re.IGNORECASE | re.MULTILINE
     )
     STARTS_WITH_I = re.compile(r'^I\s', re.MULTILINE)
@@ -106,6 +117,7 @@ class Filter:
         has_headers = bool(self.HEADER.search(assistant_text))
 
         quality = {
+            "generator_version": GENERATOR_VERSION,
             "task_class": task_class,
             "target_tokens": target_tokens,
             "actual_tokens": actual_tokens,

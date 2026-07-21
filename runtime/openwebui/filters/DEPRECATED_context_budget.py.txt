@@ -1,0 +1,17 @@
+DEPRECATED — DO NOT INSTALL
+
+This file is kept for historical reference only.
+Do not install this filter in Open WebUI.
+
+Replaced by: context_budget_enforcer.py (Gen 2)
+
+Reason: If both context_budget.py and context_budget_enforcer.py are installed
+simultaneously in Open WebUI, context will be truncated TWICE per request,
+causing premature loss of recent conversation history.
+
+context_budget_enforcer.py (v1.1.0) has cleaner truncation logic:
+- Preserves system messages explicitly
+- Uses self._state for internal tracking (no body mutation)
+- Conservative tokens_per_char_estimate (0.25) with Valve override
+
+See: docs/architecture/filter-pipeline.md for canonical pipeline definition.

@@ -1,0 +1,13 @@
+DEPRECATED — DO NOT INSTALL
+
+This file is kept for historical reference only.
+Do not install this filter in Open WebUI.
+
+Replaced by: profile_selector.py (Gen 2)
+
+Reason: task_classifier communicated via body["metadata"]["task_class"].
+Open WebUI does not guarantee body["metadata"] stability across versions.
+Gen 2 (profile_selector) uses a module-level _TASK_CLASS_REGISTRY which
+does not depend on body schema contracts.
+
+See: docs/architecture/filter-pipeline.md for canonical pipeline definition.

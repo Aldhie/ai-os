@@ -1,107 +1,280 @@
 {
-  "schema": "ai-os/benchmark-suite",
-  "version": "1.0.0",
-  "generated": "2026-07-21",
-  "rationale": "Each benchmark dimension produces a score in [0, 100]. Scoring rubrics are explicit — no subjective evaluation. Benchmark results must be reproducible from the same prompt set.",
-  "dimensions": {
-    "discussion_quality": {
-      "weight": 0.12,
-      "metrics": [
-        {"id": "DQ-01", "name": "Answer-first rate", "method": "Check if response begins with direct answer, not preamble", "score_pass": 10, "score_fail": 0},
-        {"id": "DQ-02", "name": "Prohibited pattern absence", "method": "Count filler affirmations. Score = 10 * (1 - min(count/3, 1))", "max_score": 10},
-        {"id": "DQ-03", "name": "Length compliance", "method": "output_tokens / target_tokens. Score = 10 if ratio in [0.5, 1.5] else 0", "max_score": 10}
-      ],
-      "max_score": 30
+  "_schema": "ai-os/benchmark/suite",
+  "_version": "1.0.0",
+  "_sprint": "C",
+  "_description": "Production benchmark suite for AI-OS Nemotron Ultra runtime. Each domain contains 3 test cases. Scoring produces numerical values 0.0-1.0 per dimension. Run via benchmark/harness.py.",
+  "_scoring_dimensions": [
+    "correctness",
+    "reasoning_depth",
+    "format_compliance",
+    "length_compliance",
+    "tool_efficiency",
+    "hallucination_control"
+  ],
+  "_passing_threshold": 0.75,
+
+  "domains": {
+
+    "discussion": {
+      "description": "General technical discussion. Tests: answer quality, language matching, format appropriateness.",
+      "target_length_tokens": 600,
+      "temperature": 0.7,
+      "cases": [
+        {
+          "id": "disc-001",
+          "prompt": "What is the difference between eventual consistency and strong consistency in distributed systems?",
+          "language": "en",
+          "expected_format": "prose_or_table",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.70, "format_compliance": 0.90, "length_compliance": 0.80, "hallucination_control": 0.90}
+        },
+        {
+          "id": "disc-002",
+          "prompt": "Jelaskan perbedaan antara monolith dan microservices untuk tim engineering kecil.",
+          "language": "id",
+          "expected_format": "prose_or_table",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.70, "format_compliance": 0.85, "length_compliance": 0.80, "hallucination_control": 0.90}
+        },
+        {
+          "id": "disc-003",
+          "prompt": "When should you choose PostgreSQL over MongoDB?",
+          "language": "en",
+          "expected_format": "prose_or_table",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.75, "format_compliance": 0.85, "length_compliance": 0.80, "hallucination_control": 0.90}
+        }
+      ]
     },
-    "reasoning": {
-      "weight": 0.18,
-      "metrics": [
-        {"id": "RS-01", "name": "Framework application", "method": "Does response name and apply a reasoning framework? Score 20 if yes.", "max_score": 20},
-        {"id": "RS-02", "name": "Assumption surfacing", "method": "Count explicit assumptions stated. Score = min(count * 5, 15).", "max_score": 15},
-        {"id": "RS-03", "name": "Uncertainty calibration", "method": "Count [verify] tags vs actual uncertain facts. Score = 15 if all uncertain facts tagged, else proportional.", "max_score": 15}
-      ],
-      "max_score": 50
-    },
-    "architecture": {
-      "weight": 0.12,
-      "metrics": [
-        {"id": "AR-01", "name": "Structure completeness", "method": "Check coverage: Requirements, Constraints, Components, Interfaces, Failure Modes, Trade-offs. Score = covered/6 * 30.", "max_score": 30},
-        {"id": "AR-02", "name": "Trade-off explicitness", "method": "Does response quantify or qualify the main trade-off? Score 20 if yes.", "max_score": 20}
-      ],
-      "max_score": 50
-    },
+
     "coding": {
-      "weight": 0.15,
-      "metrics": [
-        {"id": "CD-01", "name": "Syntax correctness", "method": "Run lint or parse. Score 40 if zero errors.", "max_score": 40},
-        {"id": "CD-02", "name": "Test coverage present", "method": "Does response include or reference tests? Score 10 if yes.", "max_score": 10}
-      ],
-      "max_score": 50
+      "description": "Production code generation. Tests: correctness, edge case handling, code structure.",
+      "target_length_tokens": 3000,
+      "temperature": 0.2,
+      "cases": [
+        {
+          "id": "code-001",
+          "prompt": "Write a Python function that implements a thread-safe LRU cache with a configurable max size. Include type hints and unit tests.",
+          "language": "en",
+          "expected_format": "code_block",
+          "expected_score_min": {"correctness": 0.90, "reasoning_depth": 0.75, "format_compliance": 0.95, "length_compliance": 0.75, "hallucination_control": 0.95}
+        },
+        {
+          "id": "code-002",
+          "prompt": "Implement a rate limiter using the sliding window algorithm in Python. Must be Redis-compatible.",
+          "language": "en",
+          "expected_format": "code_block",
+          "expected_score_min": {"correctness": 0.88, "reasoning_depth": 0.75, "format_compliance": 0.95, "length_compliance": 0.75, "hallucination_control": 0.95}
+        },
+        {
+          "id": "code-003",
+          "prompt": "Buatkan fungsi Python untuk parse structured log lines (JSON + plaintext mixed) dan output ke DataFrame.",
+          "language": "id",
+          "expected_format": "code_block",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.70, "format_compliance": 0.95, "length_compliance": 0.75, "hallucination_control": 0.95}
+        }
+      ]
     },
+
+    "architecture": {
+      "description": "System architecture design. Tests: framework application, trade-off analysis, completeness.",
+      "target_length_tokens": 2500,
+      "temperature": 0.4,
+      "cases": [
+        {
+          "id": "arch-001",
+          "prompt": "Design a real-time notification system that must handle 1M concurrent users. Provide architecture components, data flow, and failure modes.",
+          "language": "en",
+          "expected_format": "headers_and_prose",
+          "expected_score_min": {"correctness": 0.80, "reasoning_depth": 0.85, "format_compliance": 0.90, "length_compliance": 0.80, "hallucination_control": 0.85}
+        },
+        {
+          "id": "arch-002",
+          "prompt": "Rancang sistem event-driven untuk e-commerce checkout: inventory reservation, payment, fulfillment. Gunakan CQRS + Event Sourcing.",
+          "language": "id",
+          "expected_format": "headers_and_prose",
+          "expected_score_min": {"correctness": 0.80, "reasoning_depth": 0.85, "format_compliance": 0.90, "length_compliance": 0.80, "hallucination_control": 0.85}
+        },
+        {
+          "id": "arch-003",
+          "prompt": "What are the trade-offs between a service mesh and API gateway for inter-service communication in Kubernetes?",
+          "language": "en",
+          "expected_format": "table_or_prose",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.80, "format_compliance": 0.90, "length_compliance": 0.80, "hallucination_control": 0.90}
+        }
+      ]
+    },
+
+    "debugging": {
+      "description": "Systematic debugging. Tests: hypothesis ranking, root cause identification, fix quality.",
+      "target_length_tokens": 1500,
+      "temperature": 0.1,
+      "cases": [
+        {
+          "id": "dbg-001",
+          "prompt": "A Python FastAPI endpoint returns 200 OK but the response body is always empty. The handler function runs without errors. What are the likely causes and how do you diagnose?",
+          "language": "en",
+          "expected_format": "numbered_list_or_prose",
+          "expected_score_min": {"correctness": 0.88, "reasoning_depth": 0.85, "format_compliance": 0.85, "length_compliance": 0.80, "hallucination_control": 0.92}
+        },
+        {
+          "id": "dbg-002",
+          "prompt": "Redis INCR command returns WRONGTYPE error on a key that definitely exists. What is the root cause and fix?",
+          "language": "en",
+          "expected_format": "prose",
+          "expected_score_min": {"correctness": 0.90, "reasoning_depth": 0.80, "format_compliance": 0.85, "length_compliance": 0.80, "hallucination_control": 0.95}
+        },
+        {
+          "id": "dbg-003",
+          "prompt": "Kubernetes pod stuck di CrashLoopBackOff padahal image sudah benar. Langkah diagnosa step-by-step.",
+          "language": "id",
+          "expected_format": "numbered_list",
+          "expected_score_min": {"correctness": 0.88, "reasoning_depth": 0.82, "format_compliance": 0.90, "length_compliance": 0.80, "hallucination_control": 0.92}
+        }
+      ]
+    },
+
+    "analysis": {
+      "description": "Analytical reasoning. Tests: framework application, evidence-based conclusions, trade-off clarity.",
+      "target_length_tokens": 1500,
+      "temperature": 0.4,
+      "cases": [
+        {
+          "id": "anl-001",
+          "prompt": "Analyse the performance bottlenecks of a Python web application that shows high p99 latency under load but normal p50 latency.",
+          "language": "en",
+          "expected_format": "headers_and_prose",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.85, "format_compliance": 0.88, "length_compliance": 0.80, "hallucination_control": 0.90}
+        },
+        {
+          "id": "anl-002",
+          "prompt": "Evaluasi trade-off antara gRPC dan REST untuk internal microservice communication.",
+          "language": "id",
+          "expected_format": "table_or_prose",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.80, "format_compliance": 0.88, "length_compliance": 0.80, "hallucination_control": 0.90}
+        },
+        {
+          "id": "anl-003",
+          "prompt": "What are the root causes of database connection pool exhaustion and how do you measure them?",
+          "language": "en",
+          "expected_format": "prose_or_numbered_list",
+          "expected_score_min": {"correctness": 0.88, "reasoning_depth": 0.82, "format_compliance": 0.88, "length_compliance": 0.80, "hallucination_control": 0.92}
+        }
+      ]
+    },
+
+    "research": {
+      "description": "Research synthesis. Tests: source discrimination, citation policy, freshness flagging.",
+      "target_length_tokens": 2000,
+      "temperature": 0.5,
+      "cases": [
+        {
+          "id": "res-001",
+          "prompt": "Summarise the key architectural differences between transformer decoder-only models and encoder-decoder models for code generation.",
+          "language": "en",
+          "expected_format": "headers_and_prose",
+          "expected_score_min": {"correctness": 0.82, "reasoning_depth": 0.80, "format_compliance": 0.88, "length_compliance": 0.80, "hallucination_control": 0.88}
+        },
+        {
+          "id": "res-002",
+          "prompt": "Compare RAG vs fine-tuning for domain-specific LLM applications: cost, latency, accuracy trade-offs.",
+          "language": "en",
+          "expected_format": "table_or_headers_and_prose",
+          "expected_score_min": {"correctness": 0.82, "reasoning_depth": 0.80, "format_compliance": 0.88, "length_compliance": 0.80, "hallucination_control": 0.88}
+        },
+        {
+          "id": "res-003",
+          "prompt": "Bandingkan pendekatan vector search: HNSW vs IVF-PQ untuk production RAG system dengan 10M dokumen.",
+          "language": "id",
+          "expected_format": "table_or_prose",
+          "expected_score_min": {"correctness": 0.80, "reasoning_depth": 0.80, "format_compliance": 0.85, "length_compliance": 0.80, "hallucination_control": 0.88}
+        }
+      ]
+    },
+
     "memory": {
-      "weight": 0.08,
-      "metrics": [
-        {"id": "ME-01", "name": "Relevant memory loaded", "method": "For sessions with prior context, verify response references relevant prior decision. Score 25 if yes.", "max_score": 25},
-        {"id": "ME-02", "name": "No stale memory injected", "method": "Verify no memory items older than TTL are cited. Score 25 if clean.", "max_score": 25}
-      ],
-      "max_score": 50
+      "description": "Memory retrieval and cross-session consistency. Tests: relevance threshold enforcement, conflict surfacing.",
+      "target_length_tokens": 600,
+      "temperature": 0.7,
+      "cases": [
+        {
+          "id": "mem-001",
+          "prompt": "[INJECT prior session context: user prefers PostgreSQL over MongoDB] The user asks: which database should I use for this project?",
+          "language": "en",
+          "expected_format": "prose",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.75, "format_compliance": 0.85, "length_compliance": 0.85, "hallucination_control": 0.95}
+        },
+        {
+          "id": "mem-002",
+          "prompt": "[INJECT conflicting context: user said 'use Redis' in turn 3, now says 'avoid Redis'] How should the cache layer be implemented?",
+          "language": "en",
+          "expected_format": "prose",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.80, "format_compliance": 0.85, "length_compliance": 0.85, "hallucination_control": 0.95}
+        },
+        {
+          "id": "mem-003",
+          "prompt": "[INJECT 20-turn conversation with resolved architecture decision] Apa keputusan arsitektur yang sudah kita buat di sesi ini?",
+          "language": "id",
+          "expected_format": "numbered_list_or_prose",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.75, "format_compliance": 0.85, "length_compliance": 0.85, "hallucination_control": 0.92}
+        }
+      ]
     },
-    "knowledge": {
-      "weight": 0.08,
-      "metrics": [
-        {"id": "KN-01", "name": "Citation rate when RAG used", "method": "Count turns where RAG was activated. Score = (cited_turns / rag_turns) * 50.", "max_score": 50}
-      ],
-      "max_score": 50
+
+    "tool_efficiency": {
+      "description": "Tool routing and batching discipline. Tests: minimum tools used, batching before inference, correct routing decisions.",
+      "target_length_tokens": 800,
+      "temperature": 0.7,
+      "cases": [
+        {
+          "id": "tool-001",
+          "prompt": "What is the latest commit message on the main branch of this repository AND what does the RPM guard filter do?",
+          "language": "en",
+          "expected_behavior": "Batch GitHub call + model knowledge in single inference. Must NOT make two separate NIM calls.",
+          "expected_score_min": {"tool_efficiency": 0.90, "correctness": 0.85, "hallucination_control": 0.90}
+        },
+        {
+          "id": "tool-002",
+          "prompt": "What is 2 + 2? Also, what is the capital of France?",
+          "language": "en",
+          "expected_behavior": "Answer from model knowledge only. Zero tool calls. RPM cost: 1 (inference only).",
+          "expected_score_min": {"tool_efficiency": 1.0, "correctness": 1.0, "hallucination_control": 1.0}
+        },
+        {
+          "id": "tool-003",
+          "prompt": "Cari di repository ini file apa saja yang ada di runtime/openwebui/filters/ dan jelaskan fungsi masing-masing.",
+          "language": "id",
+          "expected_behavior": "Single GitHub call to list directory, then single NIM inference. Not multiple GitHub calls per file.",
+          "expected_score_min": {"tool_efficiency": 0.85, "correctness": 0.85, "hallucination_control": 0.90}
+        }
+      ]
     },
-    "planner": {
-      "weight": 0.06,
-      "metrics": [
-        {"id": "PL-01", "name": "Planner activation accuracy", "method": "Did planner activate on > 3 step tasks and skip on single-step tasks? Score = correct_activations / total_tasks * 50.", "max_score": 50}
-      ],
-      "max_score": 50
-    },
-    "reflection": {
-      "weight": 0.06,
-      "metrics": [
-        {"id": "RF-01", "name": "Reflection on mandatory task classes", "method": "Verify reflection ran for all architecture/security/complex_code tasks. Score = reflected / mandatory * 50.", "max_score": 50}
-      ],
-      "max_score": 50
-    },
-    "critic": {
-      "weight": 0.05,
-      "metrics": [
-        {"id": "CR-01", "name": "Critic on high-risk tasks", "method": "Verify critic ran for all irreversible architecture and security-critical tasks. Score = critiqued / mandatory * 50.", "max_score": 50}
-      ],
-      "max_score": 50
-    },
-    "tool_usage": {
-      "weight": 0.06,
-      "metrics": [
-        {"id": "TU-01", "name": "Minimum tools principle", "method": "Count unnecessary tool calls (tool called when answer was in context). Score = 50 - (unnecessary_calls * 10).", "max_score": 50},
-        {"id": "TU-02", "name": "Batching compliance", "method": "Verify all tool calls preceded single NIM call. Score 50 if 100% batched.", "max_score": 50}
-      ],
-      "max_score": 100
-    },
-    "conversation_consistency": {
-      "weight": 0.06,
-      "metrics": [
-        {"id": "CC-01", "name": "Contradiction rate", "method": "Count turns where response contradicts earlier decision without explicit override. Score = 50 * (1 - contradiction_rate).", "max_score": 50}
-      ],
-      "max_score": 50
-    },
-    "long_context_handling": {
-      "weight": 0.06,
-      "metrics": [
-        {"id": "LC-01", "name": "Compression trigger accuracy", "method": "Verify compression activates at turn 15+. Score 25 if yes.", "max_score": 25},
-        {"id": "LC-02", "name": "Context budget compliance", "method": "Verify context never exceeds 65536 tokens. Score 25 if always compliant.", "max_score": 25}
-      ],
-      "max_score": 50
+
+    "long_context": {
+      "description": "Long conversation consistency. Tests: contradiction detection, context compression, truncation recovery.",
+      "target_length_tokens": 1000,
+      "temperature": 0.7,
+      "cases": [
+        {
+          "id": "lctx-001",
+          "prompt": "[INJECT 15-turn conversation] At turn 3 we decided to use PostgreSQL. At turn 12 you suggested MySQL. Which is correct?",
+          "language": "en",
+          "expected_behavior": "Must detect contradiction. Must surface conflict explicitly with turn reference.",
+          "expected_score_min": {"correctness": 0.90, "reasoning_depth": 0.85, "hallucination_control": 0.95}
+        },
+        {
+          "id": "lctx-002",
+          "prompt": "[INJECT 18-turn conversation, context near 65K tokens] Continue designing the auth module we discussed.",
+          "language": "en",
+          "expected_behavior": "Must acknowledge if prior context was truncated. Must not fabricate prior decisions.",
+          "expected_score_min": {"correctness": 0.85, "hallucination_control": 0.95, "reasoning_depth": 0.80}
+        },
+        {
+          "id": "lctx-003",
+          "prompt": "[INJECT 20-turn conversation in Indonesian] Rangkum semua keputusan teknis yang sudah kita buat.",
+          "language": "id",
+          "expected_behavior": "Summary must include all non-truncated decisions. Must flag uncertainty if any turns were compressed.",
+          "expected_score_min": {"correctness": 0.85, "reasoning_depth": 0.80, "hallucination_control": 0.92}
+        }
+      ]
     }
-  },
-  "scoring": {
-    "method": "weighted_sum",
-    "normalised_to": 100,
-    "minimum_passing_score": 70,
-    "rationale": "70/100 minimum reflects production standard. A failing dimension score must be investigated and remediated before the runtime can be considered Sprint A complete."
+
   }
 }

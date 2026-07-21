@@ -1,0 +1,33 @@
+{
+  "id": "LC-001",
+  "dimension": "long_context_handling",
+  "task_class": "architecture",
+  "description": "Verify context budget compliance and compression trigger awareness",
+  "length_target": 1000,
+  "messages": [
+    {"role": "user", "content": "Let's design an e-commerce platform. Start with the overall architecture."},
+    {"role": "assistant", "content": "The platform should use a microservices architecture with an API gateway, separate services for: catalog, inventory, orders, payments, notifications, and user management. Each service owns its own database."},
+    {"role": "user", "content": "Good. Now focus on the payments service. What database should it use?"},
+    {"role": "assistant", "content": "The payments service should use PostgreSQL for ACID compliance. Financial transactions require strong consistency guarantees that eventual consistency databases cannot provide."},
+    {"role": "user", "content": "What about the catalog service? Should it use the same database?"},
+    {"role": "assistant", "content": "No. The catalog service has very different requirements: high read volume, flexible schema for different product types. A combination of PostgreSQL for structured data and Elasticsearch for full-text search is appropriate."},
+    {"role": "user", "content": "Remind me: what database did we decide on for the payments service, and why?"},
+    {"role": "assistant", "content": "PostgreSQL, chosen for ACID compliance and strong consistency — non-negotiable for financial transaction integrity."},
+    {"role": "user", "content": "Now we need to add a recommendation engine. Where does it fit in the architecture we've been building?"}
+  ],
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 2000,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": true}, "reasoning_budget": 6144}
+  },
+  "scoring_context": {
+    "compression_score": 25,
+    "budget_compliance_score": 25
+  },
+  "expected_behaviours": [
+    "References the existing architecture decisions from the conversation",
+    "Does not contradict earlier database choices",
+    "Positions recommendation engine as a separate service",
+    "Mentions data flow from catalog/orders to recommendation engine"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "CD-001",
+  "dimension": "coding",
+  "task_class": "coding",
+  "description": "Verify syntax-correct code generation with test coverage",
+  "length_target": 800,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a Python function that implements an LRU cache with O(1) get and put operations. Include type hints and at least 3 unit tests."
+    }
+  ],
+  "params": {
+    "temperature": 0.2,
+    "max_tokens": 4096,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": true}, "reasoning_budget": 4096}
+  },
+  "scoring_context": {},
+  "expected_behaviours": [
+    "Produces Python code in a fenced code block",
+    "Uses OrderedDict or doubly-linked list + hashmap",
+    "Includes type hints",
+    "Includes at least 3 test assertions or pytest test functions"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "RS-001",
+  "dimension": "reasoning",
+  "task_class": "analysis",
+  "description": "Verify reasoning framework application and assumption surfacing",
+  "length_target": 600,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Should a startup with 5 engineers choose a microservices architecture or a monolith for their first product? Think carefully about the trade-offs."
+    }
+  ],
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 1500,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": true}, "reasoning_budget": 6144}
+  },
+  "scoring_context": {},
+  "expected_behaviours": [
+    "States assumptions explicitly (team size, timeline, budget)",
+    "Applies named reasoning framework or structured analysis",
+    "Tags any uncertain claims with [verify]",
+    "Recommends monolith with clear justification"
+  ]
+}

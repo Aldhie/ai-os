@@ -1,0 +1,25 @@
+{
+  "id": "AR-001",
+  "dimension": "architecture",
+  "task_class": "architecture",
+  "description": "Verify architecture response covers all 6 required sections",
+  "length_target": 1500,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Design a rate limiter for a public REST API. The API serves 10,000 requests per second at peak. The rate limiter must be distributed and survive the failure of any single node."
+    }
+  ],
+  "params": {
+    "temperature": 0.4,
+    "max_tokens": 6144,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": true}, "reasoning_budget": 8192}
+  },
+  "scoring_context": {},
+  "expected_behaviours": [
+    "Covers: Requirements, Constraints, Components, Interfaces, Failure Modes, Trade-offs",
+    "Names specific algorithms (token bucket, sliding window, etc.)",
+    "Addresses distributed consistency explicitly",
+    "States primary trade-off clearly"
+  ]
+}

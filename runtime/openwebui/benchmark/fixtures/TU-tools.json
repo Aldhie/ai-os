@@ -1,0 +1,27 @@
+{
+  "id": "TU-001",
+  "dimension": "tool_usage",
+  "task_class": "conversational",
+  "description": "Verify minimum tools principle — general knowledge question requires no tools",
+  "length_target": 300,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain what a B-tree index is and why databases use it."
+    }
+  ],
+  "params": {
+    "temperature": 0.5,
+    "max_tokens": 800,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": true}, "reasoning_budget": 2048}
+  },
+  "scoring_context": {
+    "unnecessary_tool_calls": 0,
+    "batching_score": 50
+  },
+  "expected_behaviours": [
+    "No external tool calls made",
+    "Answer comes from model parametric knowledge",
+    "Response is accurate and complete"
+  ]
+}

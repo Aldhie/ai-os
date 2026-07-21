@@ -1,0 +1,24 @@
+{
+  "id": "DQ-001",
+  "dimension": "discussion_quality",
+  "task_class": "conversational",
+  "description": "Verify answer-first pattern and absence of filler affirmations",
+  "length_target": 400,
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the difference between concurrency and parallelism?"
+    }
+  ],
+  "params": {
+    "temperature": 0.7,
+    "max_tokens": 800,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": true}, "reasoning_budget": 2048}
+  },
+  "scoring_context": {},
+  "expected_behaviours": [
+    "Response begins with direct answer, not 'Great question' or similar",
+    "No filler affirmations in first 200 characters",
+    "Response length between 200-800 tokens"
+  ]
+}

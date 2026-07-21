@@ -1,0 +1,21 @@
+{
+  "_profile": "research",
+  "_version": "1.0.0",
+  "temperature": 0.5,
+  "top_p": 0.95,
+  "top_k": 50,
+  "max_tokens": 8192,
+  "presence_penalty": 0.2,
+  "frequency_penalty": 0.1,
+  "reasoning_budget": 8192,
+  "expected_context_tokens": 32768,
+  "expected_latency_ms": 25000,
+  "expected_output_tokens": 2000,
+  "memory_strategy": "load_if_relevant",
+  "knowledge_strategy": "mandatory",
+  "planner_usage": "on",
+  "critic_usage": "on",
+  "reflection_usage": "mandatory",
+  "tool_strategy": "all_available",
+  "rpm_optimization": "batch_all_tools_before_nim"
+}

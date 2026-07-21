@@ -1,93 +1,52 @@
-# AI-OS · Open WebUI Rollback Guide
+# AI-OS · Rollback Guide
 
-**Version**: 2.1.0  
+**Version**: 2.0.0  
 **Sprint**: C
 
 ---
 
 ## When to Rollback
 
-Initiate rollback if, after an upgrade, any of the following are observed:
-
-- Benchmark score drops below 60 (was previously ≥ 70)
-- RPM Guard is not blocking at 32 RPM
-- Responses contain filler affirmations on > 20% of turns
-- NIM inference errors spike above 5% of requests
-- Context overflow errors appear on conversations < 30K tokens
+Rollback is warranted when:
+- Benchmark score drops > 10 points vs previous baseline
+- Filters produce unexpected rejections (RPM guard triggering on < 32 RPM)
+- System prompt produces prohibited patterns consistently (filler affirmations, question restatement)
 
 ---
 
-## Rollback: System Prompt
+## Rollback Procedure
 
-To rollback to v1.0.0 compiled prompt:
+### System Prompt Rollback
 
-1. Open WebUI → Admin Panel → Models → `ai-os-nemotron-ultra` → Edit
-2. Replace System Prompt with contents of:
-   `runtime/openwebui/model/compiled_prompt_v1.md`
-3. Save
-4. Send the CAP theorem test query and verify direct answer format
-
-To rollback to v2.0.0 compiled prompt:
-
-1. Same steps, use `dist/openwebui/compiled_prompt_v2.md` from the v2.0.0 git tag
+1. Retrieve previous prompt from git:
    ```bash
-   git show v2.0.0:runtime/openwebui/model/compiled_prompt_v1.md
+   git show HEAD~1:dist/openwebui/compiled_prompt_v2.md > prompt_previous.md
+   # or for v1:
+   git show HEAD~1:runtime/openwebui/model/compiled_prompt_v1.md > prompt_v1.md
    ```
+2. Paste previous prompt into Admin → Models → AI-OS · Nemotron Ultra → System Prompt
+3. Save and verify
 
----
-
-## Rollback: Filters
-
-If a specific filter is causing issues:
-
-1. Open WebUI → Admin Panel → Functions
-2. Locate the problematic filter
-3. Toggle **Disable** (do not delete — preserves configuration)
-4. Test the model without the filter
-5. If issue resolves, the filter is the cause
-
-To fully remove a filter:
-1. Unassign from the model first (Model → Edit → Filters)
-2. Then delete from Functions
-
-**Safe to disable without service interruption:**
-- `response_quality_monitor` (outlet only, never modifies response)
-- `credential_scrub` (security impact: secrets may reach NIM; disable only for debugging)
-
-**Do not disable without a fallback plan:**
-- `rpm_guard` (disabling risks 429 errors from NIM)
-- `profile_selector` (disabling reverts to default parameters for all tasks)
-- `context_budget_enforcer` (disabling risks context overflow on long conversations)
-
----
-
-## Rollback: Full Runtime
-
-To roll back the entire AI-OS runtime to a previous git state:
+### Filter Rollback
 
 ```bash
-# 1. Identify the target version
-git log --oneline runtime/
-
-# 2. Export compiled prompt from that commit
-git show <commit-sha>:runtime/openwebui/model/compiled_prompt_v1.md > /tmp/rollback_prompt.md
-
-# 3. Replace system prompt in Open WebUI with /tmp/rollback_prompt.md contents
-
-# 4. For filter rollback, export from git and reinstall
-git show <commit-sha>:runtime/openwebui/filters/rpm_guard.py > /tmp/rpm_guard_rollback.py
-# Reinstall via Open WebUI Admin > Functions
+# Get previous version of a specific filter
+git show HEAD~1:dist/openwebui/filters/profile_selector.py > profile_selector_prev.py
 ```
+
+Then paste into Admin → Functions → the affected filter → Edit → replace code.
+
+### Emergency: Disable All Filters
+
+If a filter is causing hard failures (500 errors, rejected messages):
+1. Admin → Functions → toggle the problematic filter to **Disabled**
+2. The model continues to work without the filter
+3. Investigate and fix before re-enabling
 
 ---
 
-## Emergency: NIM is Unresponsive
+## Post-Rollback
 
-If NIM Free Tier is down or rate-limiting aggressively:
-
-1. Disable `rpm_guard.py` temporarily (stops blocking users if RPM counter is miscounting)
-2. Check NIM status: [status.nvidia.com](https://status.nvidia.com) `[verify]`
-3. If downtime exceeds SLA tolerance, configure a fallback model:
-   - Open WebUI → Admin Panel → Models → `ai-os-nemotron-ultra` → Edit
-   - Temporarily change Base Model to an available alternative
-   - The system prompt and filters remain active and compatible with any OpenAI-compatible model
+1. Run benchmark: confirm score returns to previous baseline
+2. Open a GitHub issue in `Aldhie/ai-os` describing the regression
+3. Tag the commit that caused the regression with `regression/<filter-or-prompt-name>`

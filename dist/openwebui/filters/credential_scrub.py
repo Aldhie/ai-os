@@ -1,7 +1,7 @@
 # AI-OS Production Filter: Credential Scrub v1.0.0
 # Source: runtime/openwebui/filters/credential_scrub.py
-# Install: Open WebUI Admin > Functions > New Function (type: Filter) > Paste > Enable
-# Priority: 2 (install after rpm_guard)
+# Install: Open WebUI Admin > Functions > New Function (type: Filter)
+# Install order: 2 (after rpm_guard, before profile_selector)
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -26,7 +26,7 @@ class Filter:
     def __init__(self):
         self.valves = self.Valves()
 
-    def _scrub(self, text: str):
+    def _scrub(self, text: str) -> tuple:
         detected = []
         for pattern, name in self.PATTERNS:
             if pattern.search(text):

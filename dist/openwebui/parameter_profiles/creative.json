@@ -1,0 +1,21 @@
+{
+  "_profile": "creative",
+  "_version": "1.0.0",
+  "temperature": 0.9,
+  "top_p": 0.98,
+  "top_k": 80,
+  "max_tokens": 3000,
+  "presence_penalty": 0.5,
+  "frequency_penalty": 0.5,
+  "reasoning_budget": 2048,
+  "expected_context_tokens": 4096,
+  "expected_latency_ms": 6000,
+  "expected_output_tokens": 800,
+  "memory_strategy": "load_style_preferences_only",
+  "knowledge_strategy": "skip",
+  "planner_usage": "off",
+  "critic_usage": "off",
+  "reflection_usage": "off",
+  "tool_strategy": "none",
+  "rpm_optimization": "single_nim_call_no_tools"
+}

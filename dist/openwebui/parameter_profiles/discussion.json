@@ -1,0 +1,21 @@
+{
+  "_profile": "discussion",
+  "_version": "1.0.0",
+  "temperature": 0.7,
+  "top_p": 0.95,
+  "top_k": 50,
+  "max_tokens": 4096,
+  "presence_penalty": 0.1,
+  "frequency_penalty": 0.1,
+  "reasoning_budget": 4096,
+  "expected_context_tokens": 8192,
+  "expected_latency_ms": 8000,
+  "expected_output_tokens": 600,
+  "memory_strategy": "load_if_relevant",
+  "knowledge_strategy": "skip_unless_collection_loaded",
+  "planner_usage": "off",
+  "critic_usage": "off",
+  "reflection_usage": "off",
+  "tool_strategy": "minimum",
+  "rpm_optimization": "batch_tools_before_nim"
+}

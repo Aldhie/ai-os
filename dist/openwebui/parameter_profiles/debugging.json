@@ -1,0 +1,21 @@
+{
+  "_profile": "debugging",
+  "_version": "1.0.0",
+  "temperature": 0.1,
+  "top_p": 0.85,
+  "top_k": 10,
+  "max_tokens": 3072,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "reasoning_budget": 6144,
+  "expected_context_tokens": 16384,
+  "expected_latency_ms": 15000,
+  "expected_output_tokens": 1000,
+  "memory_strategy": "load_coding_standards_and_known_bugs",
+  "knowledge_strategy": "load_if_library_relevant",
+  "planner_usage": "off",
+  "critic_usage": "on",
+  "reflection_usage": "on",
+  "tool_strategy": "github_for_specific_code",
+  "rpm_optimization": "batch_tools_before_nim"
+}

@@ -1,7 +1,7 @@
 # AI-OS Production Filter: Context Budget Enforcer v1.0.0
 # Source: runtime/openwebui/filters/context_budget_enforcer.py
-# Install: Open WebUI Admin > Functions > New Function (type: Filter) > Paste > Enable
-# Priority: 4 (install after profile_selector)
+# Install: Open WebUI Admin > Functions > New Function (type: Filter)
+# Install order: 4 (last inlet, before NIM call)
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -20,8 +20,8 @@ class Filter:
     def _est(self, text: str) -> int:
         return int(len(text) * self.valves.tokens_per_char_estimate)
 
-    def _msg_tokens(self, m: dict) -> int:
-        c = m.get("content", "")
+    def _msg_tokens(self, msg: dict) -> int:
+        c = msg.get("content", "")
         if isinstance(c, str):
             return self._est(c)
         if isinstance(c, list):
@@ -37,12 +37,13 @@ class Filter:
         system = [m for m in messages if m.get("role") == "system"]
         conv = [m for m in messages if m.get("role") != "system"]
         total = sum(self._msg_tokens(m) for m in messages)
-        if total <= self.valves.max_context_tokens:
+        ceiling = self.valves.max_context_tokens
+        if total <= ceiling:
             return body
-        preserve = self.valves.min_history_turns * 2
-        protected = conv[-max(preserve, 1):]
-        candidates = conv[:-max(preserve, 1)]
-        while candidates and total > self.valves.max_context_tokens:
+        min_p = self.valves.min_history_turns * 2
+        protected = conv[-max(min_p, 1):]
+        candidates = conv[:-max(min_p, 1)]
+        while candidates and total > ceiling:
             dropped = candidates.pop(0)
             total -= self._msg_tokens(dropped)
         body["messages"] = system + candidates + protected

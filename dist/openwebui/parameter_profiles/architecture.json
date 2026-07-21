@@ -1,0 +1,21 @@
+{
+  "_profile": "architecture",
+  "_version": "1.0.0",
+  "temperature": 0.4,
+  "top_p": 0.95,
+  "top_k": 40,
+  "max_tokens": 6144,
+  "presence_penalty": 0.2,
+  "frequency_penalty": 0.1,
+  "reasoning_budget": 8192,
+  "expected_context_tokens": 20480,
+  "expected_latency_ms": 20000,
+  "expected_output_tokens": 2500,
+  "memory_strategy": "load_project_constraints_and_decisions",
+  "knowledge_strategy": "load_domain_collection",
+  "planner_usage": "on",
+  "critic_usage": "mandatory",
+  "reflection_usage": "mandatory",
+  "tool_strategy": "github_plus_knowledge",
+  "rpm_optimization": "batch_tools_before_nim"
+}

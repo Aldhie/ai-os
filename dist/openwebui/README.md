@@ -1,79 +1,74 @@
-# AI-OS · Open WebUI Runtime Distribution Package
+# AI-OS · Open WebUI Deployment Package
 
-**Version**: 2.1.0  
+**Version**: 2.0.0  
 **Sprint**: C  
-**Status**: Production Ready
+**Model**: NVIDIA Nemotron-3-Ultra-550B via NIM Free Tier  
+**Runtime**: Open WebUI
 
-This directory contains everything needed to deploy the AI-OS runtime into Open WebUI.
-All files are production-grade. No placeholders. No TODOs.
+This directory is the **deployable output** of the AI-OS runtime. It contains everything needed to deploy the runtime into Open WebUI with minimal manual work.
 
 ---
 
-## Contents
+## Directory Structure
 
 ```
 dist/openwebui/
-├── README.md                        This file
-├── QUICKSTART.md                    Deploy in ~15 minutes
-├── IMPORT_GUIDE.md                  Detailed artifact-by-artifact import
-├── UPGRADE.md                       Version history + upgrade steps
-├── ROLLBACK.md                      Rollback procedures and emergency recovery
-├── compiled_prompt_v2.md            System prompt — paste into Open WebUI model
-├── model_config.json                Model identity and NIM connection reference
-└── filters/
-    ├── rpm_guard.py                 Filter 1 (inlet) — 32 RPM enforcement
-    ├── credential_scrub.py          Filter 2 (inlet) — credential redaction
-    ├── profile_selector.py          Filter 3 (inlet) — task classification + params
-    ├── context_budget_enforcer.py   Filter 4 (inlet) — 65K token ceiling
-    └── response_quality_monitor.py  Filter 5 (outlet) — quality scoring
+├── compiled_prompt_v2.md          ← paste as System Prompt in OWU
+├── model_config.json               ← model connection reference
+├── filters/
+│   ├── rpm_guard.py                ← inlet filter 1
+│   ├── credential_scrub.py         ← inlet filter 2
+│   ├── profile_selector.py         ← inlet filter 3
+│   ├── context_budget_enforcer.py  ← inlet filter 4
+│   └── response_quality_monitor.py ← outlet filter 5
+├── parameter_profiles/
+│   ├── discussion.json
+│   ├── coding.json
+│   ├── architecture.json
+│   ├── analysis.json
+│   ├── creative.json
+│   ├── research.json
+│   └── debugging.json
+├── QUICKSTART.md                   ← start here
+├── IMPORT_GUIDE.md
+├── UPGRADE.md
+└── ROLLBACK.md
 ```
 
 ---
 
-## Deployment Summary
+## Deployment Time
 
-| Component | Status | Where in Open WebUI |
-|-----------|--------|--------------------|
-| System Prompt v2.1.0 | ✅ Ready | Model > System Prompt |
-| RPM Guard | ✅ Ready | Admin > Functions (Filter) |
-| Credential Scrub | ✅ Ready | Admin > Functions (Filter) |
-| Profile Selector | ✅ Ready | Admin > Functions (Filter) |
-| Context Budget Enforcer | ✅ Ready | Admin > Functions (Filter) |
-| Quality Monitor | ✅ Ready | Admin > Functions (Filter) |
+Full deployment from zero: **10–15 minutes**.
+
+See `QUICKSTART.md` for step-by-step instructions.
 
 ---
 
-## Runtime Architecture (What Happens on Each Turn)
+## Source of Truth
+
+This `dist/` directory is generated from:
 
 ```
-User Message
-    ↓
-[Filter 1] RPM Guard         ← reject if > 32 req/min
-    ↓
-[Filter 2] Credential Scrub  ← redact secrets
-    ↓
-[Filter 3] Profile Selector  ← classify task, set temperature/tokens/reasoning_budget
-    ↓
-[Filter 4] Context Enforcer  ← truncate if > 65K tokens
-    ↓
-NVIDIA Cloud NIM (Nemotron Ultra)  ← inference with thinking enabled
-    ↓
-[Filter 5] Quality Monitor   ← measure response quality, attach metadata
-    ↓
-User Response
+runtime/openwebui/
+├── model/          ← prompt source modules + compiled prompts
+├── filters/        ← filter source (full version with docs)
+├── config/         ← all runtime config JSON
+└── benchmark/      ← benchmark harness
 ```
 
----
-
-## Source Repository
-
-All source files (with full documentation and comments) are at:
-`runtime/openwebui/` in the [Aldhie/ai-os](https://github.com/Aldhie/ai-os) repository.
-
-This `dist/` directory contains production copies optimised for direct paste into Open WebUI.
+Never edit `dist/` files directly. Edit source and regenerate.
 
 ---
 
-## Quick Start
+## Quality Gate
 
-See `QUICKSTART.md` for the 6-step deployment process (~15 minutes).
+Before promoting any change to `dist/`:
+
+```
+✓ Benchmark score ≥ 70
+✓ All 5 filters install without error in Open WebUI
+✓ Verification message passes: "What is the CAP theorem?"
+✓ No placeholder text, no TODO, no unfinished sections
+✓ model_config.json model ID matches actual NIM model name
+```

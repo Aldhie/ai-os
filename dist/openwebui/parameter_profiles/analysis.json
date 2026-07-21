@@ -1,0 +1,21 @@
+{
+  "_profile": "analysis",
+  "_version": "1.0.0",
+  "temperature": 0.4,
+  "top_p": 0.95,
+  "top_k": 40,
+  "max_tokens": 4096,
+  "presence_penalty": 0.2,
+  "frequency_penalty": 0.1,
+  "reasoning_budget": 6144,
+  "expected_context_tokens": 16384,
+  "expected_latency_ms": 15000,
+  "expected_output_tokens": 1500,
+  "memory_strategy": "load_if_relevant",
+  "knowledge_strategy": "load_if_relevant",
+  "planner_usage": "off",
+  "critic_usage": "on",
+  "reflection_usage": "on",
+  "tool_strategy": "knowledge_priority",
+  "rpm_optimization": "batch_tools_before_nim"
+}

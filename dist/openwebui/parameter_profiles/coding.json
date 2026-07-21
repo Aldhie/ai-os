@@ -1,0 +1,21 @@
+{
+  "_profile": "coding",
+  "_version": "1.0.0",
+  "temperature": 0.2,
+  "top_p": 0.90,
+  "top_k": 20,
+  "max_tokens": 4096,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "reasoning_budget": 4096,
+  "expected_context_tokens": 12288,
+  "expected_latency_ms": 12000,
+  "expected_output_tokens": 1200,
+  "memory_strategy": "load_coding_standards_only",
+  "knowledge_strategy": "load_if_api_or_library_relevant",
+  "planner_usage": "off",
+  "critic_usage": "on_security_critical_code",
+  "reflection_usage": "on",
+  "tool_strategy": "minimum",
+  "rpm_optimization": "batch_tools_before_nim"
+}

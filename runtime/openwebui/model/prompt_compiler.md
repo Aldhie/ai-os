@@ -1,53 +1,99 @@
 # Prompt Compiler Specification
-> **Role**: HOW modules are assembled into a production system prompt | **Version**: 1.0.0
+> **Module ID**: M-COMPILER | **Version**: 2.0.0 | **Responsibility**: Define the deterministic assembly rules that transform individual policy modules into a single executable system prompt
+> **Why this module exists**: A single monolithic system prompt cannot be independently tested, versioned, or selectively deployed per task profile. The compiler enables modular updates, regression testing, and profile-specific prompt variants without manual editing.
 
 ---
 
-## Compilation Order
+## Compilation Pipeline
 
 ```
-01_identity.md       → WHO the AI is
-02_behavior.md       → HOW it responds to uncertainty, risk, failure
-03_conversation.md   → HOW conversation flows
-04_reasoning.md      → HOW it thinks
-05_planning.md       → HOW it decomposes multi-step tasks
-06_coding.md         → HOW it writes and reviews code  [mode: coding]
-07_architecture.md   → HOW it designs systems          [mode: architecture]
-08_response.md       → HOW responses are sized and structured
-09_memory.md         → HOW memory integrates
-10_knowledge.md      → HOW RAG integrates
-11_tools.md          → HOW tools are selected
-12_quality.md        → HOW response quality is self-enforced
-13_constraints.md    → WHAT it will not do
-14_thinking.md       → HOW thinking tokens are used
+Identity (M-IDENTITY)
+    ↓
+Behaviour (M-BEHAVIOUR)
+    ↓
+Conversation (M-CONVERSATION)
+    ↓
+Reasoning (M-REASONING)
+    ↓
+Planning (M-PLANNING)
+    ↓
+Memory (M-MEMORY)
+    ↓
+Knowledge (M-KNOWLEDGE)
+    ↓
+Tools (M-TOOLS)
+    ↓
+Response (M-RESPONSE)
+    ↓
+Quality (M-QUALITY)
+    ↓
+Constraints (M-CONSTRAINTS)
+    ↓
+Thinking (M-THINKING) [injected as runtime parameter, not prompt text]
+    ↓
+[ COMPILED PROMPT ]
 ```
 
-## Compilation Profiles
+---
 
-| Profile | Modules Included |
-|---------|------------------|
-| `standard` | 01-05, 08-14 |
-| `coding` | 01-06, 08-14 |
-| `architecture` | 01-05, 07-14 |
-| `full` | 01-14 |
+## Module Registry
+
+| Module ID | File | Required | Max Tokens (compiled contribution) |
+|---|---|---|---|
+| M-IDENTITY | identity.md | YES | 80 |
+| M-BEHAVIOUR | behavior.md | YES | 300 |
+| M-CONVERSATION | conversation.md | YES | 200 |
+| M-REASONING | reasoning.md | YES | 250 |
+| M-PLANNING | planning.md | CONDITIONAL | 150 |
+| M-MEMORY | memory.md | YES | 150 |
+| M-KNOWLEDGE | knowledge.md | YES | 150 |
+| M-TOOLS | tools.md | YES | 200 |
+| M-RESPONSE | response.md | YES | 200 |
+| M-QUALITY | quality.md | YES | 150 |
+| M-CONSTRAINTS | constraints.md | YES | 150 |
+| M-THINKING | thinking.md | RUNTIME PARAM | 0 (not injected as text) |
+
+**Total compiled prompt target**: ≤ 1,800 tokens. Exceeding this wastes context budget on every request.
+
+---
 
 ## Compilation Rules
 
-1. Extract the body of each module (strip YAML frontmatter and `---` separators)
-2. Prepend a `## SECTION` header from the module role line
-3. Assemble in canonical order
-4. Insert section dividers between modules
-5. Prepend generation header: model, profile, compiled timestamp, git SHA
-6. No module may contain `TODO`, `PLACEHOLDER`, `[TBD]`, or `[FILL]`
-7. Total compiled prompt target: < 3,000 tokens (standard profile)
+1. **Order is fixed**. The pipeline sequence above is non-negotiable. Behaviour must precede Conversation; Memory must precede Knowledge.
+2. **Each module contributes a single section**. Modules may not repeat content already expressed in an earlier module.
+3. **No prose duplication**. If the same rule appears in two modules, the later module defers to the earlier.
+4. **Conditional modules** (Planning, Architecture, Coding) are only compiled into the prompt when the active profile requires them. They are omitted for `discussion` and `creative` profiles to reduce token footprint.
+5. **Thinking is a runtime API parameter** — it is never compiled into prompt text. The compiler emits a `thinking_config` object alongside the prompt, not within it.
+6. **Version header is mandatory**. Every compiled prompt must begin with a machine-readable header:
+   ```
+   <!-- COMPILED: version=X.Y.Z | profile=<name> | sha256=<hash-of-sources> | date=YYYY-MM-DD -->
+   ```
+7. **Validation before commit**: The compiler must verify:
+   - No module contains the string `TODO`, `PLACEHOLDER`, or `TBD`
+   - Total token count ≤ 1,800 (measured by tiktoken cl100k_base)
+   - All required modules are present
+   - No module exceeds its individual token budget by > 20%
 
-## Token Budget for Compiled Prompt
+---
 
-```
-standard profile:    ~2,200 tokens
-coding profile:      ~2,500 tokens
-architecture profile: ~2,600 tokens
-full profile:        ~3,000 tokens
-```
+## Profile Variants
 
-The compiled prompt is the single source of truth for the system prompt. Never edit `compiled_prompt_v1.md` directly — regenerate from modules.
+| Profile | Modules Included | Notes |
+|---|---|---|
+| standard | All required | General-purpose baseline |
+| coding | + coding.md, architecture.md | Activates code-specific reasoning sections |
+| architecture | + architecture.md, planning.md | Deep system design mode |
+| discussion | Required only (no planning/coding/arch) | Minimum token footprint |
+| research | + knowledge.md expanded | Expanded RAG citation policy |
+
+---
+
+## Upgrade Protocol
+
+1. Edit the source module only.
+2. Run the compiler.
+3. Verify token counts and validation gates.
+4. Update version header (patch for wording; minor for behaviour change; major for structural change).
+5. Commit as `feat(prompt): upgrade M-<ID> to v<X.Y.Z>`.
+6. Run behaviour benchmark suite against prior compiled version.
+7. If benchmark regression detected: revert the module, not the compiled prompt.

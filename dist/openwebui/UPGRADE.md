@@ -1,37 +1,73 @@
-# AI-OS · Upgrade Guide
+# AI-OS · Open WebUI Upgrade Guide
 
-**Version**: 1.0.0  
-
----
-
-## Before Upgrading
-
-1. Note the current `compiled_prompt_v1.md` SHA from the model's System Prompt field.
-2. Export current model config via Open WebUI API: `GET /api/models`
-3. Record any active parameter overrides.
+**Version**: 2.1.0  
+**Sprint**: C
 
 ---
 
-## Upgrade Steps
+## Version History
 
-1. Pull latest from `Aldhie/ai-os` `main` branch.
-2. Check `runtime/openwebui/model/compiled_prompt_v1.md` for changes (look at the `<!-- COMPILED: version=... -->` header).
-3. If version changed, replace the System Prompt in Open WebUI with the new compiled prompt.
-4. If `runtime/openwebui/profiles/*.json` changed, update model parameters for the relevant profiles.
-5. If `runtime/openwebui/config/*.json` changed, update Filter implementations accordingly.
-6. Run benchmark suite (`runtime/openwebui/benchmark/suite.json`) against the new version.
-7. Compare scores to previous run. Investigate any dimension that dropped > 5 points.
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | 2026-07-21 | Initial Sprint A release. Prompt compiler, 15 model modules, benchmark framework. |
+| 2.0.0 | 2026-07-21 | Sprint B. 5 Python filters, benchmark harness (harness.py). |
+| 2.1.0 | 2026-07-21 | Sprint C. Full runtime config (9 JSON configs), compiled_prompt_v2 with hardened tool batching, 20-turn long-context floor, explicit v2.1.0 constraints table. |
 
 ---
 
-## Version Compatibility
+## Upgrading from v2.0.0 to v2.1.0
 
-| AI-OS Version | Compiled Prompt Version | Open WebUI Minimum | NIM Model ID |
-|---|---|---|---|
-| Sprint A | 2.0.0 | 0.6.x | nvidia/nemotron-3-ultra-550b-a55b |
+### What Changed
+
+1. **compiled_prompt_v2.md** replaces compiled_prompt_v1.md
+   - Tool batching rule is now a HARD CONSTRAINT (3 calls/turn maximum, explicit)
+   - Long-context floor raised from 10 to 20 turns for decision summary
+   - Critic threshold expanded: now mandatory for any irreversible action (not just architecture/security)
+   - Hallucination guard extended: version numbers, release dates, benchmark scores now always require `[verify]`
+   - Two new response length hard maximums added (1.5× rule made explicit)
+
+2. **New runtime/openwebui/config/** directory
+   - 9 production JSON configs: model, parameters, memory, knowledge, workflow, capabilities, tools, filters, profiles
+   - Every config has a `why` field explaining its design rationale
+
+3. **3 additional dist filters**
+   - credential_scrub, context_budget_enforcer, response_quality_monitor now in `dist/`
+
+### Upgrade Steps
+
+1. **Update System Prompt**
+   - Open WebUI → Models → `ai-os-nemotron-ultra` → Edit
+   - Replace System Prompt with contents of `dist/openwebui/compiled_prompt_v2.md`
+   - Save
+
+2. **Install 3 new filters** (if upgrading from v2.0.0)
+   - `dist/openwebui/filters/credential_scrub.py` — priority 2
+   - `dist/openwebui/filters/context_budget_enforcer.py` — priority 4
+   - `dist/openwebui/filters/response_quality_monitor.py` — priority 5
+
+3. **Verify filter chain order** (priority 1 → 5)
+
+4. **Run benchmark** to confirm score ≥ 70
+   ```bash
+   python runtime/openwebui/benchmark/harness.py \
+     --base-url http://localhost:3000 \
+     --api-key YOUR_KEY \
+     --model-id ai-os-nemotron-ultra
+   ```
 
 ---
 
-## Rollback Trigger
+## Pre-Upgrade Checklist
 
-Rollback if any benchmark dimension scores below 50/100 after upgrade, or if NIM returns > 5% error rate in first 30 minutes.
+- [ ] Current benchmark score recorded (baseline)
+- [ ] Current system prompt backed up
+- [ ] Filter list exported from Open WebUI
+- [ ] Test conversation saved for regression comparison
+
+## Post-Upgrade Validation
+
+- [ ] Benchmark score ≥ 70
+- [ ] RPM Guard blocks at turn 33 in rapid-fire test
+- [ ] Credential in test message is redacted
+- [ ] Code question uses temperature 0.2 (check filter outlet metadata)
+- [ ] Response does not start with "I" or filler affirmation

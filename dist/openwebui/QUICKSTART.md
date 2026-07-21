@@ -1,109 +1,120 @@
 # AI-OS · Open WebUI Quick Start Guide
 
-**Version**: 1.0.0  
-**Model**: NVIDIA Nemotron-3-Ultra-550B-A55B  
-**Provider**: NVIDIA Cloud NIM  
-**Target**: Open WebUI 0.6.x+
+**Version**: 2.1.0  
+**Sprint**: C  
+**Time to deploy**: ~15 minutes
 
 ---
 
 ## Prerequisites
 
-- Open WebUI running (self-hosted or cloud)
-- NVIDIA Cloud NIM API key (`nvapi-...`) — [get one at build.nvidia.com](https://build.nvidia.com)
-- Admin access to Open WebUI
+| Requirement | Details |
+|-------------|--------|
+| Open WebUI | v0.4.x or later |
+| NVIDIA NIM API key | Free Tier at [build.nvidia.com](https://build.nvidia.com) |
+| Admin access | Open WebUI Admin Panel |
 
 ---
 
-## Step 1 — Add NVIDIA NIM Connection
+## Step 1 — Add NIM as a Connection
 
-1. Open WebUI → **Admin Panel** → **Connections**
-2. Add OpenAI-compatible connection:
+1. Open WebUI → **Admin Panel** → **Settings** → **Connections**
+2. Add an OpenAI-compatible connection:
+   - **Name**: `NVIDIA NIM`
    - **Base URL**: `https://integrate.api.nvidia.com/v1`
-   - **API Key**: `nvapi-YOUR_KEY_HERE`
-3. Save and verify connection shows green.
+   - **API Key**: your `nvapi-...` key
+3. Save and verify connection
 
 ---
 
-## Step 2 — Create the Model
+## Step 2 — Install Filters (in order)
 
-1. **Admin Panel** → **Models** → **+ Add Model**
-2. Set:
+For each file in `dist/openwebui/filters/`, in this order:
+
+1. Open WebUI → **Admin Panel** → **Functions** → **+ New Function**
+2. Set type: **Filter**
+3. Paste the file contents
+4. Save and **Enable**
+
+| Order | File | 
+|-------|------|
+| 1 | `filters/rpm_guard.py` |
+| 2 | `filters/credential_scrub.py` |
+| 3 | `filters/profile_selector.py` |
+| 4 | `filters/context_budget_enforcer.py` |
+| 5 | `filters/response_quality_monitor.py` |
+
+---
+
+## Step 3 — Create the Model
+
+1. Open WebUI → **Admin Panel** → **Models** → **+ New Model**
+2. Configure:
    - **Model ID**: `ai-os-nemotron-ultra`
-   - **Base Model**: `nvidia/nemotron-3-ultra-550b-a55b`
-   - **Name**: `AI-OS · Nemotron Ultra`
-3. In **System Prompt**, paste the full contents of:
-   `runtime/openwebui/model/compiled_prompt_v1.md`
-   (remove the HTML comment header before pasting)
-4. Set parameters:
-   - Temperature: `0.7`
-   - Top P: `0.95`
-   - Max Tokens: `4096`
-   - Frequency Penalty: `0.1`
-5. Save.
+   - **Display Name**: `AI-OS · Nemotron Ultra`
+   - **Base Model**: select `nvidia/nemotron-ultra-253b-v1` from the NIM connection
+   - **System Prompt**: paste the entire contents of `compiled_prompt_v2.md`
+3. Under **Parameters**, set:
+   - **Temperature**: `0.6`
+   - **Top P**: `0.95`
+   - **Max Tokens**: `4096`
+4. Under **Filters**, assign all 5 filters installed in Step 2
+5. Save
 
 ---
 
-## Step 3 — Enable Thinking (Reasoning Budget)
+## Step 4 — Enable Capabilities
 
-Open WebUI passes `extra_body` to OpenAI-compatible providers.  
-In the model's **Advanced Parameters**:
+In the model settings, enable:
+- [x] Web Search
+- [x] RAG / Knowledge
+- [x] Memory
+- [ ] Image input (leave **disabled** — model is text-only)
+- [ ] Arena mode (leave **disabled** — wastes 2× RPM)
 
-```json
-{
-  "extra_body": {
-    "chat_template_kwargs": { "enable_thinking": true },
-    "reasoning_budget": 4096
-  }
-}
+---
+
+## Step 5 — Verify Deployment
+
+Send this test message to the model:
+
+```
+What is the CAP theorem?
 ```
 
-If your Open WebUI version does not support `extra_body` in the UI, apply it via the Open WebUI API or a Filter.
+**Expected behaviour:**
+- Response begins with the direct answer (not "The CAP theorem states that..." preamble)
+- No filler affirmations ("Sure!", "Great!", etc.)
+- Response is 200–400 words
+- No trailing "Is there anything else I can help with?"
+
+**Verify RPM guard is active** by sending 33 messages in rapid succession — the 33rd should be blocked with:
+```
+[AI-OS RPM Guard] NIM Free Tier limit reached (32 RPM). Please wait approximately N seconds.
+```
 
 ---
 
-## Step 4 — Import Parameter Profiles
+## Step 6 — Run Benchmark (Optional but Recommended)
 
-For task-optimised parameters, use the profiles in `dist/openwebui/parameter_profiles/` or `runtime/openwebui/profiles/`.  
-Switch profiles manually by adjusting model parameters, or automate via the Profile Selector Filter (`runtime/openwebui/config/filters.json`).
+```bash
+pip install requests
+python runtime/openwebui/benchmark/harness.py \
+  --base-url http://localhost:3000 \
+  --api-key YOUR_OPENWEBUI_API_KEY \
+  --model-id ai-os-nemotron-ultra
+```
 
----
-
-## Step 5 — Verify
-
-Send a test message: **"Explain the architecture of a distributed rate limiter."**
-
-Expected behaviour:
-- Response follows: Reasoning → Requirements → Constraints → Components → Interfaces → Failure Modes → Trade-offs
-- No filler affirmations
-- Answer comes first, not preamble
-- Response length ≤ 2500 tokens
+Expected result: **score ≥ 70** (PASS).
 
 ---
 
-## Free Tier Limits
+## Troubleshooting
 
-| Limit | Value | Mitigation |
-|-------|-------|------------|
-| RPM | 32 | Batch all tools before single NIM call |
-| Context ceiling (recommended) | 64K tokens | Context Budget Enforcer Filter |
-| Concurrent requests | Shared infra | RPM Guard Filter rejects >32/min |
-
----
-
-## Files Reference
-
-| File | Purpose |
-|------|---------|
-| `runtime/openwebui/model/compiled_prompt_v1.md` | System prompt — paste into model |
-| `runtime/openwebui/config/model.json` | Full model config |
-| `runtime/openwebui/config/parameters.json` | Default + override parameters |
-| `runtime/openwebui/config/memory.json` | Memory orchestration policy |
-| `runtime/openwebui/config/knowledge.json` | Knowledge/RAG policy |
-| `runtime/openwebui/config/tools.json` | Tool routing policy |
-| `runtime/openwebui/config/workflow.json` | 9-stage processing pipeline |
-| `runtime/openwebui/config/filters.json` | Filter chain spec |
-| `runtime/openwebui/config/capabilities.json` | Verified capability flags |
-| `runtime/openwebui/config/profiles.json` | Profile index |
-| `runtime/openwebui/profiles/*.json` | 7 task-specific profiles |
-| `runtime/openwebui/benchmark/suite.json` | Benchmark suite |
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| 429 from NIM | RPM Guard not installed | Install `rpm_guard.py` as priority-1 filter |
+| Responses start with "Sure!" | System prompt not applied | Re-paste `compiled_prompt_v2.md` into model System Prompt |
+| Context overflow errors | Context Budget Enforcer not active | Verify `context_budget_enforcer.py` is enabled |
+| Very high latency (>30s) | Context approaching 65K tokens | Normal on Free Tier; enforcer will truncate next turn |
+| Model responds as generic assistant | Wrong base model selected | Select `nvidia/nemotron-ultra-253b-v1` specifically |

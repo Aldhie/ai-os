@@ -1,67 +1,53 @@
 # Prompt Compiler Specification
-
-> **Layer**: Compilation Engine  
-> **Responsibility**: Define the assembly order, rules, and output format for generating compiled_prompt_v1.md  
-> **Version**: 1.0.0
+> **Role**: HOW modules are assembled into a production system prompt | **Version**: 1.0.0
 
 ---
 
-## Assembly Order
+## Compilation Order
 
 ```
-Section 1: identity      (required, ~300 tokens)
-Section 2: behavior      (required, ~500 tokens)
-Section 3: conversation  (required, ~350 tokens)
-Section 4: reasoning     (required, ~400 tokens)
-Section 5: planning      (conditional: complex tasks)
-Section 6: coding        (conditional: coding profile)
-Section 7: architecture  (conditional: architecture profile)
-Section 8: memory        (required, ~200 tokens)
-Section 9: knowledge     (required, ~200 tokens)
-Section 10: tools        (required, ~200 tokens)
-Section 11: response     (required, ~250 tokens)
-Section 12: quality      (required, ~250 tokens)
-Section 13: constraints  (required, ~150 tokens)
-Section 14: thinking     (required, ~150 tokens)
+01_identity.md       → WHO the AI is
+02_behavior.md       → HOW it responds to uncertainty, risk, failure
+03_conversation.md   → HOW conversation flows
+04_reasoning.md      → HOW it thinks
+05_planning.md       → HOW it decomposes multi-step tasks
+06_coding.md         → HOW it writes and reviews code  [mode: coding]
+07_architecture.md   → HOW it designs systems          [mode: architecture]
+08_response.md       → HOW responses are sized and structured
+09_memory.md         → HOW memory integrates
+10_knowledge.md      → HOW RAG integrates
+11_tools.md          → HOW tools are selected
+12_quality.md        → HOW response quality is self-enforced
+13_constraints.md    → WHAT it will not do
+14_thinking.md       → HOW thinking tokens are used
 ```
 
----
-
-## Profile → Module Inclusion Map
+## Compilation Profiles
 
 | Profile | Modules Included |
 |---------|------------------|
-| standard | 1,2,3,4,8,9,10,11,12,13,14 |
-| discussion | 1,2,3,4,8,9,10,11,12,13,14 |
-| coding | 1,2,3,4,6,8,9,10,11,12,13,14 |
-| architecture | 1,2,3,4,5,7,8,9,10,11,12,13,14 |
-| research | 1,2,3,4,5,8,9,10,11,12,13,14 |
-| creative | 1,2,3,4,8,10,11,12,13,14 |
-| debugging | 1,2,3,4,6,8,9,10,11,12,13,14 |
-
----
+| `standard` | 01-05, 08-14 |
+| `coding` | 01-06, 08-14 |
+| `architecture` | 01-05, 07-14 |
+| `full` | 01-14 |
 
 ## Compilation Rules
 
-1. Extract only the `Runtime [Name] Block` from each module
-2. Strip YAML frontmatter and module metadata
-3. Assemble in order with single blank line between sections
-4. Insert header comment: `# AI-OS Compiled Prompt — Profile: {profile} — v1.0.0`
-5. No TODOs, no placeholders, no unfinished sections — FAIL if found
-6. Hash the output and record in `compiled_manifest.json`
-7. Token count the output and verify it is within the profile's system prompt budget
+1. Extract the body of each module (strip YAML frontmatter and `---` separators)
+2. Prepend a `## SECTION` header from the module role line
+3. Assemble in canonical order
+4. Insert section dividers between modules
+5. Prepend generation header: model, profile, compiled timestamp, git SHA
+6. No module may contain `TODO`, `PLACEHOLDER`, `[TBD]`, or `[FILL]`
+7. Total compiled prompt target: < 3,000 tokens (standard profile)
 
----
+## Token Budget for Compiled Prompt
 
-## Token Budget Targets (compiled output)
+```
+standard profile:    ~2,200 tokens
+coding profile:      ~2,500 tokens
+architecture profile: ~2,600 tokens
+full profile:        ~3,000 tokens
+```
 
-| Profile | Target Tokens | Hard Max |
-|---------|--------------|----------|
-| standard | 2,500 | 3,200 |
-| coding | 3,000 | 3,800 |
-| architecture | 3,200 | 4,000 |
-| research | 2,800 | 3,500 |
-
----
-
-*Module: prompt_compiler.md | Version: 1.0.0 | Last updated: 2026-07-21*
+The compiled prompt is the single source of truth for the system prompt. Never edit `compiled_prompt_v1.md` directly — regenerate from modules.

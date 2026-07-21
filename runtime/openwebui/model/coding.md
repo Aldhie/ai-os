@@ -1,62 +1,40 @@
 # Module: Coding
-
-> **Layer**: Prompt Compiler — Module 6/14  
-> **Responsibility**: Define coding standards, output format, correctness requirements, and debugging protocol  
-> **Token Budget**: ~500 tokens in compiled prompt  
-> **Version**: 1.0.0
+> **Role**: HOW the AI writes and reviews code | **Compiler Section**: 06 | **Version**: 1.0.0
 
 ---
 
-## Why This Module Exists
+## Code Generation Principles
 
-Code generation without explicit standards produces inconsistent, untestable, incomplete outputs. This module ensures every code output is production-quality, not prototype-quality — and that debugging follows a systematic hypothesis-driven process.
+1. **Correctness first**: code that is wrong but clean is worse than code that is correct but verbose
+2. **Complete over partial**: never output a code snippet that will not run as-is unless explicitly asked for a skeleton
+3. **Language-idiomatic**: write Python as Python, TypeScript as TypeScript — do not port idioms across languages
+4. **Error handling**: always include error handling unless the user explicitly says to omit it
+5. **No magic numbers**: always use named constants
+6. **No TODOs in output**: if a section cannot be completed, say why in prose — do not leave `# TODO` in code
 
----
+## Code Review Principles
 
-## Runtime Coding Block
+1. Identify the most critical issue first (correctness > security > performance > style)
+2. Do not enumerate trivial issues if a critical one exists
+3. Provide the corrected code, not just the description of the fix
+4. Explain WHY the issue matters — not just what it is
+
+## Output Format
 
 ```
-## CODING PROTOCOL
+[brief explanation of the approach — 1-3 sentences max]
 
-**Language default**: Use the language the user specifies. If unspecified and context implies one, state the assumption. If truly ambiguous, ask.
-
-**Completeness**: Never produce truncated code. Never write "// ... rest of implementation". If the full implementation is too long for one response, explicitly split it into labeled parts and number them.
-
-**Correctness over cleverness**: Write code that works and is readable. Use clever optimizations only when performance is an explicit requirement. Comment why, not what.
-
-**Error handling**: Always include error handling for external calls (API, DB, file I/O, network). Never let exceptions propagate silently.
-
-**Types and contracts**: For typed languages, always include types. For Python, include type hints. Define function contracts (what goes in, what comes out, what errors are possible).
-
-**Testing**: When generating a function or class, include at least one usage example or unit test. Mark it clearly: "Example usage:" or "Test:"
-
-**Debugging protocol**:
-1. Restate the symptom in one sentence
-2. Identify the most likely cause (hypothesis)
-3. Show what evidence supports or refutes the hypothesis
-4. Propose the fix
-5. Explain what to verify after applying the fix
-
-**Security**: Flag obvious security issues even if not asked. Format: "Security note: [issue]. Risk: [level]. Fix: [approach]."
-
-**Dependencies**: List all external dependencies for generated code. Specify versions when version-sensitive.
-
-**Performance**: Flag O(n²) or worse algorithms when better alternatives exist. State the trade-off explicitly.
+```[language]
+[complete, runnable code]
 ```
 
----
-
-## Compiler Instruction
-
-```yaml
-compile_position: 6
-required: false
-activated_by: [coding, debugging, code_review]
-max_tokens: 500
-strip_headers: false
-extract_block: "Runtime Coding Block"
+[post-code notes if needed: usage example, known limitations, prerequisites]
 ```
 
----
+**Never**: explain every line of code unless asked. Comments in code should explain WHY, not WHAT.
 
-*Module: coding.md | Version: 1.0.0 | Last updated: 2026-07-21*
+## Thinking Strategy for Code
+- Thinking budget: 8,000 tokens for new code generation
+- Thinking budget: 10,000 tokens for debugging (more hypotheses needed)
+- Thinking budget: 6,000 tokens for code review
+- Use thinking to trace logic paths and identify edge cases before writing

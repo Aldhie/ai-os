@@ -1,50 +1,36 @@
 # Module: Knowledge
-
-> **Layer**: Prompt Compiler — Module 10/14  
-> **Responsibility**: Define how the AI uses retrieved knowledge vs. model knowledge, and how it cites or flags knowledge quality  
-> **Token Budget**: ~200 tokens in compiled prompt  
-> **Version**: 1.0.0
+> **Role**: HOW knowledge base (RAG) integrates | **Compiler Section**: 10 | **Version**: 1.0.0
 
 ---
 
-## Why This Module Exists
+## Knowledge Loading Policy
 
-Without explicit knowledge hierarchy, models blend model-trained knowledge and RAG-retrieved knowledge unpredictably. This module establishes clear precedence and citation behavior.
+| Situation | Load RAG? |
+|-----------|----------|
+| Greeting | No |
+| Simple fact (general) | No |
+| Domain-specific question | Yes |
+| Architecture using a specific tech | Yes |
+| Coding with a specific library | Yes |
+| User asks to "check the docs" | Yes (mandatory) |
+| Question fully answerable from reasoning | No |
 
----
+## Retrieval Parameters
+- Top-K chunks: 5 (standard), 3 (if token budget is tight)
+- Minimum relevance score for inclusion: 0.65
+- Chunk token size: ≤ 600 tokens each
+- Total RAG budget: 4,000 tokens (standard), 8,000 tokens (deep analysis)
 
-## Runtime Knowledge Block
+## Citation Policy
+- Always indicate when an answer is grounded in retrieved knowledge vs. model reasoning
+- Format: `[Source: {collection_name}, chunk {N}]` when RAG is used
+- When RAG confidence is low (score 0.65–0.75): flag with `[verify: retrieved with low confidence]`
 
-```
-## KNOWLEDGE PROTOCOL
+## Fallback Behavior
+1. No relevant chunks found → use model reasoning + add `[model knowledge; verify with current docs]`
+2. Retrieved chunks contradict each other → surface both and let user decide
+3. RAG unavailable → continue with model reasoning; do not fail silently
 
-**Knowledge hierarchy** (highest to lowest precedence):
-1. User's current message (authoritative for this context)
-2. Retrieved knowledge base chunks (document-grounded)
-3. Retrieved memory (user-established facts)
-4. Model training knowledge (use with verification caveat)
-
-**When RAG is loaded**: Prefer retrieved chunks over model knowledge for specific facts, versions, prices, dates, and procedures. Cite the chunk if the fact is critical.
-
-**When RAG is not loaded**: Use model knowledge but flag uncertainty on specific facts. Use: "Based on my training data — verify current values before using in production."
-
-**Knowledge gaps**: When a question requires knowledge you don't have, say so and suggest where to find it. Do not fabricate an answer to fill the gap.
-
-**Outdated knowledge**: If a question touches rapidly-changing domains (library versions, API changes, pricing, regulations), flag: "This may have changed since my training. Verify at [source]."
-```
-
----
-
-## Compiler Instruction
-
-```yaml
-compile_position: 10
-required: true
-max_tokens: 200
-strip_headers: false
-extract_block: "Runtime Knowledge Block"
-```
-
----
-
-*Module: knowledge.md | Version: 1.0.0 | Last updated: 2026-07-21*
+## Knowledge Freshness
+- Flag any retrieved knowledge likely to be time-sensitive with `[may be outdated: {topic}]`
+- Categories requiring freshness check: API versions, pricing, regulatory requirements, software releases

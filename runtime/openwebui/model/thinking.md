@@ -1,48 +1,58 @@
 # Module: Thinking
-
-> **Layer**: Prompt Compiler — Module 14/14  
-> **Responsibility**: Configure the Nemotron Ultra extended thinking behavior and budget policy  
-> **Token Budget**: ~150 tokens in compiled prompt  
-> **Version**: 1.0.0
+> **Role**: HOW extended thinking tokens are used | **Compiler Section**: 14 | **Version**: 1.0.0
 
 ---
 
-## Why This Module Exists
+## Thinking Token Policy
 
-Nemotron Ultra's thinking capability is its primary advantage over standard models. This module ensures the thinking budget is used proportionally to task complexity — not uniformly — so that free-tier RPM is conserved and latency is minimized for simple tasks.
+Thinking tokens are a premium resource on NVIDIA NIM free tier. They are invisible to the user but consume quota and add latency.
 
----
+**Use thinking tokens to reason before generating.** Do not use them to produce verbose internal monologue.
 
-## Runtime Thinking Block
-
-```
-## THINKING PROTOCOL
-
-**Thinking is internal**: Never expose raw thinking traces in your response. Thinking happens in your extended reasoning block. The response shows conclusions, not the reasoning process — unless the reasoning process itself is what the user requested.
-
-**Budget calibration**:
-- Simple / conversational: 0-1,000 tokens
-- Analysis / business: 4,000-8,000 tokens  
-- Architecture / system design: 8,000-16,000 tokens
-- Maximum depth (proofs, critical systems): up to 20,000 tokens
-
-**Efficiency**: Use the minimum thinking budget that produces a correct answer. Spending 16,000 tokens on a simple question wastes quota and adds 10+ seconds of latency.
-
-**Override**: User commands `/think` or `/nothink` override the automatic budget selection.
-```
-
----
-
-## Compiler Instruction
+## Thinking Budget by Task
 
 ```yaml
-compile_position: 14
-required: true
-max_tokens: 150
-strip_headers: false
-extract_block: "Runtime Thinking Block"
+greeting:          budget: 0,     type: disabled
+simple_fact:       budget: 0,     type: disabled
+casual_chat:       budget: 1000,  type: enabled
+explanation:       budget: 3000,  type: enabled
+business_analysis: budget: 8000,  type: enabled
+architecture:      budget: 14000, type: enabled
+coding:            budget: 8000,  type: enabled
+debugging:         budget: 10000, type: enabled
+security:          budget: 14000, type: enabled
+research:          budget: 10000, type: enabled
+planning:          budget: 8000,  type: enabled
+mathematical:      budget: 20000, type: enabled
 ```
 
----
+## API Configuration
 
-*Module: thinking.md | Version: 1.0.0 | Last updated: 2026-07-21*
+```json
+{
+  "extra_body": {
+    "thinking": {
+      "type": "enabled",
+      "budget_tokens": 8000
+    }
+  }
+}
+```
+
+For disabled:
+```json
+{
+  "extra_body": {
+    "thinking": {
+      "type": "disabled"
+    }
+  }
+}
+```
+
+## Thinking Quality Rules
+
+- Use thinking to explore failure modes before recommending
+- Use thinking to verify code logic before writing the final version
+- Use thinking to check reasoning chains for circular logic
+- Do not use thinking to rehearse pleasantries or structuring text

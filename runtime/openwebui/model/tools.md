@@ -1,53 +1,43 @@
 # Module: Tools
-
-> **Layer**: Prompt Compiler — Module 11/14  
-> **Responsibility**: Define tool selection logic, minimum tool policy, and tool result integration  
-> **Token Budget**: ~200 tokens in compiled prompt  
-> **Version**: 1.0.0
+> **Role**: HOW tools are selected and used | **Compiler Section**: 11 | **Version**: 1.0.0
 
 ---
 
-## Why This Module Exists
+## Tool Selection Principle
 
-Tool calls cost RPM quota on the free tier. Unnecessary tool calls degrade latency and consume the 32 RPM limit. This module enforces minimum-tool discipline.
+Use the **minimum number of tools** that produce a correct answer.
 
----
+Every tool call costs:
+- Latency (network round-trip + model call)
+- Tokens (tool definitions in context)
+- RPM quota (against 32 RPM free tier limit)
 
-## Runtime Tools Block
+Never use a tool when reasoning alone is sufficient.
 
-```
-## TOOL PROTOCOL
+## Tool Routing Matrix
 
-**Minimum tool principle**: Use the minimum number of tools necessary to answer correctly. If model knowledge is sufficient, do not call a tool.
+| Need | Tool | Skip Condition |
+|------|------|----------------|
+| User's repo or code | GitHub MCP | General coding question not about a specific repo |
+| User preference / history | Brain Memory | First turn; greeting; general question |
+| Current facts / news | Web Search | Question answerable from training knowledge |
+| Domain documentation | Knowledge RAG | Simple question; no relevant collection exists |
+| Math / calculation | Calculator | Estimation; single-step arithmetic |
+| File analysis | Attachment | No file provided |
 
-**Tool selection order**:
-1. Memory (if query is about user preferences, history, or established context)
-2. Knowledge / RAG (if query requires document-grounded facts)
-3. Web search (if query requires current/live information not in knowledge base)
-4. GitHub tools (if query is about repository contents or operations)
-5. Calculator (if query requires precise numerical computation)
+## Tool Call Budget
 
-**No redundant calls**: Do not call memory AND knowledge for a greeting. Do not call web search if the knowledge base has the answer.
+| Task Class | Max Tool Calls | RPM Impact |
+|------------|---------------|------------|
+| Greeting | 0 | 0 |
+| Simple fact | 0 | 0 |
+| Research | 3 | +3 RPM |
+| Architecture | 3 | +3 RPM |
+| Coding (user repo) | 2 | +2 RPM |
+| Debugging | 2 | +2 RPM |
+| Business | 2 | +2 RPM |
 
-**Tool result integration**: Integrate tool results naturally. Do not expose raw tool output. Synthesize it into a coherent answer.
-
-**Tool failure**: If a tool call fails or returns empty, proceed with model knowledge and flag: "The [tool] returned no results. Answering from model knowledge — verify."
-
-**RPM awareness**: On free tier (32 RPM), each tool chain call counts. Batch what can be batched. Sequence what must be sequenced. Prefer cached results when valid.
-```
-
----
-
-## Compiler Instruction
-
-```yaml
-compile_position: 11
-required: true
-max_tokens: 200
-strip_headers: false
-extract_block: "Runtime Tools Block"
-```
-
----
-
-*Module: tools.md | Version: 1.0.0 | Last updated: 2026-07-21*
+## Tool Result Integration
+- Consolidate all tool results before making the final NIM call
+- Never call NIM once per tool — batch all results, then call NIM once
+- If a tool fails: note the failure, continue with available data, do not retry silently

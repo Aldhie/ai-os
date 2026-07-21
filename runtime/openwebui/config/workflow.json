@@ -1,140 +1,82 @@
 {
-  "_schema": "ai-os/owu-workflow-config",
-  "_version": "1.0.0",
-  "_sprint": "C",
-  "_why": "Defines the per-turn execution pipeline for AI-OS runtime. Each stage has a trigger, priority, skip condition, failure strategy, latency budget, and token budget. This is the Runtime Decision Engine in executable form.",
-
+  "$schema": "https://ai-os.dev/schemas/runtime/workflow.json",
+  "_meta": {
+    "version": "1.0.0",
+    "sprint": "C",
+    "last_updated": "2026-07-21",
+    "why": "Defines the per-turn execution pipeline. Each stage has a condition, execution order, latency budget, and failure strategy."
+  },
   "pipeline": [
     {
       "stage": 1,
-      "name": "RPM Guard",
+      "name": "rpm_guard",
       "type": "filter_inlet",
-      "trigger": "every_turn",
-      "priority": "CRITICAL",
-      "skip_condition": "filter disabled in OWU valves",
-      "failure_strategy": "reject turn with user-visible error message",
+      "ref": "runtime/openwebui/filters/rpm_guard.py",
+      "condition": "always",
+      "failure_strategy": "reject_with_message",
       "latency_budget_ms": 5,
-      "token_budget": 0,
-      "_why": "Must be first. A rejected request costs nothing. A 429 from NIM mid-stream corrupts the session."
+      "why": "Must be first. A rejected request here costs zero NIM RPM."
     },
     {
       "stage": 2,
-      "name": "Credential Scrub",
+      "name": "credential_scrub",
       "type": "filter_inlet",
-      "trigger": "every_turn",
-      "priority": "CRITICAL",
-      "skip_condition": "filter disabled",
-      "failure_strategy": "pass through without scrubbing, log warning",
+      "ref": "runtime/openwebui/filters/credential_scrub.py",
+      "condition": "always",
+      "failure_strategy": "pass_through_log_error",
       "latency_budget_ms": 10,
-      "token_budget": 0,
-      "_why": "Credential exposure to NIM is an irreversible data leak. Prevention must run before any external call."
+      "why": "Must run before any content reaches NIM. Regex-only, negligible latency."
     },
     {
       "stage": 3,
-      "name": "Profile Selector",
+      "name": "profile_selector",
       "type": "filter_inlet",
-      "trigger": "every_turn",
-      "priority": "HIGH",
-      "skip_condition": "filter disabled",
-      "failure_strategy": "apply default profile (discussion)",
-      "latency_budget_ms": 5,
-      "token_budget": 0,
-      "_why": "Parameter optimisation per task class improves quality and reduces token waste. Default profile is always safe."
+      "ref": "runtime/openwebui/filters/profile_selector.py",
+      "condition": "always",
+      "failure_strategy": "use_default_profile",
+      "latency_budget_ms": 10,
+      "why": "Classify task and set parameters before NIM call. No-op if classification fails — defaults apply."
     },
     {
       "stage": 4,
-      "name": "Context Budget Enforcer",
+      "name": "context_budget_enforcer",
       "type": "filter_inlet",
-      "trigger": "every_turn",
-      "priority": "HIGH",
-      "skip_condition": "estimated context tokens < 65536",
-      "failure_strategy": "pass through without truncation, log warning",
-      "latency_budget_ms": 15,
-      "token_budget": 0,
-      "_why": "Context overflow on NIM Free Tier causes timeout. Proactive truncation is cheaper than a failed request."
+      "ref": "runtime/openwebui/filters/context_budget_enforcer.py",
+      "condition": "always",
+      "failure_strategy": "pass_through_log_warning",
+      "latency_budget_ms": 20,
+      "why": "Must run after profile_selector so task_class is available. Prevents NIM timeout from context overflow."
     },
     {
       "stage": 5,
-      "name": "Memory Retrieval",
-      "type": "tool_call",
-      "trigger": "auto_load_triggers met (see memory.json)",
-      "priority": "MEDIUM",
-      "skip_condition": "no load trigger signal in user message",
-      "failure_strategy": "skip memory, proceed without user context",
-      "latency_budget_ms": 800,
-      "token_budget": 4096,
-      "rpm_cost": 1,
-      "_why": "User context materially improves personalised answers. Optional — failure degrades personalisation, not correctness."
+      "name": "nim_inference",
+      "type": "model_call",
+      "model_ref": "runtime/openwebui/config/model.json",
+      "condition": "always",
+      "failure_strategy": "surface_error_to_user",
+      "latency_budget_ms": 30000,
+      "why": "The actual NIM call. Latency budget is 30s; Free Tier shared infra can spike to 15–25s on heavy load."
     },
     {
       "stage": 6,
-      "name": "Knowledge Retrieval (RAG)",
-      "type": "tool_call",
-      "trigger": "auto_trigger_conditions met (see knowledge.json)",
-      "priority": "MEDIUM",
-      "skip_condition": "no relevant collection loaded OR skip_conditions met",
-      "failure_strategy": "fall back to model knowledge with [verify] flag",
-      "latency_budget_ms": 1500,
-      "token_budget": 8192,
-      "rpm_cost": 0,
-      "_why": "RAG does not consume NIM RPM — it uses OWU's internal vector search. Zero RPM cost makes it always worth attempting when relevant."
-    },
-    {
-      "stage": 7,
-      "name": "Tool Calls (GitHub / Web Search / Calculator)",
-      "type": "tool_call",
-      "trigger": "routing rules met (see tools section of compiled_prompt_v2.md)",
-      "priority": "MEDIUM",
-      "skip_condition": "routing rules not met OR RPM budget exhausted",
-      "failure_strategy": "acknowledge error, proceed without tool result",
-      "latency_budget_ms": 3000,
-      "token_budget": 4096,
-      "rpm_cost": "1 per tool call — max 3 tool calls before NIM inference",
-      "batch_rule": "collect all tool results before NIM inference — no partial answer chaining",
-      "_why": "Tool results must arrive together to avoid multiple NIM inference calls per turn, which drains RPM quota."
-    },
-    {
-      "stage": 8,
-      "name": "NIM Inference",
-      "type": "nim_call",
-      "trigger": "every_turn (exactly once)",
-      "priority": "CRITICAL",
-      "skip_condition": "never",
-      "failure_strategy": "surface NIM error to user with retry guidance",
-      "latency_budget_ms": 30000,
-      "token_budget": "determined by active profile max_tokens",
-      "rpm_cost": 1,
-      "_why": "The single inference call must happen exactly once per turn. All context (memory + RAG + tool results) must be assembled before this call."
-    },
-    {
-      "stage": 9,
-      "name": "Response Quality Monitor",
+      "name": "response_quality_monitor",
       "type": "filter_outlet",
-      "trigger": "every_turn",
-      "priority": "LOW",
-      "skip_condition": "filter disabled",
-      "failure_strategy": "pass through response unchanged",
-      "latency_budget_ms": 10,
-      "token_budget": 0,
-      "_why": "Quality monitoring is passive — it annotates metadata for the benchmark harness without modifying the response."
+      "ref": "runtime/openwebui/filters/response_quality_monitor.py",
+      "condition": "always",
+      "failure_strategy": "pass_through_log_error",
+      "latency_budget_ms": 15,
+      "why": "Outlet-only. Attaches quality metadata to body for benchmark consumption. Never modifies visible response."
     }
   ],
-
-  "rpm_accounting": {
-    "per_turn_budget": 32,
-    "nim_inference_cost": 1,
-    "max_tool_calls_per_turn": 4,
-    "memory_retrieval_cost": 1,
-    "rag_retrieval_cost": 0,
-    "safety_margin": 3,
-    "effective_tool_budget_per_turn": 3
-  },
-
-  "failure_modes": {
-    "nim_429": "RPM Guard should prevent this. If reached: surface error, advise 60s wait.",
-    "nim_timeout": "Context too large or NIM overloaded. Context Budget Enforcer should prevent. If reached: advise retry with shorter input.",
-    "tool_error": "Acknowledge, state what is missing, proceed with best available.",
-    "memory_conflict": "Surface conflict to user, request resolution.",
-    "rag_low_score": "Fall back to model knowledge with [verify] flag."
+  "tool_orchestration": {
+    "max_tool_calls_per_turn": 3,
+    "batching_rule": "collect_all_results_before_inference",
+    "execution_order": ["memory", "knowledge", "github", "web_search"],
+    "rpm_accounting": {
+      "memory_call": 0,
+      "rag_call": 0,
+      "nim_inference": 1,
+      "why": "Only NIM inference calls count against the 32 RPM budget. Memory and RAG are local operations."
+    }
   }
 }

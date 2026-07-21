@@ -1,36 +1,37 @@
 {
-  "_schema": "ai-os/owu-model-config",
-  "_version": "1.0.0",
-  "_sprint": "C",
-  "_why": "Defines the Open WebUI model entity for AI-OS Nemotron Ultra. This is the root config imported into OWU via Admin > Models > + New Model.",
-
-  "id": "ai-os-nemotron-ultra",
-  "name": "AI-OS · Nemotron Ultra",
-  "base_model_id": "nvidia/nemotron-3-ultra-550b",
-  "description": "Production reasoning intelligence of AI-OS. Optimised for architecture, coding, analysis, and long technical discussions. Powered by NVIDIA Nemotron-3-Ultra-550B via NIM Free Tier.",
-
-  "meta": {
-    "tags": ["production", "reasoning", "coding", "architecture", "analysis"],
-    "capabilities": {
-      "vision": false,
-      "file_handling": true,
-      "code_execution": false,
-      "tools": true,
-      "citations": true
-    }
+  "$schema": "https://ai-os.dev/schemas/runtime/model.json",
+  "_meta": {
+    "version": "1.0.0",
+    "sprint": "C",
+    "last_updated": "2026-07-21",
+    "why": "Single source of truth for the AI-OS model identity in Open WebUI. All other configs reference this model_id."
   },
-
-  "params": {
-    "system": "[PASTE compiled_prompt_v2.md contents here — see dist/openwebui/compiled_prompt_v2.md]",
-    "stream_response": true,
-    "function_calling": "auto"
+  "model_id": "ai-os-nemotron-ultra",
+  "display_name": "AI-OS · Nemotron Ultra",
+  "description": "Production reasoning intelligence. NVIDIA Nemotron-3-Ultra-550B-A55B via NIM Free Tier. Optimized for architecture, coding, analysis, and long technical conversations.",
+  "base_model": {
+    "provider": "nvidia",
+    "api_type": "openai_compatible",
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "model_name": "nvidia/nemotron-ultra-253b-v1",
+    "api_key_env": "NVIDIA_NIM_API_KEY"
   },
-
-  "_filters": [
-    { "priority": 1, "name": "AI-OS RPM Guard",                "file": "dist/openwebui/filters/rpm_guard.py" },
-    { "priority": 2, "name": "AI-OS Credential Scrub",         "file": "dist/openwebui/filters/credential_scrub.py" },
-    { "priority": 3, "name": "AI-OS Profile Selector",         "file": "dist/openwebui/filters/profile_selector.py" },
-    { "priority": 4, "name": "AI-OS Context Budget Enforcer",  "file": "dist/openwebui/filters/context_budget_enforcer.py" },
-    { "priority": 5, "name": "AI-OS Response Quality Monitor", "file": "dist/openwebui/filters/response_quality_monitor.py" }
-  ]
+  "system_prompt_ref": "runtime/openwebui/model/compiled_prompt_v2.md",
+  "capabilities": {
+    "streaming": true,
+    "function_calling": false,
+    "vision": false,
+    "thinking": true,
+    "extended_context": true,
+    "max_context_tokens": 1000000,
+    "safe_context_tokens": 65536
+  },
+  "tier": {
+    "name": "free",
+    "rpm_limit": 32,
+    "tpm_limit": null,
+    "concurrent_requests": 1,
+    "shared_infrastructure": true
+  },
+  "tags": ["ai-os", "nemotron", "nvidia", "production", "reasoning"]
 }

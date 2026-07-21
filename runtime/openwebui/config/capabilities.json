@@ -1,78 +1,41 @@
 {
-  "_schema": "ai-os/owu-capabilities",
-  "_version": "1.0.0",
-  "_sprint": "C",
-  "_why": "Declares which Open WebUI capability flags to enable for AI-OS Nemotron Ultra. Each flag is justified.",
-
-  "model_capabilities": {
-    "vision": {
-      "enabled": false,
-      "_why": "Nemotron-3-Ultra-550B is a text model. Enabling vision in OWU would route image inputs to a capability the model cannot satisfy."
-    },
-    "file_handling": {
-      "enabled": true,
-      "_why": "Users frequently upload code files, architecture diagrams (as text), and documents for analysis. File handling enriches RAG ingestion."
-    },
-    "code_execution": {
-      "enabled": false,
-      "_why": "Code execution sandbox is not available in the target Open WebUI deployment. Enabling it would create a misleading UI affordance."
-    },
-    "web_search": {
-      "enabled": true,
-      "_why": "Time-sensitive queries (current library versions, breaking changes) require web search. Governed by tool routing rules in compiled_prompt_v2.md."
-    },
-    "tools": {
-      "enabled": true,
-      "_why": "GitHub, Brain Memory, and Calculator tools are registered. Tool routing is governed by the compiled prompt to minimise RPM usage."
-    },
-    "citations": {
-      "enabled": true,
-      "_why": "Citation display is required for RAG transparency. Users must be able to verify the source of retrieved content."
-    },
-    "memory": {
-      "enabled": true,
-      "_why": "Cross-session project continuity is a core AI-OS capability. Governed by memory.json policy."
-    },
-    "streaming": {
-      "enabled": true,
-      "_why": "Streaming is critical on NIM Free Tier. It delivers first token quickly, masking the high latency of 550B inference and improving perceived responsiveness."
-    },
-    "system_prompt_override": {
-      "enabled": false,
-      "_why": "compiled_prompt_v2.md is version-controlled. Allowing per-user system prompt override would break runtime consistency and version traceability."
-    }
+  "$schema": "https://ai-os.dev/schemas/runtime/capabilities.json",
+  "_meta": {
+    "version": "1.0.0",
+    "sprint": "C",
+    "last_updated": "2026-07-21",
+    "why": "Declares which Open WebUI capabilities are enabled for this model. Controls what UI elements appear and what pipeline features activate."
   },
-
-  "tool_manifest": [
-    {
-      "name": "GitHub",
-      "type": "mcp",
-      "routing_rule": "only for repo/commit/issue/PR/code-search queries",
-      "rpm_cost": 1
-    },
-    {
-      "name": "Brain Memory",
-      "type": "mcp",
-      "routing_rule": "only when user-specific context materially changes the answer",
-      "rpm_cost": 1
-    },
-    {
-      "name": "Web Search",
-      "type": "builtin",
-      "routing_rule": "time-sensitive facts, current versions, breaking news",
-      "rpm_cost": 0
-    },
-    {
-      "name": "Knowledge (RAG)",
-      "type": "builtin",
-      "routing_rule": "domain-specific collections, codebase queries",
-      "rpm_cost": 0
-    },
-    {
-      "name": "Calculator",
-      "type": "builtin",
-      "routing_rule": "multi-step arithmetic, statistical derivations requiring precision",
-      "rpm_cost": 0
-    }
-  ]
+  "open_webui": {
+    "chat": true,
+    "streaming": true,
+    "markdown_rendering": true,
+    "code_highlighting": true,
+    "mermaid_diagrams": true,
+    "latex_math": true,
+    "image_generation": false,
+    "image_input": false,
+    "voice_input": false,
+    "voice_output": false,
+    "web_search": true,
+    "rag": true,
+    "memory": true,
+    "tools": true,
+    "filters": true,
+    "arena_mode": false
+  },
+  "model_native": {
+    "thinking": true,
+    "extended_context": true,
+    "max_context_tokens": 1000000,
+    "safe_context_tokens": 65536,
+    "function_calling": false,
+    "parallel_tool_calls": false,
+    "why_safe_ceiling": "NIM Free Tier shared infra produces extreme latency and occasional timeouts above 64K tokens. 65536 is the enforced operational ceiling, not a model limit."
+  },
+  "disabled_features": {
+    "image_input": {"reason": "Nemotron Ultra is a text-only model. Enabling would surface confusing UI without function."},
+    "image_generation": {"reason": "Out of scope for reasoning runtime."},
+    "arena_mode": {"reason": "Arena mode wastes 2× RPM budget for A/B comparison. Not viable on 32 RPM Free Tier."}
+  }
 }

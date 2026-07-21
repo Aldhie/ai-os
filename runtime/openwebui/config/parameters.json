@@ -1,17 +1,11 @@
 {
-  "_schema": "ai-os/owu-parameters",
-  "_version": "1.0.0",
-  "_sprint": "C",
-  "_why": "Base parameter defaults for the AI-OS model entity in Open WebUI. Profile Selector filter overrides these per-turn. These serve as the fallback when no task class is detected.",
-
-  "_nim_free_tier_constraints": {
-    "max_rpm": 32,
-    "context_window_safe_ceiling": 65536,
-    "shared_infrastructure": true,
-    "streaming_supported": true,
-    "extended_thinking_supported": true
+  "$schema": "https://ai-os.dev/schemas/runtime/parameters.json",
+  "_meta": {
+    "version": "1.0.0",
+    "sprint": "C",
+    "last_updated": "2026-07-21",
+    "why": "Default parameter set applied when no task-class profile is active. Balanced for general discussion. Profile Selector filter overrides these per-turn."
   },
-
   "defaults": {
     "temperature": 0.6,
     "top_p": 0.95,
@@ -19,94 +13,19 @@
     "max_tokens": 4096,
     "presence_penalty": 0.1,
     "frequency_penalty": 0.1,
-    "stream": true,
-    "stop": null
+    "stop": [],
+    "stream": true
   },
-
-  "profiles": {
-    "discussion": {
-      "_why": "Balanced temperature for fluent technical dialogue. Not too creative, not too deterministic. Presence/frequency penalties prevent repetition in long conversations.",
-      "temperature": 0.7,
-      "top_p": 0.95,
-      "top_k": 50,
-      "max_tokens": 4096,
-      "presence_penalty": 0.15,
-      "frequency_penalty": 0.10,
-      "reasoning_budget": 4096,
-      "expected_latency_ms": 8000,
-      "expected_output_tokens": 600
-    },
-    "coding": {
-      "_why": "Low temperature maximises determinism. Code correctness degrades rapidly above 0.3. Reasoning budget ensures multi-step logic is fully worked before output.",
-      "temperature": 0.2,
-      "top_p": 0.90,
-      "top_k": 20,
-      "max_tokens": 4096,
-      "presence_penalty": 0.0,
-      "frequency_penalty": 0.0,
-      "reasoning_budget": 4096,
-      "expected_latency_ms": 12000,
-      "expected_output_tokens": 1200
-    },
-    "architecture": {
-      "_why": "Moderate temperature preserves structured reasoning while allowing creative solution exploration. High reasoning budget required — architecture analysis involves 7 mandatory sections.",
-      "temperature": 0.4,
-      "top_p": 0.93,
-      "top_k": 40,
-      "max_tokens": 6144,
-      "presence_penalty": 0.1,
-      "frequency_penalty": 0.05,
-      "reasoning_budget": 8192,
-      "expected_latency_ms": 20000,
-      "expected_output_tokens": 2000
-    },
-    "analysis": {
-      "_why": "Balanced between discussion and coding. Analysis requires structured thinking (low temperature) but also synthesis across multiple sources (moderate top_p).",
-      "temperature": 0.4,
-      "top_p": 0.93,
-      "top_k": 40,
-      "max_tokens": 4096,
-      "presence_penalty": 0.1,
-      "frequency_penalty": 0.08,
-      "reasoning_budget": 6144,
-      "expected_latency_ms": 15000,
-      "expected_output_tokens": 1500
-    },
-    "creative": {
-      "_why": "High temperature enables generative exploration. Penalty values are zero — repetition is sometimes intentional in creative work.",
-      "temperature": 0.9,
-      "top_p": 0.97,
-      "top_k": 80,
-      "max_tokens": 3000,
-      "presence_penalty": 0.0,
-      "frequency_penalty": 0.0,
-      "reasoning_budget": 2048,
-      "expected_latency_ms": 8000,
-      "expected_output_tokens": 1000
-    },
-    "research": {
-      "_why": "High max_tokens and reasoning budget for synthesis tasks. Moderate temperature preserves accuracy while allowing cross-domain connections.",
-      "temperature": 0.5,
-      "top_p": 0.94,
-      "top_k": 50,
-      "max_tokens": 8192,
-      "presence_penalty": 0.1,
-      "frequency_penalty": 0.05,
-      "reasoning_budget": 8192,
-      "expected_latency_ms": 25000,
-      "expected_output_tokens": 2000
-    },
-    "debugging": {
-      "_why": "Minimum temperature for maximum determinism. Debugging requires exact trace-following and hypothesis ranking — variance degrades both.",
-      "temperature": 0.1,
-      "top_p": 0.85,
-      "top_k": 10,
-      "max_tokens": 3072,
-      "presence_penalty": 0.0,
-      "frequency_penalty": 0.0,
-      "reasoning_budget": 6144,
-      "expected_latency_ms": 15000,
-      "expected_output_tokens": 1000
-    }
+  "thinking": {
+    "enabled": true,
+    "default_budget_tokens": 4096,
+    "api_param": "reasoning_budget",
+    "chat_template_kwargs": {"enable_thinking": true},
+    "why": "Nemotron Ultra exposes a reasoning_budget parameter that controls how many tokens are allocated to internal chain-of-thought before the visible response. Enabling thinking by default produces higher-quality answers with minimal latency penalty on Free Tier because the thinking tokens are not counted against the visible token limit."
+  },
+  "nim_specific": {
+    "extra_body_key": "reasoning_budget",
+    "extra_body_chat_template": "chat_template_kwargs",
+    "note": "NIM requires reasoning_budget in extra_body, not in the standard OpenAI parameters object."
   }
 }

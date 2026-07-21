@@ -1,138 +1,99 @@
 {
-  "_schema": "ai-os/owu-tools-config",
-  "_version": "1.0.0",
-  "_sprint": "C",
-  "_why": "Complete tool orchestration configuration. Defines routing logic, cost accounting, batching rules, and failure strategies for all tools available to AI-OS runtime.",
-
-  "orchestration_principles": [
-    "Use the minimum number of tools required to answer accurately",
-    "Every tool call consumes RPM quota — treat it as a scarce resource",
-    "Batch all tool results before the NIM inference call",
-    "Never call a tool whose result will not change the final answer",
-    "Max 4 tool calls per turn (reserves 1 RPM unit for NIM inference)"
-  ],
-
-  "tools": {
-    "github": {
-      "name": "GitHub MCP",
-      "type": "mcp",
-      "rpm_cost": 1,
-      "latency_budget_ms": 2000,
-      "trigger": [
-        "query is about a specific repository by owner/name",
-        "query asks about a specific commit SHA, branch, or PR number",
-        "query asks to read, create, or update a file in a repo",
-        "query asks for issue or PR status",
-        "query requires a code search in a specific repo"
-      ],
-      "skip": [
-        "general programming questions not tied to a repo",
-        "conceptual architecture questions",
-        "debugging questions about code the user has pasted directly"
-      ],
-      "available_operations": [
-        "get_file_contents", "list_commits", "list_pull_requests",
-        "issue_read", "issue_write", "push_files", "create_branch",
-        "search_code", "search_repositories", "pull_request_read"
-      ],
-      "failure_strategy": "acknowledge error, state which repo data is missing, proceed without it"
-    },
-
-    "brain_memory": {
-      "name": "Brain Memory MCP",
-      "type": "mcp",
-      "rpm_cost": 1,
-      "latency_budget_ms": 800,
-      "trigger": [
-        "user references a prior decision from a previous session",
-        "user references a project by name with no other context in current session",
-        "answer quality materially improves from knowing user preferences",
-        "user asks to remember something"
-      ],
-      "skip": [
-        "generic factual questions with no personal context dependency",
-        "first turn greeting with no project reference",
-        "user has already provided all needed context in current session"
-      ],
-      "available_operations": [
-        "search_memory", "save_memory", "update_memory", "list_memory"
-      ],
-      "minimum_relevance_score": 0.70,
-      "failure_strategy": "skip memory, proceed without user context, do not surface error to user"
-    },
-
-    "web_search": {
-      "name": "Web Search",
-      "type": "builtin_owu",
-      "rpm_cost": 0,
-      "latency_budget_ms": 2500,
-      "trigger": [
-        "query requires information from last 30 days",
-        "query asks about current software version or release",
-        "query asks about a live system status or incident",
-        "query explicitly requests current information"
-      ],
-      "skip": [
-        "stable conceptual knowledge available in model training",
-        "project-specific questions better answered by RAG",
-        "questions about the AI-OS project itself (use GitHub tool)"
-      ],
-      "max_queries_per_turn": 3,
-      "failure_strategy": "fall back to model knowledge with [verify] flag"
-    },
-
-    "knowledge_rag": {
-      "name": "Knowledge (RAG)",
-      "type": "builtin_owu",
-      "rpm_cost": 0,
-      "latency_budget_ms": 1500,
-      "trigger": [
-        "a relevant collection is loaded",
-        "query is about library API usage with version specificity",
-        "query is about codebase-specific patterns",
-        "query asks 'how does X work in this project'"
-      ],
-      "skip": [
-        "no relevant collection is loaded",
-        "query is about current events (use web search)",
-        "query is purely conceptual"
-      ],
-      "prefer_over_web_search_when": [
-        "project-specific collection is loaded",
-        "collection contains content more authoritative than web results"
-      ],
-      "failure_strategy": "fall back to model knowledge with [model knowledge — verify with current docs] flag"
-    },
-
-    "calculator": {
-      "name": "Calculator",
-      "type": "builtin_owu",
-      "rpm_cost": 0,
-      "latency_budget_ms": 200,
-      "trigger": [
-        "multi-step arithmetic where intermediate error would compound",
-        "statistical derivations",
-        "unit conversions requiring precision",
-        "token budget calculations",
-        "RPM accounting"
-      ],
-      "skip": [
-        "single-step arithmetic",
-        "rough estimates where precision is not required"
-      ],
-      "failure_strategy": "state arithmetic inline with explicit step-by-step, flag as unverified"
-    }
+  "$schema": "https://ai-os.dev/schemas/runtime/tools.json",
+  "_meta": {
+    "version": "1.0.0",
+    "sprint": "C",
+    "last_updated": "2026-07-21",
+    "why": "Tool routing policy. Maps each available tool to its trigger conditions, skip conditions, latency cost, and RPM cost. Enforces minimum-tool principle."
   },
-
-  "future_mcp_tools": {
-    "_why": "AI-OS is designed to be extensible. New MCP tools follow the same routing, cost, and batching rules.",
-    "onboarding_requirements": [
-      "Define rpm_cost",
-      "Define trigger conditions",
-      "Define skip conditions",
-      "Define failure_strategy",
-      "Add to capabilities.json tool_manifest",
-      "Add routing entry to compiled_prompt (rebuild via prompt_compiler)"
-    ]
-  }
+  "rpm_constraint": {
+    "total_rpm": 32,
+    "nim_inference_cost_rpm": 1,
+    "max_tool_calls_per_turn": 3,
+    "batching_required": true
+  },
+  "tools": [
+    {
+      "id": "github",
+      "display_name": "GitHub MCP",
+      "latency_estimate_ms": 800,
+      "rpm_cost": 0,
+      "triggers": [
+        "query references specific repo, commit, issue, pull request",
+        "query asks about code in a specific repository",
+        "query asks about release versions of a specific project"
+      ],
+      "skip_when": [
+        "general programming question with no specific repo",
+        "conceptual question about a language or framework",
+        "user has not provided a repo context"
+      ],
+      "failure_strategy": "surface_error_continue_with_model_knowledge"
+    },
+    {
+      "id": "brain_memory",
+      "display_name": "Brain Memory",
+      "latency_estimate_ms": 200,
+      "rpm_cost": 0,
+      "triggers": [
+        "query depends on prior session decisions",
+        "query asks about user preferences or project state",
+        "user references something said in a previous session"
+      ],
+      "skip_when": [
+        "query is stateless and factual",
+        "session is turn 1 with no prior context expected",
+        "context window is within 10% of 65K ceiling"
+      ],
+      "failure_strategy": "continue_without_memory_log_warning"
+    },
+    {
+      "id": "web_search",
+      "display_name": "Web Search",
+      "latency_estimate_ms": 1500,
+      "rpm_cost": 0,
+      "triggers": [
+        "query asks for current version, price, or availability",
+        "topic is likely post-training-cutoff",
+        "user explicitly requests web search"
+      ],
+      "skip_when": [
+        "answer exists in model knowledge with high confidence",
+        "query is about established concepts not subject to change",
+        "RAG collection covers the topic"
+      ],
+      "failure_strategy": "fall_back_to_model_knowledge_with_flag"
+    },
+    {
+      "id": "knowledge_rag",
+      "display_name": "Knowledge (RAG)",
+      "latency_estimate_ms": 300,
+      "rpm_cost": 0,
+      "triggers": [
+        "relevant collection is loaded for this conversation",
+        "query asks about project-specific standards or APIs"
+      ],
+      "skip_when": [
+        "no collection is loaded",
+        "query is purely conceptual",
+        "all chunk similarity scores < 0.65"
+      ],
+      "failure_strategy": "fall_back_to_model_knowledge"
+    },
+    {
+      "id": "calculator",
+      "display_name": "Calculator",
+      "latency_estimate_ms": 50,
+      "rpm_cost": 0,
+      "triggers": [
+        "multi-step arithmetic required",
+        "precision matters (financial, scientific, cryptographic)"
+      ],
+      "skip_when": [
+        "single-step arithmetic resolvable without error",
+        "result is an estimate (round numbers acceptable)"
+      ],
+      "failure_strategy": "perform_arithmetic_in_model_with_verify_flag"
+    }
+  ]
 }
